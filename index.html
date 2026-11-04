@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сотка: химия и биология</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="description" content="Бесплатный тренажёр ЕГЭ по химии и биологии">
+<meta name="apple-mobile-web-app-title" content="Сотка">
+<meta name="theme-color" content="#f3f6f4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* layout: phone-first single column app, sticky top bar, bottom tab bar (Тренировка · Шпаргалки · Вариант · Промпт); cards scale up to 720px on desktop */
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --ink:#15201b; --muted:#5f6d66; --line:#dbe3de;
+  --chem:#2d55c8; --chem-soft:#e6ecfb; --bio:#17845a; --bio-soft:#e2f3eb;
+  --ok:#17845a; --ok-soft:#dff2e8; --bad:#c2412d; --bad-soft:#fbe7e3; --warn:#b26a00;
+  --display:"Unbounded","Golos Text",system-ui,sans-serif; --body:"Golos Text",-apple-system,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --acc:var(--chem); --acc-soft:var(--chem-soft);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1412; --surface:#18201d; --ink:#e7eeea; --muted:#9aa9a1; --line:#2a3530;
+  --chem:#7c9bff; --chem-soft:#1c2747; --bio:#4fd09a; --bio-soft:#15332a;
+  --ok:#4fd09a; --ok-soft:#15332a; --bad:#ff8a74; --bad-soft:#3a1d18; --warn:#f0b04a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --surface:#18201d; --ink:#e7eeea; --muted:#9aa9a1; --line:#2a3530;
+  --chem:#7c9bff; --chem-soft:#1c2747; --bio:#4fd09a; --bio-soft:#15332a;
+  --ok:#4fd09a; --ok-soft:#15332a; --bad:#ff8a74; --bad-soft:#3a1d18; --warn:#f0b04a; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+html{scroll-padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(84px + env(safe-area-inset-bottom,0px))}
+body.bio{--acc:var(--bio);--acc-soft:var(--bio-soft)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em}
+.brand b{color:var(--acc)}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:8px 14px;border-radius:999px;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--acc);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0e1412}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#0e1412}}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:500;font-size:18px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:2px}
+.stat b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.btn{appearance:none;border:0;border-radius:14px;background:var(--acc);color:#fff;font:600 16px var(--body);padding:14px 18px;min-height:50px;width:100%;cursor:pointer}
+:root[data-theme="dark"] .btn{color:#0e1412}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0e1412}}
+.btn.ghost{background:var(--acc-soft);color:var(--acc)}
+.btn:disabled{opacity:.45}
+.btn:focus-visible,.opt:focus-visible,.chip:focus-visible,.seg button:focus-visible,.tab:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.topics{display:grid;gap:8px}
+.topic{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.topic .name{font-weight:600}
+.topic .meta{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:6px}
+.pill{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;background:var(--acc-soft);color:var(--acc);white-space:nowrap}
+.qhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.q{font-size:17px;line-height:1.55}
+.q sub,.opt sub,.sol sub,.theory sub{font-size:.72em}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font:inherit;min-height:48px;cursor:pointer}
+.opt .n{font-family:var(--mono);font-weight:500;min-width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;background:var(--acc-soft);color:var(--acc);font-size:13px;flex:none}
+.opt[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.match{display:grid;gap:10px}
+.mrow{display:grid;gap:6px}
+.mrow .lbl{font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;min-width:44px;min-height:44px;font:600 16px var(--mono);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--acc);background:var(--acc);color:#fff}
+.answerline{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:18px;background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;min-height:48px}
+.answerline .ph{font-family:var(--body);font-size:14px;color:var(--muted)}
+input.num{width:100%;font:500 20px var(--mono);padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);min-height:52px}
+.verdict{border-radius:12px;padding:12px 14px;display:grid;gap:6px}
+.verdict.ok{background:var(--ok-soft)} .verdict.no{background:var(--bad-soft)}
+.verdict strong{font-size:16px}
+.sol{font-size:15px;line-height:1.55}
+.sol .eq{font-family:var(--mono);font-size:14px;background:var(--bg);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto;white-space:nowrap}
+.trap{font-size:14px;color:var(--warn)}
+.row{display:flex;gap:8px}
+.row .btn{flex:1}
+.theory{display:grid;gap:10px}
+details.th{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 14px}
+details.th summary{cursor:pointer;font-weight:600;padding:10px 0;list-style:none}
+details.th summary::-webkit-details-marker{display:none}
+details.th summary::after{content:"+";float:right;color:var(--acc);font-weight:700}
+details.th[open] summary::after{content:"–"}
+.tbl{overflow-x:auto;margin-bottom:12px}
+.tbl table{border-collapse:collapse;font-size:14px;min-width:100%}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+.tbl th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.checks{display:grid;gap:8px}
+.checks label{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.checks input{width:22px;height:22px;flex:none;accent-color:var(--acc)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));display:flex;justify-content:center}
+nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;width:100%}
+.tab{border:0;background:transparent;color:var(--muted);font:600 12px var(--body);display:grid;justify-items:center;gap:3px;padding:6px 2px;min-height:52px;cursor:pointer}
+.tab svg{width:24px;height:24px}
+.tab[aria-current="page"]{color:var(--acc)}
+.timer{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.prompt{font-family:var(--mono);font-size:13px;line-height:1.55;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;max-height:60vh;overflow:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20}
+.small{font-size:13px}
+.ios{display:grid;gap:6px;font-size:14px}
+@media (prefers-reduced-motion: no-preference){.opt,.chip,.btn{transition:background .15s,border-color .15s,transform .1s}.btn:active,.opt:active,.chip:active{transform:scale(.98)}}
+</style>
+</head>
+<body>
+
+<header class="top wrap" style="padding-left:0;padding-right:0">
+  <div class="brand" id="brand">Сотка<b>.</b></div>
+  <div class="seg" role="group" aria-label="Предмет">
+    <button id="sub-chem" aria-pressed="true">Химия</button>
+    <button id="sub-bio" aria-pressed="false">Биология</button>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast" hidden></div>
+
+<nav class="tabs" aria-label="Разделы"><div class="in">
+  <button class="tab" data-view="train" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/></svg>Тренировка</button>
+  <button class="tab" data-view="theory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>Шпаргалки</button>
+  <button class="tab" data-view="exam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>Вариант</button>
+  <button class="tab" data-view="prompt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>Промпт</button>
+</div></nav>
+
+<script>
+/* ---------- formula rendering: [[H2SO4]] -> H₂SO₄ with sub/sup; ^2- for charges ---------- */
+function F(s){return s.replace(/\[\[(.+?)\]\]/g,(m,f)=>f.replace(/\^([0-9]*[+\-−])/g,'<sup>$1</sup>').replace(/([A-Za-z\)\]])(\d+)/g,'$1<sub>$2</sub>'));}
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ---------- question bank ----------
+ type: multi (выберите N; ответ — цифры в любом порядке), match (буквы → цифры), order (последовательность), num (число), part2 (развёрнутый ответ: эталон + самопроверка)
+ pts: первичные баллы как в ЕГЭ; для 2-балльных одна ошибка = 1 балл */
+const BANK={
+chem:{name:'Химия',topics:[
+ {id:'atom',name:'Строение атома и периодический закон'},
+ {id:'bond',name:'Химическая связь и степени окисления'},
+ {id:'inorg',name:'Неорганические вещества'},
+ {id:'org',name:'Органическая химия'},
+ {id:'react',name:'Реакции: скорость, равновесие, ОВР, электролиз'},
+ {id:'calc',name:'Расчётные задачи'},
+ {id:'p2',name:'Часть 2: развёрнутый ответ'}],
+ items:[
+ {id:'c1',t:'atom',type:'multi',k:2,pts:1,q:'Выберите два элемента, атомы которых в основном состоянии имеют два неспаренных электрона.',o:['C','N','Na','O','F'],a:'14',
+  ex:'C: 2s²2p² — два неспаренных p-электрона. O: 2s²2p⁴ — тоже два (две пары и два одиночных). N: 2p³ — три. Na и F — по одному.',trap:'Кислород часто пропускают: 2p⁴ — это не «все спарены», а одна пара и два одиночных.'},
+ {id:'c2',t:'atom',type:'order',pts:1,q:'Выберите три металла одного периода и расположите их в порядке увеличения радиуса атома.',o:['Si','Mg','Na','Al','Cl'],a:'423',
+  ex:'Na, Mg, Al — третий период. В периоде слева направо радиус уменьшается, значит по возрастанию: Al → Mg → Na.',trap:'Si и Cl тоже из третьего периода, но это неметаллы.'},
+ {id:'c3',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два элемента, которые могут проявлять степень окисления +7.',o:['Cl','S','Mn','F','N'],a:'13',
+  ex:'Cl: +7 в [[HClO4]]. Mn: +7 в [[KMnO4]]. Максимум серы +6, азота +5, фтор проявляет только −1.',trap:'Фтор — самый электроотрицательный элемент, положительных степеней окисления у него нет.'},
+ {id:'c4',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества с ионной химической связью.',o:['[[NH4Cl]]','[[HCl]]','[[CO2]]','[[CaO]]','[[SiO2]]'],a:'14',
+  ex:'[[CaO]] — металл + неметалл, ионная. [[NH4Cl]] — соль аммония: между [[NH4^+]] и [[Cl^−]] ионная связь (внутри катиона ковалентные).',trap:'Соли аммония в ЕГЭ относят к веществам с ионной связью, хотя металла в них нет.'},
+ {id:'c5',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества с молекулярной кристаллической решёткой.',o:['[[SiO2]]','[[I2]]','[[NaCl]]','[[CO2]]','алмаз'],a:'24',
+  ex:'Иод и твёрдый [[CO2]] («сухой лёд») состоят из молекул. [[SiO2]] и алмаз — атомные решётки, [[NaCl]] — ионная.',trap:'[[CO2]] и [[SiO2]] похожи по формуле, но у кварца атомная решётка: отсюда разница в температурах плавления.'},
+ {id:'c6',t:'inorg',type:'match',pts:1,q:'Установите соответствие между классом и формулой вещества.',rows:['А) кислотный оксид','Б) амфотерный гидроксид','В) кислая соль'],o:['[[Mn2O7]]','[[Zn(OH)2]]','[[NaHCO3]]','[[CO]]','[[(CuOH)2CO3]]'],a:'123',
+  ex:'[[Mn2O7]] — кислотный оксид (ему соответствует [[HMnO4]]). [[Zn(OH)2]] — амфотерный. [[NaHCO3]] — кислая соль.',trap:'[[CO]] — несолеобразующий оксид, а [[(CuOH)2CO3]] — основная, а не кислая соль.'},
+ {id:'c7',t:'inorg',type:'multi',k:2,pts:2,q:'Выберите два вещества, с каждым из которых реагирует гидроксид натрия.',o:['Al','[[CuO]]','[[SiO2]]','Fe','[[MgO]]'],a:'13',
+  ex:'2Al + 2NaOH + 6H₂O → 2Na[Al(OH)₄] + 3H₂↑ — алюминий амфотерен. [[SiO2]] — кислотный оксид, реагирует со щёлочью при сплавлении (или с концентрированным раствором при нагревании) с образованием [[Na2SiO3]].',trap:'[[CuO]] и [[MgO]] — основные оксиды, со щелочами не реагируют.'},
+ {id:'c8',t:'inorg',type:'multi',k:2,pts:2,q:'Выберите два вещества, которые реагируют с разбавленной серной кислотой с выделением газа.',o:['Cu','Zn','[[Na2CO3]]','[[BaCl2]]','Ag'],a:'23',
+  ex:'Zn + H₂SO₄ → ZnSO₄ + H₂↑. Na₂CO₃ + H₂SO₄ → Na₂SO₄ + H₂O + CO₂↑. С [[BaCl2]] выпадает осадок [[BaSO4]], газа нет.',trap:'Cu и Ag стоят после водорода и с разбавленной серной кислотой не реагируют.'},
+ {id:'c9',t:'inorg',type:'match',pts:2,q:'Установите соответствие между реагентами и продуктом(-ами) реакции.',rows:['А) Fe + [[Cl2]]','Б) Fe + HCl','В) Fe + [[H2SO4]] (разб.)','Г) [[FeO]] + [[HNO3]] (конц.)'],o:['[[FeCl2]] + [[H2]]','[[FeCl3]]','[[FeSO4]] + [[H2]]','[[Fe2(SO4)3]] + [[SO2]] + [[H2O]]','[[Fe(NO3)3]] + [[NO2]] + [[H2O]]','[[FeCl2]]'],a:'2135',
+  ex:'Хлор — сильный окислитель: Fe → Fe⁺³. Соляная и разбавленная серная кислоты окисляют железо только до +2. Концентрированная азотная окисляет Fe⁺² до Fe⁺³ и восстанавливается до [[NO2]].',trap:'Fe + HCl даёт хлорид железа(II), а не (III): «хлор» и «соляная кислота» — разные окислители.'},
+ {id:'c10',t:'inorg',type:'match',pts:1,q:'Дана схема превращений: Al →(X) Na[Al(OH)₄] →(Y) Al(OH)₃. Определите вещества X и Y.',rows:['X','Y'],o:['NaOH (р-р)','NaCl','[[CO2]] (изб.)','[[H2O]]','HCl (изб.)'],a:'13',
+  ex:'Al + NaOH (р-р) → Na[Al(OH)₄] + H₂. Углекислый газ осаждает гидроксид: Na[Al(OH)₄] + CO₂ → Al(OH)₃↓ + NaHCO₃.',trap:'Избыток HCl растворит гидроксид дальше до [[AlCl3]], поэтому он не подходит.'},
+ {id:'c11',t:'org',type:'match',pts:1,q:'Установите соответствие между названием вещества и классом.',rows:['А) пропанол-2','Б) метилацетат','В) глицин'],o:['спирты','сложные эфиры','аминокислоты','альдегиды'],a:'123',
+  ex:'Пропанол-2 — вторичный спирт. Метилацетат [[CH3COOCH3]] — сложный эфир. Глицин [[NH2CH2COOH]] — аминокислота.'},
+ {id:'c12',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые являются структурными изомерами бутена-1.',o:['бутен-2','бутан','циклобутан','бутин-1','бутадиен-1,3'],a:'13',
+  ex:'Изомеры имеют одинаковую формулу [[C4H8]]: бутен-2 (изомерия положения связи) и циклобутан (межклассовая изомерия).',trap:'Бутан ([[C4H10]]), бутин и бутадиен ([[C4H6]]) имеют другие формулы.'},
+ {id:'c13',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, в молекулах которых есть атом углерода в sp-гибридизации.',o:['ацетилен','этилен','бензол','[[CO2]]','метан'],a:'14',
+  ex:'В ацетилене тройная связь — sp. В [[CO2]] углерод образует две двойные связи, линейная молекула — тоже sp.',trap:'Этилен и бензол — sp², метан — sp³.'},
+ {id:'c14',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые обесцвечивают бромную воду.',o:['бензол','этилен','гексан','ацетилен','циклогексан'],a:'24',
+  ex:'Кратные связи присоединяют бром: этилен (C=C) и ацетилен (C≡C).',trap:'Бензол бромную воду не обесцвечивает: бромируется только с катализатором [[FeBr3]].'},
+ {id:'c15',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, с которыми реагирует фенол, но не реагирует этанол.',o:['NaOH (р-р)','Na','[[Br2]] (водн.)','HCl','[[O2]]'],a:'13',
+  ex:'Фенол — слабая кислота: реагирует со щёлочью (фенолят натрия). Бромная вода даёт белый осадок 2,4,6-трибромфенола. Этанол ни с тем, ни с другим не реагирует.',trap:'С натрием реагируют оба. Горят тоже оба.'},
+ {id:'c16',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые дают реакцию «серебряного зеркала».',o:['формальдегид','ацетон','этанол','глюкоза','сахароза'],a:'14',
+  ex:'Альдегидная группа есть у формальдегида и у глюкозы (в открытой форме).',trap:'Сахароза — невосстанавливающий дисахарид, «зеркала» не даёт. Ацетон — кетон.'},
+ {id:'c17',t:'org',type:'multi',k:2,pts:1,q:'Выберите два утверждения, верных для жиров.',o:['сложные эфиры глицерина и высших карбоновых кислот','хорошо растворимы в воде','при щелочном гидролизе образуют мыла','содержат пептидные связи','дают реакцию «серебряного зеркала»'],a:'13',
+  ex:'Жиры — триглицериды. Щелочной гидролиз (омыление) даёт глицерин и соли высших кислот, то есть мыла.'},
+ {id:'c18',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, основные свойства которых в водном растворе выражены сильнее, чем у аммиака.',o:['анилин','метиламин','дифениламин','диметиламин','вода'],a:'24',
+  ex:'Алкильные радикалы — доноры электронов, повышают электронную плотность на азоте, поэтому основность растёт: аммиак < метиламин < диметиламин.',trap:'Бензольное кольцо оттягивает электронную пару азота, поэтому анилин слабее аммиака, а дифениламин ещё слабее.'},
+ {id:'c19',t:'org',type:'match',pts:1,q:'Схема: этилен →(X) этанол →(Y) этаналь. Определите X и Y.',rows:['X','Y'],o:['[[H2O]] (H⁺)','[[H2]]','[[CuO]] (t)','KOH (спирт.)','[[KMnO4]] (H⁺)'],a:'13',
+  ex:'Гидратация: CH₂=CH₂ + H₂O → C₂H₅OH. Мягкое окисление оксидом меди: C₂H₅OH + CuO → CH₃CHO + Cu + H₂O.',trap:'Подкисленный [[KMnO4]] окислит этанол дальше, до уксусной кислоты.'},
+ {id:'c20',t:'react',type:'multi',k:2,pts:1,q:'Реакция N₂ + 3H₂ ⇄ 2NH₃, ΔH < 0. Выберите два верных признака.',o:['экзотермическая','необратимая','каталитическая','реакция обмена','реакция разложения'],a:'13',
+  ex:'ΔH < 0 — теплота выделяется. Синтез аммиака идёт на железном катализаторе. Реакция обратима и является реакцией соединения.'},
+ {id:'c21',t:'react',type:'multi',k:2,pts:1,q:'Выберите два воздействия, которые увеличивают скорость реакции Zn + 2HCl → ZnCl₂ + H₂.',o:['измельчение цинка','разбавление кислоты','нагревание','повышение давления водорода','добавление [[ZnCl2]]'],a:'13',
+  ex:'Скорость растёт при увеличении площади поверхности твёрдого вещества и при нагревании (правило Вант-Гоффа).',trap:'Давление влияет на скорость, только если газ среди реагентов; водород здесь продукт.'},
+ {id:'c22',t:'react',type:'match',pts:1,q:'Установите соответствие между уравнением и свойством, которое проявляет азот.',rows:['А) N₂ + 3H₂ → 2NH₃','Б) 4NH₃ + 5O₂ → 4NO + 6H₂O','В) 2NO + O₂ → 2NO₂','Г) 3NO₂ + H₂O → 2HNO₃ + NO'],o:['окислитель','восстановитель','и окислитель, и восстановитель','не меняет степень окисления'],a:'1223',
+  ex:'А: 0 → −3, окислитель. Б: −3 → +2, восстановитель. В: +2 → +4, восстановитель. Г: +4 → +5 и +2, диспропорционирование.'},
+ {id:'c23',t:'react',type:'match',pts:1,q:'Установите соответствие между формулой соли и продуктом на инертном аноде при электролизе её водного раствора.',rows:['А) [[CuCl2]]','Б) [[Na2SO4]]','В) KF','Г) [[AgNO3]]'],o:['[[O2]]','[[Cl2]]','[[F2]]','[[SO2]]'],a:'2111',
+  ex:'Бескислородные анионы (кроме F⁻) окисляются до простого вещества: Cl⁻ → Cl₂. Кислородсодержащие анионы и F⁻ не разряжаются, окисляется вода: выделяется O₂.',trap:'Фторид-ион не окисляется в водном растворе: на аноде выделяется кислород, а не фтор.'},
+ {id:'c24',t:'react',type:'order',pts:1,q:'Расположите растворы одинаковой концентрации в порядке возрастания pH.',o:['[[Na2CO3]]','HCl','NaCl','[[NH4Cl]]'],a:'2431',
+  ex:'HCl — сильная кислота (pH ≪ 7). [[NH4Cl]] гидролизуется по катиону — слабокислая. NaCl — нейтральная. [[Na2CO3]] гидролизуется по аниону — щелочная.'},
+ {id:'c25',t:'react',type:'match',pts:2,q:'Система 2SO₂ + O₂ ⇄ 2SO₃, ΔH < 0. Установите соответствие между воздействием и смещением равновесия.',rows:['А) повышение температуры','Б) повышение давления','В) добавление катализатора','Г) удаление [[SO3]]'],o:['вправо','влево','не смещается'],a:'2131',
+  ex:'Реакция экзотермическая: нагрев смещает влево. Слева 3 моль газа, справа 2: давление смещает вправо. Катализатор равновесие не смещает. Удаление продукта смещает вправо.'},
+ {id:'c26',t:'react',type:'match',pts:2,q:'В реактор ввели A и B: [A]₀ = 0,6 моль/л, [B]₀ = 0,4 моль/л. Протекает реакция A + B ⇄ 2C. В равновесии [C] = 0,4 моль/л. Определите равновесные концентрации A (X) и B (Y).',rows:['X — [A]','Y — [B]'],o:['0,1','0,2','0,3','0,4','0,5','0,6'],a:'42',
+  ex:'Образовалось 0,4 моль/л C, значит, израсходовалось по 0,2 моль/л A и B (коэффициенты 1 : 1 : 2). [A] = 0,6 − 0,2 = 0,4; [B] = 0,4 − 0,2 = 0,2.'},
+ {id:'c27',t:'react',type:'match',pts:2,q:'Установите соответствие между веществами и реактивом, с помощью которого их можно различить.',rows:['А) NaCl и [[NaNO3]]','Б) [[Na2SO4]] и NaCl','В) этанол и глицерин','Г) фенол и бензол'],o:['[[AgNO3]]','[[BaCl2]]','[[Cu(OH)2]]','[[Br2]] (водн.)','фенолфталеин'],a:'1234',
+  ex:'А: AgCl — белый творожистый осадок. Б: BaSO₄ — белый осадок. В: глицерин (многоатомный спирт) даёт с Cu(OH)₂ ярко-синий раствор. Г: фенол даёт с бромной водой белый осадок.'},
+ {id:'c28',t:'calc',type:'num',pts:1,q:'К 200 г 10%-го раствора NaCl добавили 50 г NaCl. Вычислите массовую долю соли в новом растворе (%). Ответ — целое число.',a:'28',
+  ex:'Соли: 200 · 0,10 + 50 = 70 г. Раствора: 200 + 50 = 250 г. ω = 70 / 250 = 0,28 = 28%.',trap:'Добавленная соль увеличивает и массу вещества, и массу раствора.'},
+ {id:'c29',t:'calc',type:'num',pts:1,q:'Уравнение: 2H₂ + O₂ → 2H₂O + 572 кДж. Сколько теплоты (кДж) выделится при сгорании 6 г водорода?',a:'858',
+  ex:'n(H₂) = 6 / 2 = 3 моль. По уравнению 2 моль H₂ дают 572 кДж, значит, 3 моль дают 572 · 3 / 2 = 858 кДж.'},
+ {id:'c30',t:'calc',type:'num',pts:1,q:'Какая масса (г) оксида кальция образуется при полном разложении 25 г карбоната кальция?',a:'14',
+  ex:'CaCO₃ → CaO + CO₂. n(CaCO₃) = 25 / 100 = 0,25 моль = n(CaO). m(CaO) = 0,25 · 56 = 14 г.'},
+ {id:'c31',t:'p2',type:'part2',line:'29',pts:2,q:'Используя метод электронного баланса, составьте уравнение реакции:<br>[[KMnO4]] + [[Na2SO3]] + [[H2SO4]] → [[MnSO4]] + [[Na2SO4]] + [[K2SO4]] + [[H2O]]<br>Укажите окислитель и восстановитель.',
+  sol:'<div class="eq">Mn⁺⁷ + 5e → Mn⁺²   | 2</div><div class="eq">S⁺⁴ − 2e → S⁺⁶     | 5</div><div class="eq">2KMnO₄ + 5Na₂SO₃ + 3H₂SO₄ → 2MnSO₄ + 5Na₂SO₄ + K₂SO₄ + 3H₂O</div>Окислитель — KMnO₄ (Mn⁺⁷), восстановитель — Na₂SO₃ (S⁺⁴).',
+  crit:['Составлен электронный баланс, коэффициенты расставлены верно','Указаны окислитель и восстановитель']},
+ {id:'c32',t:'p2',type:'part2',line:'30',pts:2,q:'Запишите молекулярное, полное и сокращённое ионные уравнения реакции карбоната натрия с соляной кислотой.',
+  sol:'<div class="eq">Na₂CO₃ + 2HCl → 2NaCl + H₂O + CO₂↑</div><div class="eq">2Na⁺ + CO₃²⁻ + 2H⁺ + 2Cl⁻ → 2Na⁺ + 2Cl⁻ + H₂O + CO₂↑</div><div class="eq">CO₃²⁻ + 2H⁺ → H₂O + CO₂↑</div>',
+  crit:['Верно записано молекулярное уравнение','Верно записаны полное и сокращённое ионные уравнения']},
+ {id:'c33',t:'p2',type:'part2',line:'31',pts:4,q:'Напишите уравнения реакций, соответствующие цепочке: Fe → FeCl₃ → Fe(OH)₃ → Fe₂O₃ → Fe.',
+  sol:'<div class="eq">2Fe + 3Cl₂ → 2FeCl₃</div><div class="eq">FeCl₃ + 3NaOH → Fe(OH)₃↓ + 3NaCl</div><div class="eq">2Fe(OH)₃ →(t) Fe₂O₃ + 3H₂O</div><div class="eq">Fe₂O₃ + 3CO →(t) 2Fe + 3CO₂</div>',
+  crit:['Уравнение 1','Уравнение 2','Уравнение 3','Уравнение 4'],trap:'FeCl₃ из железа получают хлором, а не соляной кислотой: HCl даёт FeCl₂.'},
+ {id:'c34',t:'p2',type:'part2',line:'32',pts:5,q:'Напишите уравнения реакций, соответствующие цепочке (органические вещества — структурными формулами):<br>CH₄ →(1500 °C) X₁ →(H₂O, Hg²⁺) X₂ →(H₂, Ni) X₃ →(H₂SO₄, t > 140 °C) X₄ →(KMnO₄, H₂O) X₅',
+  sol:'<div class="eq">2CH₄ →(1500 °C) HC≡CH + 3H₂</div><div class="eq">HC≡CH + H₂O →(Hg²⁺) CH₃–CHO</div><div class="eq">CH₃–CHO + H₂ →(Ni) CH₃–CH₂–OH</div><div class="eq">CH₃–CH₂–OH →(H₂SO₄, t > 140 °C) CH₂=CH₂ + H₂O</div><div class="eq">3CH₂=CH₂ + 2KMnO₄ + 4H₂O → 3HO–CH₂–CH₂–OH + 2MnO₂ + 2KOH</div>',
+  crit:['Уравнение 1','Уравнение 2 (реакция Кучерова)','Уравнение 3','Уравнение 4','Уравнение 5 (с коэффициентами)']},
+ {id:'c35',t:'p2',type:'part2',line:'33',pts:3,q:'При сгорании 2,3 г органического вещества получили 4,4 г CO₂ и 2,7 г H₂O. Плотность паров вещества по воздуху 1,59. Вещество реагирует с натрием. Установите молекулярную формулу, структурную формулу и запишите уравнение реакции с натрием.',
+  sol:'n(C) = n(CO₂) = 4,4 / 44 = 0,1 моль → 1,2 г<br>n(H) = 2 · 2,7 / 18 = 0,3 моль → 0,3 г<br>m(O) = 2,3 − 1,2 − 0,3 = 0,8 г → 0,05 моль<br>C : H : O = 0,1 : 0,3 : 0,05 = 2 : 6 : 1 → C₂H₆O, M = 46 г/моль; 1,59 · 29 ≈ 46 ✓<br>Реагирует с натрием — это спирт: CH₃–CH₂–OH<div class="eq">2CH₃CH₂OH + 2Na → 2CH₃CH₂ONa + H₂↑</div>',
+  crit:['Проведены вычисления и найдена молекулярная формула','Составлена структурная формула с учётом условия','Записано уравнение реакции с натрием'],trap:'Формуле C₂H₆O соответствует и диметиловый эфир, но он с натрием не реагирует.'},
+ {id:'c36',t:'p2',type:'part2',line:'34',pts:4,q:'Разминка к линии 34. Смесь цинка и меди массой 20 г обработали избытком соляной кислоты, выделилось 4,48 л газа (н. у.). Вычислите массовую долю меди в смеси.',
+  sol:'С кислотой реагирует только цинк: Zn + 2HCl → ZnCl₂ + H₂↑<br>n(H₂) = 4,48 / 22,4 = 0,2 моль = n(Zn); m(Zn) = 0,2 · 65 = 13 г<br>m(Cu) = 20 − 13 = 7 г; ω(Cu) = 7 / 20 = 0,35 = 35%',
+  crit:['Записано уравнение реакции','Найдено количество водорода и цинка','Найдена масса меди','Найдена массовая доля меди'],trap:'Медь стоит после водорода и с соляной кислотой не реагирует.'}
+ ]},
+bio:{name:'Биология',topics:[
+ {id:'cell',name:'Клетка: строение, деление, обмен веществ'},
+ {id:'gen',name:'Генетика'},
+ {id:'org',name:'Растения и животные'},
+ {id:'hum',name:'Человек'},
+ {id:'evo',name:'Эволюция и экология'},
+ {id:'p2',name:'Часть 2: развёрнутый ответ'}],
+ items:[
+ {id:'b1',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два органоида, которые содержат собственную ДНК.',o:['митохондрия','рибосома','хлоропласт','лизосома','аппарат Гольджи'],a:'13',
+  ex:'Митохондрии и хлоропласты — двумембранные полуавтономные органоиды: у них своя кольцевая ДНК и рибосомы (симбиотическая теория).'},
+ {id:'b2',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два процесса, которые происходят в профазе I мейоза.',o:['конъюгация гомологичных хромосом','кроссинговер','расхождение хроматид к полюсам','репликация ДНК','цитокинез'],a:'12',
+  ex:'В профазе I гомологичные хромосомы сближаются (конъюгация) и обмениваются участками (кроссинговер).',trap:'Репликация ДНК идёт в интерфазе (S-период), а хроматиды расходятся в анафазе II.'},
+ {id:'b3',t:'cell',type:'num',pts:1,q:'В соматической клетке человека 46 хромосом. Сколько хромосом в клетке в метафазе II мейоза?',a:'23',
+  ex:'После мейоза I набор гаплоидный: n2c, то есть 23 двухроматидные хромосомы. В метафазе II они выстраиваются на экваторе.'},
+ {id:'b4',t:'cell',type:'num',pts:1,q:'Сколько молекул ДНК содержится в клетке человека в метафазе I мейоза?',a:'92',
+  ex:'Перед мейозом ДНК удвоилась: 2n4c = 46 хромосом и 92 молекулы ДНК (каждая хромосома из двух хроматид).'},
+ {id:'b5',t:'cell',type:'num',pts:1,q:'Фрагмент молекулы ДНК содержит 1000 нуклеотидов, из них 20% — адениловые. Сколько в нём нуклеотидов с тимином?',a:'200',
+  ex:'По правилу Чаргаффа A = T: 20% от 1000 = 200.',trap:'Не путайте с цитозином: Г + Ц = 60%, значит Ц = 30% = 300.'},
+ {id:'b6',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два процесса световой фазы фотосинтеза.',o:['фотолиз воды','синтез АТФ','фиксация CO₂','синтез глюкозы','образование крахмала'],a:'12',
+  ex:'На мембранах тилакоидов под действием света разлагается вода (выделяется O₂) и синтезируется АТФ.',trap:'Фиксация CO₂ и синтез глюкозы — темновая фаза (цикл Кальвина) в строме.'},
+ {id:'b7',t:'cell',type:'num',pts:1,q:'Сколько молекул АТФ образуется при полном окислении одной молекулы глюкозы (по школьной схеме)?',a:'38',
+  ex:'Гликолиз даёт 2 АТФ, кислородный этап — 36 АТФ. Итого 38.'},
+ {id:'b8',t:'cell',type:'order',pts:1,q:'Установите последовательность процессов биосинтеза белка.',o:['терминация трансляции','транскрипция','процессинг иРНК','инициация трансляции','элонгация'],a:'23451',
+  ex:'В ядре: транскрипция, затем созревание иРНК (сплайсинг). В цитоплазме: инициация на рибосоме, элонгация цепи, терминация на стоп-кодоне.'},
+ {id:'b9',t:'gen',type:'num',pts:1,q:'Сколько типов гамет образует особь с генотипом AaBb при независимом наследовании?',a:'4',
+  ex:'Число типов гамет = 2ⁿ, где n — число гетерозиготных пар. 2² = 4: AB, Ab, aB, ab.'},
+ {id:'b10',t:'gen',type:'num',pts:1,q:'Определите соотношение фенотипов в F₂ при дигибридном скрещивании (полное доминирование, независимое наследование). Ответ — цифры в порядке убывания.',a:'9331',
+  ex:'AaBb × AaBb → 9 A_B_ : 3 A_bb : 3 aaB_ : 1 aabb.'},
+ {id:'b11',t:'gen',type:'num',pts:1,q:'Определите соотношение фенотипов в потомстве при анализирующем скрещивании дигетерозиготы (гены не сцеплены).',a:'1111',
+  ex:'AaBb × aabb → AaBb : Aabb : aaBb : aabb = 1 : 1 : 1 : 1.'},
+ {id:'b12',t:'gen',type:'num',pts:1,q:'Мать — носительница гемофилии, отец здоров. Какова вероятность (%) рождения ребёнка с гемофилией (среди всех детей)?',a:'25',
+  ex:'XᴴXʰ × XᴴY → XᴴXᴴ, XᴴXʰ, XᴴY, XʰY. Болен только XʰY — 1 из 4 = 25%.',trap:'Если спрашивают «среди сыновей», ответ 50%.'},
+ {id:'b13',t:'org',type:'match',pts:2,q:'Установите соответствие между признаком и отделом растений.',rows:['А) в цикле преобладает гаметофит','Б) образуют семена, но не плоды','В) двойное оплодотворение','Г) есть ризоиды, нет корней','Д) семязачатки открыто лежат на чешуях'],o:['Моховидные','Голосеменные','Покрытосеменные'],a:'12312',
+  ex:'Мхи — единственный отдел, где преобладает гаметофит, у них ризоиды вместо корней. У голосеменных семена открыто на чешуях шишек. Двойное оплодотворение — признак цветковых.'},
+ {id:'b14',t:'org',type:'multi',k:3,pts:2,q:'Выберите три признака, характерные для млекопитающих.',o:['диафрагма','четырёхкамерное сердце, левая дуга аорты','клоака у всех представителей','потовые железы','ядерные эритроциты','непостоянная температура тела'],a:'124',
+  ex:'Диафрагма, левая дуга аорты, потовые и млечные железы — признаки класса. Эритроциты зрелых млекопитающих безъядерные.',trap:'Клоака есть только у однопроходных (утконос, ехидна), не у всех. У птиц четырёхкамерное сердце, но дуга аорты правая.'},
+ {id:'b15',t:'hum',type:'order',pts:1,q:'Установите последовательность движения крови по большому кругу кровообращения, начиная с левого желудочка.',o:['аорта','правое предсердие','левый желудочек','капилляры органов','полые вены','артерии'],a:'316452',
+  ex:'Левый желудочек → аорта → артерии → капилляры органов → вены → полые вены → правое предсердие.'},
+ {id:'b16',t:'hum',type:'multi',k:2,pts:1,q:'Выберите две железы смешанной секреции.',o:['поджелудочная','половые','гипофиз','щитовидная','слюнные'],a:'12',
+  ex:'Поджелудочная выделяет сок в кишку и инсулин/глюкагон в кровь. Половые железы образуют гаметы и гормоны.',trap:'Гипофиз и щитовидная — только внутренней секреции, слюнные — только внешней.'},
+ {id:'b17',t:'evo',type:'multi',k:2,pts:1,q:'Выберите два примера идиоадаптации.',o:['уплощённое тело камбалы','четырёхкамерное сердце птиц','покровительственная окраска','отсутствие корней у повилики','появление семени'],a:'13',
+  ex:'Идиоадаптации — частные приспособления к условиям среды без повышения уровня организации.',trap:'Четырёхкамерное сердце и семя — ароморфозы. Потеря корней у паразита повилики — общая дегенерация.'},
+ {id:'b18',t:'evo',type:'multi',k:2,pts:1,q:'Выберите две пары гомологичных органов.',o:['рука человека и крыло летучей мыши','крыло бабочки и крыло птицы','лапа крота и лапа медведки','колючки кактуса и колючки барбариса','жабры рака и жабры рыбы'],a:'14',
+  ex:'Гомологичные органы имеют общее происхождение. Передняя конечность — у человека и летучей мыши. Колючки и кактуса, и барбариса — видоизменённые листья.',trap:'Крылья бабочки и птицы, лапы крота и медведки, жабры рака и рыбы — аналогичные органы: функция одна, происхождение разное.'},
+ {id:'b19',t:'evo',type:'order',pts:1,q:'Расположите организмы в правильной последовательности в пищевой цепи.',o:['ястреб','листья','гусеница','синица'],a:'2341',
+  ex:'Продуцент (листья) → консумент I порядка (гусеница) → II порядка (синица) → III порядка (ястреб).'},
+ {id:'b20',t:'evo',type:'multi',k:2,pts:1,q:'Выберите два признака агроценоза.',o:['низкое видовое разнообразие','замкнутый круговорот веществ','нужна дополнительная энергия от человека','высокая устойчивость','главная роль естественного отбора'],a:'13',
+  ex:'Агроценоз беден видами, неустойчив, круговорот незамкнутый (урожай уносится), без вложений человека быстро разрушается. Главную роль играет искусственный отбор.'},
+ {id:'b21',t:'p2',type:'part2',line:'цитология',pts:3,q:'Фрагмент транскрибируемой цепи ДНК: 3′-ТАЦ-ГАА-ЦЦГ-ТТТ-5′. Определите последовательность иРНК, антикодоны тРНК и аминокислотную последовательность фрагмента белка (по таблице генетического кода).',
+  sol:'иРНК комплементарна транскрибируемой цепи и антипараллельна:<div class="eq">иРНК: 5′-АУГ-ЦУУ-ГГЦ-ААА-3′</div>Антикодоны тРНК комплементарны кодонам: 3′-УАЦ-5′, 3′-ГАА-5′, 3′-ЦЦГ-5′, 3′-УУУ-5′.<div class="eq">Белок: Мет – Лей – Гли – Лиз</div>',
+  crit:['Верно определена иРНК с указанием концов','Верно определены антикодоны тРНК','Верно определена последовательность аминокислот'],trap:'Кодоны читают по иРНК от 5′ к 3′. Тимина в РНК нет: вместо него урацил.'},
+ {id:'b22',t:'p2',type:'part2',line:'цитология',pts:3,q:'В соматических клетках пшеницы 28 хромосом. Определите набор хромосом и число молекул ДНК в клетке семязачатка перед началом мейоза, в метафазе мейоза I и в конце телофазы мейоза I. Объясните.',
+  sol:'Перед мейозом (после S-периода): 2n4c — 28 хромосом, 56 ДНК (ДНК удвоилась, хромосомы двухроматидные).<br>Метафаза I: 2n4c — 28 хромосом, 56 ДНК (пары гомологов на экваторе).<br>Конец телофазы I: n2c — 14 хромосом, 28 ДНК в каждой клетке (гомологичные хромосомы разошлись, хроматиды ещё вместе).',
+  crit:['Верно для клетки перед мейозом с объяснением','Верно для метафазы I с объяснением','Верно для конца телофазы I с объяснением']},
+ {id:'b23',t:'p2',type:'part2',line:'генетика',pts:3,q:'У томата высокий стебель (A) доминирует над карликовым, круглые плоды (B) — над грушевидными. Гены не сцеплены. Дигетерозиготное растение скрестили с карликовым растением с грушевидными плодами. Составьте схему, определите генотипы и фенотипы потомства и их соотношение. Какой закон проявляется?',
+  sol:'<div class="eq">P: ♀ AaBb × ♂ aabb</div>Гаметы: AB, Ab, aB, ab  и  ab<div class="eq">F₁: AaBb : Aabb : aaBb : aabb = 1 : 1 : 1 : 1</div>AaBb — высокие, круглые; Aabb — высокие, грушевидные; aaBb — карликовые, круглые; aabb — карликовые, грушевидные.<br>Закон независимого наследования признаков (третий закон Менделя), анализирующее скрещивание.',
+  crit:['Верно записаны генотипы родителей и гаметы','Верно определены генотипы и фенотипы потомства и соотношение','Назван закон']},
+ {id:'b24',t:'p2',type:'part2',line:'генетика',pts:3,q:'Женщина с нормальным цветовым зрением, отец которой был дальтоником, вышла замуж за мужчину с нормальным зрением. Дальтонизм — рецессивный признак, сцепленный с X-хромосомой. Составьте схему, определите генотипы родителей и возможного потомства, вероятность рождения сына-дальтоника.',
+  sol:'Женщина получила Xᵈ от отца, значит, она носительница: XᴰXᵈ. Мужчина: XᴰY.<div class="eq">P: ♀ XᴰXᵈ × ♂ XᴰY</div><div class="eq">F₁: XᴰXᴰ, XᴰXᵈ (дочери здоровы), XᴰY, XᵈY</div>Вероятность рождения сына-дальтоника среди всех детей — 25%, среди сыновей — 50%. Дочери-носительницы — 25% от всех детей.',
+  crit:['Верно определены генотипы родителей с объяснением','Верно определены генотипы и фенотипы потомства','Верно определена вероятность']},
+ {id:'b25',t:'p2',type:'part2',line:'экология',pts:3,q:'Почему агроценоз, оставленный без ухода человека, быстро разрушается? Приведите не менее трёх причин.',
+  sol:'1) Культурные растения не выдерживают конкуренции с сорняками, приспособленными к местным условиям.<br>2) Низкое видовое разнообразие и короткие цепи питания: нет естественной регуляции численности вредителей.<br>3) Круговорот веществ не замкнут: элементы питания выносятся с урожаем и без удобрений истощаются.<br>4) Культурные сорта созданы искусственным отбором и без поддержки человека (полив, защита) погибают.',
+  crit:['Названа первая причина','Названа вторая причина','Названа третья причина']}
+ ]}
+};
+
+/* ---------- full version: extra items ---------- */
+BANK.chem.items.push(
+ {id:'c37',t:'atom',type:'multi',k:2,pts:1,q:'Выберите два элемента, которые образуют высший оксид состава ЭО₃.',o:['S','P','Cr','N','Si'],a:'13',ex:'Сера (VIA) — [[SO3]], хром (VIB) — [[CrO3]]. Высший оксид ЭО₃ у элементов VI группы.',trap:'P даёт [[P2O5]], N — [[N2O5]], Si — [[SiO2]].'},
+ {id:'c38',t:'atom',type:'order',pts:1,q:'Выберите три элемента одной группы и расположите их в порядке ослабления неметаллических свойств.',o:['N','P','As','C','Si'],a:'123',ex:'N, P, As — VA группа. Сверху вниз радиус растёт, электроотрицательность падает, неметаллические свойства ослабевают.'},
+ {id:'c39',t:'atom',type:'multi',k:2,pts:1,q:'Выберите два элемента, атомы которых имеют конфигурацию внешнего уровня ns²np⁴.',o:['O','N','Cl','S','Ar'],a:'14',ex:'ns²np⁴ — шесть электронов на внешнем уровне, VIA группа: кислород и сера.'},
+ {id:'c41',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества с ковалентной неполярной связью.',o:['[[O2]]','[[H2O]]','[[N2]]','NaCl','HF'],a:'13',ex:'Неполярная связь — между одинаковыми атомами неметалла: [[O2]], [[N2]].'},
+ {id:'c42',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества, между молекулами которых образуются водородные связи.',o:['[[CH4]]','HF','[[H2S]]','[[CH3OH]]','[[C2H6]]'],a:'24',ex:'Водородная связь возникает, когда H связан с F, O или N: HF и метанол (группа –OH).',trap:'В [[H2S]] сера недостаточно электроотрицательна — водородных связей практически нет.'},
+ {id:'c43',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества, в которых степень окисления азота равна +3.',o:['[[HNO2]]','[[NH3]]','[[NaNO2]]','[[NO2]]','[[N2O5]]'],a:'13',ex:'В [[HNO2]] и [[NaNO2]]: +1 + x + 2·(−2) = 0 → x = +3. В [[NH3]] −3, в [[NO2]] +4, в [[N2O5]] +5.'},
+ {id:'c44',t:'bond',type:'multi',k:2,pts:1,q:'Выберите два вещества с атомной кристаллической решёткой.',o:['алмаз','лёд','кремний','NaCl','иод'],a:'13',ex:'Алмаз и кристаллический кремний — атомные решётки: тугоплавкие и твёрдые.'},
+ {id:'c45',t:'inorg',type:'multi',k:2,pts:2,q:'Выберите два вещества, с каждым из которых реагирует соляная кислота.',o:['Cu','[[Fe(OH)3]]','[[SiO2]]','[[AgNO3]]','[[CO2]]'],a:'24',ex:'Гидроксид железа(III) — основание: нейтрализация. С [[AgNO3]] выпадает AgCl.',trap:'Cu после водорода; [[SiO2]] и [[CO2]] — кислотные оксиды, с кислотами не реагируют (кроме [[SiO2]] + HF).'},
+ {id:'c46',t:'inorg',type:'multi',k:2,pts:1,q:'Выберите два амфотерных оксида.',o:['ZnO','CaO','[[Al2O3]]','[[SO3]]','[[Na2O]]'],a:'13',ex:'Амфотерные оксиды: ZnO, [[Al2O3]], BeO, [[Cr2O3]], [[Fe2O3]] — реагируют и с кислотами, и со щелочами.'},
+ {id:'c47',t:'inorg',type:'multi',k:2,pts:2,q:'Выберите два вещества, которые реагируют с водой при комнатной температуре.',o:['Na','Cu','CaO','[[SiO2]]','[[Fe2O3]]'],a:'13',ex:'2Na + 2H₂O → 2NaOH + H₂. CaO + H₂O → Ca(OH)₂ (гашение извести).',trap:'[[SiO2]] — кислотный оксид, но с водой не реагирует.'},
+ {id:'c48',t:'inorg',type:'match',pts:2,q:'Установите соответствие между веществом и реагентами, с каждым из которых оно может взаимодействовать.',rows:['А) [[CO2]]','Б) Cu','В) NaOH','Г) [[Fe2O3]]'],o:['[[Ca(OH)2]], Mg','[[HNO3]] (разб.), [[O2]]','[[Al2O3]], [[CO2]]','[[H2]], HCl','NaCl, [[H2O]]'],a:'1234',ex:'Магний горит в [[CO2]]: 2Mg + CO₂ → 2MgO + C. Медь растворяется в разбавленной азотной кислоте и окисляется кислородом. Щёлочь реагирует с амфотерным и кислотным оксидами. [[Fe2O3]] восстанавливается водородом и растворяется в HCl.'},
+ {id:'c49',t:'inorg',type:'match',pts:1,q:'Установите соответствие между тривиальным названием и формулой.',rows:['А) негашёная известь','Б) гашёная известь','В) питьевая сода','Г) поваренная соль'],o:['CaO','[[Ca(OH)2]]','[[NaHCO3]]','[[Na2CO3]]','NaCl'],a:'1235',ex:'[[Na2CO3]] — кальцинированная сода, не питьевая.'},
+ {id:'c50',t:'inorg',type:'match',pts:1,q:'Схема: Cu →(X) [[CuSO4]] →(Y) [[Cu(OH)2]]. Определите X и Y.',rows:['X','Y'],o:['[[H2SO4]] (разб.)','[[H2SO4]] (конц.)','NaOH','[[Na2SO4]]','[[H2O]]'],a:'23',ex:'Cu + 2H₂SO₄(конц.) → CuSO₄ + SO₂ + 2H₂O. CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄.',trap:'Медь не реагирует с разбавленной серной кислотой.'},
+ {id:'c51',t:'inorg',type:'multi',k:2,pts:2,q:'Выберите два вещества, которые при нагревании разлагаются с образованием оксида металла.',o:['[[NaNO3]]','[[Cu(OH)2]]','KCl','[[CaCO3]]','[[Na2CO3]]'],a:'24',ex:'Cu(OH)₂ → CuO + H₂O; CaCO₃ → CaO + CO₂.',trap:'Нитраты щелочных металлов дают нитрит и кислород: 2NaNO₃ → 2NaNO₂ + O₂. Карбонаты щелочных металлов не разлагаются.'},
+ {id:'c52',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые являются гомологами этана.',o:['пропан','этилен','бутан','циклопропан','бензол'],a:'13',ex:'Гомологи — один класс, общая формула CₙH₂ₙ₊₂, отличаются на CH₂.',trap:'Циклопропан — циклоалкан, CₙH₂ₙ.'},
+ {id:'c53',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые вступают в реакцию гидрирования.',o:['этан','бензол','пропен','метанол','уксусная кислота'],a:'23',ex:'Водород присоединяется по кратным связям: пропен → пропан, бензол → циклогексан (Ni, t, p).'},
+ {id:'c54',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые реагируют со свежеосаждённым [[Cu(OH)2]] с образованием ярко-синего раствора.',o:['глицерин','этанол','этиленгликоль','фенол','бензол'],a:'13',ex:'Качественная реакция на многоатомные спирты (соседние группы –OH): глицерин, этиленгликоль.'},
+ {id:'c55',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые реагируют с уксусной кислотой.',o:['Mg','Cu','[[NaHCO3]]','[[Na2SO4]]','HCl'],a:'13',ex:'Уксусная кислота — слабая, но вытесняет H₂ из активных металлов и [[CO2]] из гидрокарбонатов.'},
+ {id:'c56',t:'org',type:'match',pts:1,q:'Установите соответствие между классом углеводородов и общей формулой.',rows:['А) алканы','Б) алкены','В) алкины','Г) арены (гомологи бензола)'],o:['CₙH₂ₙ₊₂','CₙH₂ₙ','CₙH₂ₙ₋₂','CₙH₂ₙ₋₆'],a:'1234',ex:'Каждая π-связь или цикл «отнимают» два атома водорода. Алкадиены тоже CₙH₂ₙ₋₂, циклоалканы — CₙH₂ₙ.'},
+ {id:'c57',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые подвергаются гидролизу.',o:['сахароза','глюкоза','крахмал','фруктоза','этанол'],a:'13',ex:'Ди- и полисахариды гидролизуются: сахароза → глюкоза + фруктоза; крахмал → глюкоза.',trap:'Моносахариды (глюкоза, фруктоза) не гидролизуются.'},
+ {id:'c58',t:'org',type:'match',pts:2,q:'Установите соответствие между реагентами и органическим продуктом.',rows:['А) CH₃COOH + C₂H₅OH (H⁺)','Б) C₂H₅OH (H₂SO₄, t > 140 °C)','В) C₂H₅OH + HBr','Г) CH₃CHO + Cu(OH)₂ (t)'],o:['этилацетат','этилен','бромэтан','уксусная кислота','диэтиловый эфир','этаналь'],a:'1234',ex:'А — этерификация. Б — внутримолекулярная дегидратация (при t < 140 °C — диэтиловый эфир). В — замещение –OH на Br. Г — окисление альдегида до кислоты, красный осадок Cu₂O.'},
+ {id:'c59',t:'org',type:'multi',k:2,pts:1,q:'Выберите два вещества, которые проявляют амфотерные свойства.',o:['глицин','анилин','аланин','этанол','уксусная кислота'],a:'13',ex:'Аминокислоты содержат –NH₂ (основная) и –COOH (кислотная группы): реагируют и с кислотами, и со щелочами.'},
+ {id:'c60',t:'org',type:'multi',k:2,pts:1,q:'Выберите два способа получения этанола.',o:['гидратация этилена','спиртовое брожение глюкозы','гидролиз крахмала','дегидратация этиленгликоля','окисление этаналя'],a:'12',ex:'CH₂=CH₂ + H₂O → C₂H₅OH; C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂.',trap:'Окисление этаналя даёт уксусную кислоту; этанол получают восстановлением этаналя.'},
+ {id:'c61',t:'react',type:'multi',k:2,pts:1,q:'Выберите две окислительно-восстановительные реакции.',o:['Zn + 2HCl → ZnCl₂ + H₂','NaOH + HCl → NaCl + H₂O','CaCO₃ → CaO + CO₂','2H₂ + O₂ → 2H₂O','BaCl₂ + Na₂SO₄ → BaSO₄ + 2NaCl'],a:'14',ex:'Признак ОВР — изменение степеней окисления. Участие простого вещества почти всегда указывает на ОВР.'},
+ {id:'c62',t:'react',type:'multi',k:2,pts:1,q:'Выберите две соли, которые гидролизуются по аниону.',o:['[[K2S]]','NaCl','[[CH3COONa]]','[[ZnCl2]]','[[KNO3]]'],a:'13',ex:'По аниону гидролизуются соли слабых кислот и сильных оснований: S²⁻, CH₃COO⁻. Среда щелочная.',trap:'[[ZnCl2]] гидролизуется по катиону.'},
+ {id:'c63',t:'react',type:'match',pts:2,q:'Установите соответствие между солью и средой её водного раствора.',rows:['А) [[AlCl3]]','Б) [[K2SO4]]','В) [[Na2S]]','Г) [[Cu(NO3)2]]'],o:['кислая','нейтральная','щелочная'],a:'1231',ex:'Al³⁺ и Cu²⁺ — катионы слабых оснований (кислая). [[K2SO4]] — сильное основание и сильная кислота. S²⁻ — анион слабой кислоты (щелочная).'},
+ {id:'c64',t:'react',type:'match',pts:2,q:'Установите соответствие между солью и продуктом на катоде при электролизе её водного раствора.',rows:['А) [[KNO3]]','Б) [[CuSO4]]','В) [[ZnCl2]]','Г) [[AgNO3]]'],o:['водород','металл','металл и водород','кислород'],a:'1232',ex:'K — до Al: только H₂. Cu, Ag — после H: только металл. Zn — между Al и H: металл и водород.'},
+ {id:'c65',t:'react',type:'multi',k:2,pts:1,q:'Система [[CaCO3]](тв) ⇄ CaO(тв) + [[CO2]](г), ΔH > 0. Выберите два воздействия, смещающих равновесие вправо.',o:['повышение температуры','повышение давления','удаление [[CO2]]','добавление CaO','добавление катализатора'],a:'13',ex:'Эндотермическая реакция: нагрев — вправо. Уменьшение концентрации продукта — вправо.',trap:'Концентрации твёрдых веществ в равновесии не учитываются: CaO не смещает.'},
+ {id:'c66',t:'react',type:'multi',k:2,pts:1,q:'Выберите две соли, при электролизе водных растворов которых на катоде выделяется только водород.',o:['NaCl','[[CuCl2]]','[[K2SO4]]','[[AgNO3]]','[[FeCl2]]'],a:'13',ex:'Na⁺ и K⁺ — металлы до алюминия: восстанавливается вода.'},
+ {id:'c67',t:'react',type:'match',pts:1,q:'Установите соответствие между уравнением и свойством, которое проявляет сера.',rows:['А) S + O₂ → SO₂','Б) S + H₂ → H₂S','В) H₂S + Cl₂ → S + 2HCl','Г) Cu + 2H₂SO₄(конц.) → CuSO₄ + SO₂ + 2H₂O'],o:['окислитель','восстановитель'],a:'2121',ex:'А: 0 → +4. Б: 0 → −2. В: −2 → 0. Г: +6 → +4.'},
+ {id:'c68',t:'calc',type:'num',pts:1,q:'Какая масса (г) гидроксида натрия нужна для приготовления 500 г 4%-го раствора?',a:'20',ex:'m = 500 · 0,04 = 20 г.'},
+ {id:'c69',t:'calc',type:'num',pts:1,q:'Какой объём (л, н. у.) кислорода нужен для полного сгорания 4 г метана? Ответ с точностью до десятых.',a:'11,2',ex:'CH₄ + 2O₂ → CO₂ + 2H₂O. n(CH₄) = 4 / 16 = 0,25 моль; n(O₂) = 0,5 моль; V = 0,5 · 22,4 = 11,2 л.'},
+ {id:'c70',t:'calc',type:'num',pts:1,q:'Какая масса (г) соли образуется при взаимодействии 9,8 г серной кислоты с избытком гидроксида натрия? Ответ с точностью до десятых.',a:'14,2',ex:'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O. n = 9,8 / 98 = 0,1 моль; m(Na₂SO₄) = 0,1 · 142 = 14,2 г.'},
+ {id:'c71',t:'calc',type:'num',pts:1,q:'Вычислите массовую долю (%) кислорода в оксиде серы(VI).',a:'60',ex:'M(SO₃) = 80; ω(O) = 48 / 80 = 0,6 = 60%.'},
+ {id:'c72',t:'calc',type:'num',pts:1,q:'К 300 г 20%-го раствора добавили 100 г воды. Вычислите массовую долю (%) вещества в новом растворе.',a:'15',ex:'Вещества 60 г, раствора 400 г: 60 / 400 = 15%.'},
+ {id:'c73',t:'p2',type:'part2',line:'29',pts:2,q:'Методом электронного баланса составьте уравнение: Cu + [[HNO3]] (конц.) → [[Cu(NO3)2]] + [[NO2]] + [[H2O]]. Укажите окислитель и восстановитель.',
+  sol:'<div class="eq">Cu⁰ − 2e → Cu⁺²   | 1</div><div class="eq">N⁺⁵ + 1e → N⁺⁴   | 2</div><div class="eq">Cu + 4HNO₃ → Cu(NO₃)₂ + 2NO₂ + 2H₂O</div>Медь — восстановитель, азот в HNO₃ (N⁺⁵) — окислитель.',crit:['Электронный баланс и коэффициенты','Указаны окислитель и восстановитель'],trap:'Две молекулы HNO₃ окисляют, ещё две идут на образование соли — поэтому коэффициент 4.'},
+ {id:'c74',t:'p2',type:'part2',line:'30',pts:2,q:'Запишите молекулярное, полное и сокращённое ионные уравнения реакции нитрата серебра с хлоридом натрия.',
+  sol:'<div class="eq">AgNO₃ + NaCl → AgCl↓ + NaNO₃</div><div class="eq">Ag⁺ + NO₃⁻ + Na⁺ + Cl⁻ → AgCl↓ + Na⁺ + NO₃⁻</div><div class="eq">Ag⁺ + Cl⁻ → AgCl↓</div>',crit:['Молекулярное уравнение','Полное и сокращённое ионные уравнения']},
+ {id:'c75',t:'p2',type:'part2',line:'31',pts:4,q:'Напишите уравнения реакций для цепочки: Na → NaOH → Na₂CO₃ → CO₂ → CaCO₃.',
+  sol:'<div class="eq">2Na + 2H₂O → 2NaOH + H₂↑</div><div class="eq">2NaOH + CO₂ → Na₂CO₃ + H₂O</div><div class="eq">Na₂CO₃ + 2HCl → 2NaCl + H₂O + CO₂↑</div><div class="eq">CO₂ + Ca(OH)₂ → CaCO₃↓ + H₂O</div>',crit:['Уравнение 1','Уравнение 2','Уравнение 3','Уравнение 4']},
+ {id:'c76',t:'p2',type:'part2',line:'34',pts:4,q:'В 200 г 9,8%-го раствора серной кислоты растворили цинк, взятый в избытке. Вычислите объём выделившегося газа (н. у.) и массовую долю соли в полученном растворе.',
+  sol:'Zn + H₂SO₄ → ZnSO₄ + H₂↑<br>n(H₂SO₄) = 200 · 0,098 / 98 = 0,2 моль = n(Zn) = n(ZnSO₄) = n(H₂)<br>V(H₂) = 0,2 · 22,4 = 4,48 л<br>m(ZnSO₄) = 0,2 · 161 = 32,2 г<br>m(р-ра) = 200 + 0,2 · 65 − 0,2 · 2 = 212,6 г<br>ω(ZnSO₄) = 32,2 / 212,6 ≈ 0,151 = 15,1%',
+  crit:['Уравнение реакции','Количество вещества и объём газа','Масса соли и масса раствора (с учётом цинка и ушедшего водорода)','Массовая доля соли'],trap:'Масса раствора: прибавить растворившийся цинк и вычесть улетевший водород. Непрореагировавший избыток цинка в раствор не входит.'}
+);
+BANK.bio.items.push(
+ {id:'b26',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два признака прокариотической клетки.',o:['нет оформленного ядра','кольцевая ДНК в цитоплазме','есть митохондрии','есть эндоплазматическая сеть','делится митозом'],a:'12',ex:'У бактерий нет ядра и мембранных органоидов, ДНК кольцевая (нуклеоид), деление — бинарное.'},
+ {id:'b27',t:'cell',type:'multi',k:2,pts:1,q:'Выберите две функции липидов.',o:['энергетическая','ферментативная','строительная (основа мембран)','хранение наследственной информации','транспорт кислорода'],a:'13',ex:'Липиды — запас энергии (38,9 кДж/г) и основа мембран (фосфолипиды).',trap:'Ферменты и гемоглобин — белки, наследственная информация — в нуклеиновых кислотах.'},
+ {id:'b28',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два немембранных органоида.',o:['рибосома','клеточный центр','лизосома','вакуоль','ЭПС'],a:'12',ex:'Немембранные: рибосомы, клеточный центр, микротрубочки, реснички и жгутики (по основе).'},
+ {id:'b29',t:'cell',type:'order',pts:1,q:'Установите последовательность фаз митоза.',o:['метафаза','телофаза','профаза','анафаза'],a:'3142',ex:'Профаза → метафаза → анафаза → телофаза («ПроМетАнаТело»).'},
+ {id:'b30',t:'cell',type:'num',pts:1,q:'Фрагмент иРНК содержит 90 нуклеотидов (без стоп-кодона). Сколько аминокислот он кодирует?',a:'30',ex:'Код триплетный: 90 / 3 = 30.'},
+ {id:'b31',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два процесса, которые происходят при гликолизе.',o:['расщепление глюкозы до ПВК','синтез двух молекул АТФ','выделение CO₂','образование 36 АТФ','протекает на кристах митохондрий'],a:'12',ex:'Гликолиз идёт в цитоплазме без кислорода: глюкоза → 2 ПВК, чистый выход 2 АТФ.',trap:'CO₂ и 36 АТФ — кислородный этап в митохондриях.'},
+ {id:'b32',t:'cell',type:'match',pts:2,q:'Установите соответствие между процессом и фазой фотосинтеза.',rows:['А) фотолиз воды','Б) фиксация CO₂','В) синтез АТФ','Г) восстановление НАДФ⁺','Д) образование глюкозы'],o:['световая','темновая'],a:'12112',ex:'Световая (тилакоиды): фотолиз, АТФ, НАДФ·H₂. Темновая (строма): цикл Кальвина — фиксация CO₂ и синтез глюкозы.'},
+ {id:'b33',t:'cell',type:'multi',k:2,pts:1,q:'Выберите два примера бесполого размножения.',o:['почкование гидры','спорообразование у мха','опыление яблони','оплодотворение у лягушки','конъюгация у инфузории'],a:'12',ex:'Бесполое — без гамет: почкование, споры, деление, вегетативное размножение.',trap:'Конъюгация инфузорий — половой процесс (обмен генетической информацией).'},
+ {id:'b34',t:'gen',type:'num',pts:1,q:'Сколько типов гамет образует особь с генотипом AaBbCc (гены не сцеплены)?',a:'8',ex:'2³ = 8.'},
+ {id:'b35',t:'gen',type:'num',pts:1,q:'Определите соотношение фенотипов в потомстве Aa × Aa при неполном доминировании. Ответ — цифры подряд.',a:'121',ex:'AA : Aa : aa = 1 : 2 : 1, при неполном доминировании гетерозигота имеет промежуточный фенотип.'},
+ {id:'b36',t:'gen',type:'num',pts:1,q:'У матери II группа крови (гетерозигота), у отца III (гетерозигота). Какова вероятность (%) рождения ребёнка с IV группой?',a:'25',ex:'Iᴬi × Iᴮi → IᴬIᴮ, Iᴬi, Iᴮi, ii. IV группа — 1 из 4.'},
+ {id:'b37',t:'gen',type:'multi',k:2,pts:1,q:'Выберите два примера модификационной изменчивости.',o:['загар кожи','разная форма листьев стрелолиста в воде и над водой','альбинизм','синдром Дауна','полиплоидия у пшеницы'],a:'12',ex:'Модификации не затрагивают генотип и возникают под действием среды в пределах нормы реакции.'},
+ {id:'b38',t:'gen',type:'match',pts:2,q:'Установите соответствие между примером и типом мутации.',rows:['А) трисомия по 21-й хромосоме','Б) полиплоидия','В) замена нуклеотида в гене гемоглобина','Г) утрата участка хромосомы'],o:['геномная','генная','хромосомная'],a:'1123',ex:'Геномные — изменение числа хромосом. Генные — изменения в пределах гена. Хромосомные — перестройки структуры хромосом (делеции, инверсии, транслокации).'},
+ {id:'b39',t:'gen',type:'num',pts:1,q:'Сколько фенотипических классов в потомстве AaBb × AaBb при полном доминировании?',a:'4',ex:'A_B_, A_bb, aaB_, aabb — 4 фенотипа (9 : 3 : 3 : 1), генотипов — 9.'},
+ {id:'b40',t:'org',type:'multi',k:2,pts:1,q:'Выберите два признака класса Однодольные.',o:['мочковатая корневая система','параллельное или дуговое жилкование','две семядоли','сетчатое жилкование','стержневая корневая система'],a:'12',ex:'Однодольные: одна семядоля, мочковатый корень, параллельное жилкование, цветок трёхчленный.'},
+ {id:'b41',t:'org',type:'match',pts:1,q:'Установите соответствие между животным и типом.',rows:['А) дождевой червь','Б) аскарида','В) беззубка','Г) речной рак'],o:['Кольчатые черви','Круглые черви','Моллюски','Членистоногие'],a:'1234',ex:'Беззубка — двустворчатый моллюск, речной рак — ракообразное (членистоногие).'},
+ {id:'b42',t:'org',type:'multi',k:2,pts:1,q:'Выберите два признака земноводных.',o:['трёхкамерное сердце','голая слизистая кожа с железами','сухая кожа с роговыми чешуями','внутреннее оплодотворение у всех видов','постоянная температура тела'],a:'12',ex:'У земноводных кожа участвует в дыхании, сердце трёхкамерное, оплодотворение у большинства наружное.'},
+ {id:'b43',t:'org',type:'multi',k:2,pts:1,q:'Выберите две функции корня.',o:['закрепление растения в почве','всасывание воды и минеральных солей','фотосинтез','испарение воды','образование цветков'],a:'12',ex:'Корень закрепляет, всасывает, запасает вещества, служит для вегетативного размножения.'},
+ {id:'b44',t:'evo',type:'order',pts:1,q:'Установите последовательность появления групп растений в эволюции.',o:['покрытосеменные','водоросли','риниофиты (псилофиты)','голосеменные','папоротниковидные'],a:'23541',ex:'Водоросли → первые наземные риниофиты → папоротниковидные → голосеменные (семя) → покрытосеменные (цветок, плод).'},
+ {id:'b46',t:'hum',type:'multi',k:2,pts:1,q:'Выберите две функции печени.',o:['образование желчи','обезвреживание ядовитых веществ','выработка инсулина','всасывание аминокислот','образование пепсина'],a:'12',ex:'Печень вырабатывает желчь, обезвреживает яды, запасает гликоген.',trap:'Инсулин — поджелудочная железа, пепсин — желудок.'},
+ {id:'b47',t:'hum',type:'order',pts:1,q:'Установите последовательность передачи звуковой волны и нервного импульса.',o:['слуховые косточки','наружный слуховой проход','барабанная перепонка','рецепторы улитки','слуховой нерв'],a:'23145',ex:'Проход → барабанная перепонка → молоточек, наковальня, стремечко → жидкость и рецепторы улитки → слуховой нерв → височная доля коры.'},
+ {id:'b48',t:'hum',type:'match',pts:1,q:'Установите соответствие между витамином и заболеванием при его недостатке.',rows:['А) C','Б) D','В) A','Г) B₁'],o:['цинга','рахит','куриная слепота','бери-бери'],a:'1234',ex:'C — цинга, D — рахит, A — нарушение сумеречного зрения, B₁ — бери-бери.'},
+ {id:'b49',t:'hum',type:'multi',k:2,pts:1,q:'Выберите два отдела, относящихся к стволу головного мозга.',o:['продолговатый мозг','мост','мозжечок','кора больших полушарий','спинной мозг'],a:'12',ex:'Ствол: продолговатый мозг, мост, средний мозг (часто и промежуточный).',trap:'Мозжечок к стволу не относят.'},
+ {id:'b50',t:'hum',type:'multi',k:2,pts:1,q:'Выберите две функции эритроцитов.',o:['перенос кислорода','перенос углекислого газа','свёртывание крови','фагоцитоз','выработка антител'],a:'12',ex:'Гемоглобин эритроцитов переносит O₂ и частично CO₂.',trap:'Свёртывание — тромбоциты; фагоцитоз и антитела — лейкоциты.'},
+ {id:'b51',t:'hum',type:'match',pts:1,q:'Установите соответствие между железой и гормоном.',rows:['А) поджелудочная','Б) щитовидная','В) надпочечники','Г) гипофиз'],o:['инсулин','тироксин','адреналин','соматотропин'],a:'1234',ex:'Недостаток инсулина — сахарный диабет; тироксина в детстве — кретинизм; избыток соматотропина в детстве — гигантизм.'},
+ {id:'b52',t:'evo',type:'multi',k:2,pts:1,q:'Выберите два движущих фактора эволюции.',o:['мутационная изменчивость','естественный отбор','модификационная изменчивость','ароморфоз','конвергенция'],a:'12',ex:'Факторы эволюции: мутации, отбор, дрейф генов, изоляция, волны жизни.',trap:'Модификации не наследуются. Ароморфоз и конвергенция — результаты эволюции.'},
+ {id:'b53',t:'evo',type:'multi',k:2,pts:1,q:'Выберите два биотических фактора.',o:['опыление растений пчёлами','поедание зайцем коры','температура воздуха','влажность почвы','вырубка леса'],a:'12',ex:'Биотические — влияние живых организмов друг на друга.',trap:'Вырубка — антропогенный фактор.'},
+ {id:'b54',t:'evo',type:'match',pts:1,q:'Установите соответствие между парой организмов и типом их отношений.',rows:['А) лиса и заяц','Б) клубеньковые бактерии и бобовые','В) аскарида и человек','Г) рыба-прилипала и акула'],o:['хищничество','мутуализм','паразитизм','комменсализм'],a:'1234',ex:'Мутуализм — польза обоим. Комменсализм — польза одному, второму безразлично.'},
+ {id:'b55',t:'evo',type:'order',pts:1,q:'Установите последовательность этапов эволюции человека.',o:['неандерталец','австралопитек','кроманьонец','человек умелый','человек прямоходящий'],a:'24513',ex:'Австралопитек → человек умелый → человек прямоходящий → неандерталец → кроманьонец (человек разумный).'},
+ {id:'b56',t:'evo',type:'multi',k:2,pts:1,q:'Выберите два рудимента человека.',o:['червеобразный отросток (аппендикс)','копчик','многососковость','хвостовой придаток у новорождённого','густой волосяной покров на теле'],a:'12',ex:'Рудименты есть у всех людей и утратили основную функцию.',trap:'Многососковость, хвост, сплошное оволосение — атавизмы: встречаются редко.'},
+ {id:'b57',t:'evo',type:'num',pts:1,q:'Цепь: растения → заяц → орёл. Сколько килограммов растений нужно, чтобы масса орла выросла на 5 кг (правило 10%)?',a:'500',ex:'На каждый следующий уровень переходит около 10% энергии: 5 → 50 кг зайца → 500 кг растений.'},
+ {id:'b58',t:'p2',type:'part2',line:'анализ текста',pts:3,q:'Найдите три ошибки в тексте, укажите номера предложений и исправьте их.<br>1) Митохондрии — одномембранные органоиды. 2) В них происходит кислородный этап энергетического обмена. 3) Митохондрии содержат собственную кольцевую ДНК. 4) Рибосомы митохондрий сходны с рибосомами эукариот. 5) Митохондрии есть в клетках бактерий.',
+  sol:'1 — митохондрии двумембранные органоиды.<br>4 — рибосомы митохондрий сходны с рибосомами прокариот (70S).<br>5 — у бактерий митохондрий нет: дыхание идёт на мембране клетки.',crit:['Найдена и исправлена ошибка 1','Найдена и исправлена ошибка 2','Найдена и исправлена ошибка 3'],trap:'Ошибкой засчитывается только предложение с исправлением. Номер без исправления балла не даёт.'},
+ {id:'b59',t:'p2',type:'part2',line:'физиология',pts:3,q:'Почему у людей, постоянно живущих высоко в горах, число эритроцитов в крови выше, чем у жителей равнин?',
+  sol:'1) В горах ниже атмосферное давление и парциальное давление кислорода — в лёгкие поступает меньше O₂.<br>2) Возникает недостаток кислорода в тканях (гипоксия); в ответ почки выделяют эритропоэтин, и красный костный мозг усиливает образование эритроцитов.<br>3) Больше эритроцитов и гемоглобина — кровь связывает и переносит больше кислорода, это приспособление к условиям среды.',crit:['Низкое содержание (парциальное давление) кислорода','Усиление кроветворения в ответ на гипоксию','Связь числа эритроцитов и гемоглобина с переносом O₂']}
+);
+BANK.chem.topics.find(t=>t.id==='calc').name='Расчётные задачи (часть 1)';
+
+/* ---------- theory cards ---------- */
+const THEORY={
+chem:[
+ ['Электролиз водных растворов (инертные электроды)',`<div class="tbl"><table><tr><th>Катод</th><th>Что выделяется</th></tr>
+ <tr><td>Li … Al (до Al включительно)</td><td>только H₂ (восстанавливается вода)</td></tr>
+ <tr><td>Mn … Pb (между Al и H)</td><td>металл + H₂</td></tr>
+ <tr><td>после H (Cu, Ag, Hg, Au)</td><td>только металл</td></tr></table></div>
+ <div class="tbl"><table><tr><th>Анод</th><th>Что выделяется</th></tr>
+ <tr><td>S²⁻, I⁻, Br⁻, Cl⁻</td><td>простое вещество (S, I₂, Br₂, Cl₂)</td></tr>
+ <tr><td>F⁻ и кислородсодержащие (SO₄²⁻, NO₃⁻, PO₄³⁻)</td><td>O₂ (окисляется вода)</td></tr>
+ <tr><td>RCOO⁻</td><td>R–R + CO₂ (реакция Кольбе)</td></tr></table></div>`],
+ ['Гидролиз солей и pH',`<div class="tbl"><table><tr><th>Соль образована</th><th>Гидролиз</th><th>Среда</th></tr>
+ <tr><td>сильным основанием и сильной кислотой (NaCl, K₂SO₄)</td><td>нет</td><td>нейтральная, pH = 7</td></tr>
+ <tr><td>слабым основанием и сильной кислотой (NH₄Cl, CuSO₄, AlCl₃)</td><td>по катиону</td><td>кислая, pH &lt; 7</td></tr>
+ <tr><td>сильным основанием и слабой кислотой (Na₂CO₃, CH₃COONa, K₂S)</td><td>по аниону</td><td>щелочная, pH &gt; 7</td></tr>
+ <tr><td>слабым основанием и слабой кислотой (Al₂S₃)</td><td>полный, необратимый</td><td>близка к нейтральной</td></tr></table></div>`],
+ ['Качественные реакции',`<div class="tbl"><table><tr><th>Что ищем</th><th>Реактив</th><th>Признак</th></tr>
+ <tr><td>Cl⁻ / Br⁻ / I⁻</td><td>AgNO₃</td><td>белый / желтоватый / жёлтый осадок</td></tr>
+ <tr><td>SO₄²⁻</td><td>Ba²⁺</td><td>белый осадок BaSO₄, не растворяется в кислотах</td></tr>
+ <tr><td>CO₃²⁻</td><td>кислота</td><td>газ CO₂ без запаха, мутит известковую воду</td></tr>
+ <tr><td>NH₄⁺</td><td>щёлочь, t</td><td>газ NH₃ с резким запахом, синит влажную лакмусовую бумажку</td></tr>
+ <tr><td>Fe³⁺</td><td>KSCN / K₄[Fe(CN)₆]</td><td>кроваво-красный раствор / берлинская лазурь</td></tr>
+ <tr><td>Fe²⁺</td><td>K₃[Fe(CN)₆]</td><td>турнбулева синь</td></tr>
+ <tr><td>C=C, C≡C</td><td>бромная вода, KMnO₄</td><td>обесцвечивание</td></tr>
+ <tr><td>–CHO</td><td>[Ag(NH₃)₂]OH; Cu(OH)₂, t</td><td>«серебряное зеркало»; красный осадок Cu₂O</td></tr>
+ <tr><td>многоатомные спирты</td><td>Cu(OH)₂</td><td>ярко-синий раствор</td></tr>
+ <tr><td>фенол</td><td>бромная вода; FeCl₃</td><td>белый осадок; фиолетовое окрашивание</td></tr>
+ <tr><td>белок</td><td>Cu(OH)₂ (биуретовая); HNO₃ (ксантопротеиновая)</td><td>фиолетовое; жёлтое окрашивание</td></tr></table></div>`],
+ ['Окислители: во что превращаются',`<div class="tbl"><table><tr><th>Окислитель</th><th>Среда</th><th>Продукт</th></tr>
+ <tr><td>KMnO₄</td><td>кислая</td><td>Mn²⁺ (бесцветный)</td></tr>
+ <tr><td>KMnO₄</td><td>нейтральная</td><td>MnO₂ (бурый осадок)</td></tr>
+ <tr><td>KMnO₄</td><td>щелочная</td><td>K₂MnO₄ (зелёный)</td></tr>
+ <tr><td>K₂Cr₂O₇</td><td>кислая</td><td>Cr³⁺</td></tr>
+ <tr><td>HNO₃ (конц.)</td><td>с малоактивными металлами</td><td>NO₂</td></tr>
+ <tr><td>HNO₃ (разб.)</td><td>с малоактивными металлами</td><td>NO</td></tr>
+ <tr><td>H₂SO₄ (конц.)</td><td>с малоактивными металлами</td><td>SO₂</td></tr></table></div>
+ <p class="small muted">Fe, Al, Cr пассивируются холодными концентрированными HNO₃ и H₂SO₄.</p>`],
+ ['Часть 2: за что ставят баллы (линии 29–34)',`<div class="tbl"><table><tr><th>Линия</th><th>Что проверяют</th><th>Баллы</th></tr>
+ <tr><td>29</td><td>ОВР, электронный баланс</td><td>2</td></tr><tr><td>30</td><td>ионный обмен</td><td>2</td></tr>
+ <tr><td>31</td><td>превращения неорганических веществ (4 уравнения)</td><td>4</td></tr>
+ <tr><td>32</td><td>превращения органических веществ (5 уравнений, структурные формулы)</td><td>5</td></tr>
+ <tr><td>33</td><td>вывод формулы органического вещества</td><td>3</td></tr><tr><td>34</td><td>комбинированная расчётная задача</td><td>4</td></tr></table></div>
+ <p class="small muted">Всего 34 задания, 56 первичных баллов, 3 ч 30 мин. В КИМ 2027 года, по проектам ФИПИ, структура не меняется.</p>`]
+],
+bio:[
+ ['Набор хромосом (n) и ДНК (c) при делении',`<div class="tbl"><table><tr><th>Этап</th><th>Митоз</th><th>Мейоз</th></tr>
+ <tr><td>Интерфаза после S</td><td>2n4c</td><td>2n4c</td></tr>
+ <tr><td>Профаза, метафаза</td><td>2n4c</td><td>I: 2n4c · II: n2c</td></tr>
+ <tr><td>Анафаза</td><td>4n4c</td><td>I: 2n4c · II: 2n2c</td></tr>
+ <tr><td>Телофаза (в каждой клетке)</td><td>2n2c</td><td>I: n2c · II: nc</td></tr></table></div>
+ <p class="small muted">У растений: гаметофит мха n, спорофит 2n; у цветковых эндосперм 3n, зародыш 2n, спермии n.</p>`],
+ ['Биосинтез белка: алгоритм задачи',`<p>1) По транскрибируемой цепи ДНК строим иРНК: комплементарно, антипараллельно, вместо Т — У.<br>2) Делим иРНК на триплеты с 5′-конца.<br>3) Аминокислоты — по таблице генетического кода (по иРНК).<br>4) Антикодоны тРНК комплементарны кодонам иРНК.<br>5) Стоп-кодоны: УАА, УАГ, УГА. Старт: АУГ (Мет).</p>`],
+ ['Генетика: законы и расщепления',`<div class="tbl"><table><tr><th>Скрещивание</th><th>Расщепление</th></tr>
+ <tr><td>Aa × Aa, полное доминирование</td><td>3 : 1 по фенотипу; 1 : 2 : 1 по генотипу</td></tr>
+ <tr><td>Aa × Aa, неполное доминирование</td><td>1 : 2 : 1 и по генотипу, и по фенотипу</td></tr>
+ <tr><td>Aa × aa (анализирующее)</td><td>1 : 1</td></tr>
+ <tr><td>AaBb × AaBb</td><td>9 : 3 : 3 : 1</td></tr>
+ <tr><td>AaBb × aabb, гены не сцеплены</td><td>1 : 1 : 1 : 1</td></tr>
+ <tr><td>AB//ab × ab//ab, полное сцепление</td><td>1 : 1 (только родительские фенотипы)</td></tr>
+ <tr><td>сцепление с кроссинговером</td><td>две большие группы (некроссоверы) и две малые (кроссоверы)</td></tr></table></div>`],
+ ['Пути эволюции',`<div class="tbl"><table><tr><th>Путь</th><th>Суть</th><th>Примеры</th></tr>
+ <tr><td>Ароморфоз</td><td>повышение уровня организации</td><td>семя, четырёхкамерное сердце, теплокровность, фотосинтез</td></tr>
+ <tr><td>Идиоадаптация</td><td>частное приспособление</td><td>окраска, форма тела камбалы, видоизменения листьев</td></tr>
+ <tr><td>Общая дегенерация</td><td>упрощение строения</td><td>паразиты: повилика, ленточные черви</td></tr></table></div>`],
+ ['Структура экзамена',`<p class="small">28 заданий, максимум 57 первичных баллов, 3 ч 55 мин. По проектам ФИПИ на 2027 год сумма баллов та же, но меняются некоторые задания части 2. Линия 22 — две переменные и отрицательный контроль. Линия 23 — составление формулы по данным. Линии 26–27 — частоты аллелей и филогенетические деревья. В части 1 появляется задание с кладограммой.</p>`]
+]};
+
+THEORY.chem.splice(0,0,
+ ['Периодический закон: как меняются свойства',`<div class="tbl"><table><tr><th>Свойство</th><th>В периоде →</th><th>В группе ↓</th></tr>
+ <tr><td>радиус атома</td><td>уменьшается</td><td>увеличивается</td></tr>
+ <tr><td>электроотрицательность</td><td>растёт</td><td>падает</td></tr>
+ <tr><td>металлические свойства</td><td>ослабевают</td><td>усиливаются</td></tr>
+ <tr><td>высшая степень окисления</td><td>растёт (= № группы)</td><td>одинакова</td></tr>
+ <tr><td>кислотность высших оксидов и гидроксидов</td><td>растёт</td><td>падает</td></tr></table></div>
+ <p class="small muted">Исключения для высшей степени окисления: F (только −1), O (не +6), Fe (+6 в ферратах, обычно +3), Cu (+2), Au (+3).</p>`],
+ ['Связь и кристаллическая решётка',`<div class="tbl"><table><tr><th>Связь</th><th>Между</th><th>Примеры</th></tr>
+ <tr><td>ковалентная неполярная</td><td>одинаковые неметаллы</td><td>H₂, O₂, N₂, Cl₂, алмаз</td></tr>
+ <tr><td>ковалентная полярная</td><td>разные неметаллы</td><td>HCl, H₂O, CO₂, NH₃</td></tr>
+ <tr><td>ионная</td><td>металл + неметалл; соли аммония</td><td>NaCl, CaO, NH₄Cl, KOH</td></tr>
+ <tr><td>металлическая</td><td>в металлах</td><td>Na, Fe, Cu</td></tr></table></div>
+ <div class="tbl"><table><tr><th>Решётка</th><th>Вещества</th></tr>
+ <tr><td>атомная</td><td>алмаз, графит, Si, B, SiO₂, SiC, Al₂O₃</td></tr>
+ <tr><td>ионная</td><td>соли, щёлочи, оксиды активных металлов</td></tr>
+ <tr><td>молекулярная</td><td>большинство органических веществ, H₂O (лёд), CO₂, I₂, галогены</td></tr></table></div>`],
+ ['Амфотерность и генетические ряды',`<p>Амфотерные: Be, Zn, Al, Cr(+3), Fe(+3) — их оксиды и гидроксиды реагируют и с кислотами, и со щелочами.</p>
+ <div class="eq" style="font-family:var(--mono);font-size:14px">Al(OH)₃ + NaOH (р-р) → Na[Al(OH)₄]</div>
+ <div class="eq" style="font-family:var(--mono);font-size:14px">Al(OH)₃ + NaOH (сплавление) → NaAlO₂ + 2H₂O</div>
+ <p class="small">Тетрагидроксоалюминат разрушается кислотами: избыток сильной кислоты → соль Al³⁺; CO₂ или слабая кислота → осадок Al(OH)₃.</p>
+ <p class="small muted">Ряд металла: металл → основный оксид → основание → соль. Ряд неметалла: неметалл → кислотный оксид → кислота → соль.</p>`]
+);
+THEORY.chem.push(
+ ['Органика: типы реакций по классам',`<div class="tbl"><table><tr><th>Класс</th><th>Главные реакции</th></tr>
+ <tr><td>алканы</td><td>замещение (Cl₂, hν), горение, крекинг, изомеризация</td></tr>
+ <tr><td>алкены</td><td>присоединение по правилу Марковникова (H₂, Br₂, HBr, H₂O), окисление KMnO₄, полимеризация</td></tr>
+ <tr><td>алкины</td><td>присоединение (2 стадии), Кучеров (→ альдегид/кетон), тримеризация ацетилена в бензол</td></tr>
+ <tr><td>арены</td><td>замещение (Br₂/FeBr₃, HNO₃/H₂SO₄), гомологи окисляются KMnO₄ до бензойной кислоты</td></tr>
+ <tr><td>спирты</td><td>с Na, с HHal, дегидратация, окисление CuO до альдегида, этерификация</td></tr>
+ <tr><td>альдегиды</td><td>окисление до кислот (серебряное зеркало, Cu(OH)₂), восстановление до спиртов</td></tr>
+ <tr><td>кислоты</td><td>с металлами, основаниями, карбонатами; этерификация</td></tr>
+ <tr><td>амины</td><td>основные свойства: с кислотами и водой; анилин + Br₂ → белый осадок</td></tr></table></div>`]
+);
+THEORY.bio.push(
+ ['Органоиды клетки',`<div class="tbl"><table><tr><th>Мембраны</th><th>Органоиды</th></tr>
+ <tr><td>две</td><td>ядро, митохондрии, пластиды (своя ДНК и рибосомы 70S)</td></tr>
+ <tr><td>одна</td><td>ЭПС, аппарат Гольджи, лизосомы, вакуоли</td></tr>
+ <tr><td>нет</td><td>рибосомы, клеточный центр, микротрубочки</td></tr></table></div>
+ <p class="small muted">Прокариоты: нет ядра и мембранных органоидов, кольцевая ДНК, рибосомы 70S, клеточная стенка из муреина.</p>`],
+ ['Энергетический обмен и фотосинтез',`<div class="tbl"><table><tr><th>Этап</th><th>Где</th><th>Итог</th></tr>
+ <tr><td>подготовительный</td><td>пищеварение, лизосомы</td><td>мономеры, энергия рассеивается как тепло</td></tr>
+ <tr><td>гликолиз</td><td>цитоплазма</td><td>глюкоза → 2 ПВК, 2 АТФ</td></tr>
+ <tr><td>кислородный</td><td>митохондрии (матрикс, кристы)</td><td>CO₂ + H₂O, 36 АТФ</td></tr>
+ <tr><td>световая фаза</td><td>мембраны тилакоидов</td><td>фотолиз воды, O₂, АТФ, НАДФ·H₂</td></tr>
+ <tr><td>темновая фаза</td><td>строма хлоропласта</td><td>цикл Кальвина: CO₂ → глюкоза</td></tr></table></div>`],
+ ['Экология: отношения и пирамиды',`<div class="tbl"><table><tr><th>Отношение</th><th>Знак</th><th>Пример</th></tr>
+ <tr><td>мутуализм</td><td>+ +</td><td>клубеньковые бактерии и бобовые, лишайник</td></tr>
+ <tr><td>комменсализм</td><td>+ 0</td><td>рыба-прилипала и акула</td></tr>
+ <tr><td>хищничество / паразитизм</td><td>+ −</td><td>лиса и заяц / аскарида и человек</td></tr>
+ <tr><td>конкуренция</td><td>− −</td><td>сорняки и культурные растения</td></tr></table></div>
+ <p class="small muted">Правило 10%: на следующий трофический уровень переходит около 10% энергии.</p>`]
+);
+
+/* ---------- prompt text ---------- */
+const PROMPT=`Ты — команда из методиста ЕГЭ (химия и биология, 11 класс), когнитивного психолога и мобильного продуктового дизайнера. Спроектируй и собери веб-приложение «Сотка» — тренажёр для подготовки к ЕГЭ по химии и биологии на 90–100 баллов.
+
+АУДИТОРИЯ И УСТРОЙСТВО
+- Ученик 11 класса, занимается с iPhone по 15–40 минут в день, часто урывками.
+- Доступ мгновенный и бесплатный: открывается по ссылке в Safari, без регистрации, без установки. Можно добавить на экран «Домой».
+- Интерфейс: одна колонка, крупные зоны нажатия (от 44 pt), нижняя панель вкладок, учёт safe area, тёмная тема, шрифт с кириллицей. Формулы с индексами (H₂SO₄, CO₃²⁻).
+
+СООТВЕТСТВИЕ ЭКЗАМЕНУ
+- Сверяйся с актуальными демоверсией, спецификацией и кодификатором ФИПИ на текущий год. Химия: 34 задания, 56 первичных баллов, 3 ч 30 мин. Биология: 28 заданий, 57 баллов, 3 ч 55 мин.
+- Задания копируют форматы КИМ: «выберите два/три», соответствие (ответ — последовательность цифр), последовательность, числовой ответ, развёрнутый ответ части 2.
+- Оценивание как на ЕГЭ: 2-балльные задания — одна ошибка = 1 балл; часть 2 — по критериям ФИПИ.
+
+МЕТОДИКА (доказательные практики)
+1. Активное припоминание: сначала ответ, потом подсказка. Никакого пассивного чтения теории до попытки.
+2. Интервальные повторения: система Лейтнера (1, 3, 7, 16 дней), ошибки возвращаются в начало.
+3. Чередование: в одной сессии смешиваются темы, особенно похожие (электролиз и гидролиз, митоз и мейоз).
+4. Немедленная обратная связь: верно/неверно, полное объяснение, отдельной строкой «типичная ловушка».
+5. Разобранные примеры для части 2: эталон, критерии, самопроверка по чек-листу.
+6. Минимум теории: шпаргалки-таблицы (электролиз, гидролиз, качественные реакции, окислители по средам; набор хромосом при делении, алгоритм биосинтеза белка, расщепления, пути эволюции).
+7. Пробный вариант с таймером и подсчётом первичных баллов; аналитика слабых тем.
+8. Каждое объяснение отвечает «почему», а не только «что».
+
+КАЧЕСТВО КОНТЕНТА
+- Только корректная химия и биология школьного курса по кодификатору ФИПИ. Каждый ключ ответа проверь дважды.
+- Без выдуманных «реальных заданий ЕГЭ»: задания — авторские аналоги в формате КИМ.
+- Объяснения: 1–3 коротких предложения, простым языком, со ссылкой на правило.
+
+ТЕХНИЧЕСКИ
+- Один HTML-файл без сервера; прогресс в localStorage; работает офлайн после загрузки.
+- Банк заданий — JSON: id, предмет, тема, тип, текст, варианты, ответ, баллы, объяснение, ловушка, для части 2 — эталон и критерии.
+
+ВЫХОД
+1. Структура разделов и экранов.
+2. Банк из 30+ заданий по каждому предмету с ответами и объяснениями.
+3. Готовый код.
+4. Чек-лист проверки ответов.`;
+
+/* ---------- state ---------- */
+const store={get(k,d){try{const v=localStorage.getItem('sotka:'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('sotka:'+k,JSON.stringify(v))}catch(e){}}};
+let S={subject:store.get('subject','chem'),view:'train',prog:store.get('prog',{}),session:null,exam:null};
+const DAY=864e5, BOXES=[0,1,3,7,16];
+const itemsOf=sub=>BANK[sub].items;
+function due(it){const p=S.prog[it.id];return !p||p.next<=Date.now()}
+function rec(it,ok){const p=S.prog[it.id]||{box:0,seen:0,ok:0};p.seen++;if(ok){p.ok++;p.box=Math.min(p.box+1,4)}else p.box=0;p.next=Date.now()+BOXES[p.box]*DAY;S.prog[it.id]=p;store.set('prog',S.prog)}
+function mastery(list){if(!list.length)return 0;return Math.round(list.reduce((s,it)=>s+((S.prog[it.id]||{}).box||0),0)/(list.length*4)*100)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ---------- grading ---------- */
+function grade(it,ans){
+  if(it.type==='multi'){const a=[...it.a].sort().join(''),u=[...ans].sort().join('');if(u===a)return it.pts;
+    if(it.pts===2){const A=new Set(it.a),U=new Set(ans);let err=0;A.forEach(x=>{if(!U.has(x))err++});U.forEach(x=>{if(!A.has(x))err++});return err<=1?1:0}return 0}
+  if(it.type==='match'){if(ans===it.a)return it.pts;if(it.pts===2&&ans.length===it.a.length){let e=0;for(let i=0;i<ans.length;i++)if(ans[i]!==it.a[i])e++;return e<=1?1:0}return 0}
+  if(it.type==='order'||it.type==='num'){return ans.replace(/[\s,.:%]/g,'')===it.a.replace(/[\s,.:%]/g,'')?it.pts:0}
+  return 0}
+
+/* ---------- views ---------- */
+const app=document.getElementById('app');
+function setSubject(sub){S.subject=sub;store.set('subject',sub);document.body.classList.toggle('bio',sub==='bio');
+  document.getElementById('sub-chem').setAttribute('aria-pressed',sub==='chem');document.getElementById('sub-bio').setAttribute('aria-pressed',sub==='bio');
+  S.session=null;S.exam=null;render()}
+function setView(v){S.view=v;document.querySelectorAll('.tab').forEach(t=>t.toggleAttribute('aria-current',t.dataset.view===v));if(t=document.querySelector('.tab[aria-current]'))t.setAttribute('aria-current','page');
+  if(location.hash.slice(1)!==v){try{history.replaceState(null,'','#'+v)}catch(e){}}render();window.scrollTo({top:0})}
+var t;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,1800)}
+
+function render(){
+  if(S.view==='train') return S.session?renderQuestion():renderHome();
+  if(S.view==='theory') return renderTheory();
+  if(S.view==='exam') return S.exam?(S.exam.done?renderExamResult():renderQuestion()):renderExamStart();
+  if(S.view==='prompt') return renderPrompt();
+}
+
+function renderHome(){
+  const sub=S.subject,B=BANK[sub],all=itemsOf(sub),dueN=all.filter(due).length,seen=all.filter(i=>S.prog[i.id]).length;
+  app.innerHTML=`<div><h1>${sub==='chem'?'Химия':'Биология'} на сотку</h1><p class="muted" style="margin:6px 0 0">Отвечай, потом смотри разбор. Ошибки вернутся через день, верные ответы — через 3, 7 и 16 дней.</p></div>
+  <div class="stats"><div class="stat"><b>${dueN}</b><span>на сегодня</span></div><div class="stat"><b>${seen}/${all.length}</b><span>пройдено</span></div><div class="stat"><b>${mastery(all)}%</b><span>освоено</span></div></div>
+  <button class="btn" id="go-mix">${dueN?'Повторить на сегодня — '+Math.min(dueN,10)+' заданий':'Всё повторено. Ещё 10 вперемешку'}</button>
+  <h2>Темы</h2><div class="topics">${B.topics.map(tp=>{const l=all.filter(i=>i.t===tp.id),m=mastery(l);
+    return `<button class="topic" data-t="${tp.id}"><span class="name">${tp.name}</span><span class="pill">${l.length}</span><span class="meta"><span class="bar"><i style="width:${m}%"></i></span>${m}%</span></button>`}).join('')}</div>
+  <details class="th card ios" style="padding:4px 14px"><summary>Как сделать иконкой на iPhone</summary><div class="ios" style="padding-bottom:12px">
+  <span>1. Откройте ссылку в Safari.</span><span>2. Нажмите «Поделиться» (квадрат со стрелкой).</span><span>3. Выберите «На экран „Домой“» → «Добавить».</span><span class="muted">Прогресс хранится в этом браузере на телефоне.</span></div></details>`;
+  document.getElementById('go-mix').onclick=()=>{const pool=all.filter(due);startSession(shuffle(pool.length?pool:all).slice(0,10))};
+  app.querySelectorAll('.topic').forEach(b=>b.onclick=()=>startSession(shuffle(all.filter(i=>i.t===b.dataset.t))));
+}
+function startSession(list){S.session={list,i:0,ans:'',checked:false,score:0,max:0};render();window.scrollTo({top:0})}
+
+function ctx(){return S.view==='exam'?S.exam:S.session}
+function renderQuestion(){
+  const c=ctx(),it=c.list[c.i],sub=S.view==='exam'?c.sub:S.subject,tp=BANK[sub].topics.find(x=>x.id===it.t);
+  const hint=it.type==='multi'?`Выберите ${it.k===3?'три':'два'} ответа`:it.type==='match'?'Для каждой буквы выберите цифру':it.type==='order'?'Нажимайте варианты по порядку':it.type==='num'?'Введите число':'Решите на бумаге, затем сверьтесь с эталоном';
+  let body='';
+  if(it.type==='multi'||it.type==='order'){
+    body=`<div class="opts">${it.o.map((o,i)=>`<button class="opt" data-v="${i+1}" aria-pressed="${c.ans.includes(String(i+1))}"><span class="n">${i+1}</span><span>${F(o)}</span></button>`).join('')}</div>`;
+    if(it.type==='order')body+=`<div class="answerline" aria-live="polite">${c.ans?c.ans.split('').join(' → '):'<span class="ph">Порядок появится здесь</span>'}</div>`;
+  } else if(it.type==='match'){
+    body=`<div class="opts" style="gap:6px">${it.o.map((o,i)=>`<div class="small"><span class="n" style="font-family:var(--mono);color:var(--acc);font-weight:600">${i+1})</span> ${F(o)}</div>`).join('')}</div>
+    <div class="match">${it.rows.map((r,ri)=>`<div class="mrow"><span class="lbl">${F(r)}</span><div class="chips">${it.o.map((o,oi)=>`<button class="chip" data-r="${ri}" data-v="${oi+1}" aria-pressed="${(c.ans[ri]||'')===String(oi+1)}">${oi+1}</button>`).join('')}</div></div>`).join('')}</div>`;
+  } else if(it.type==='num'){
+    body=`<input class="num" id="num" inputmode="decimal" autocomplete="off" placeholder="Ответ" value="${esc(c.ans)}">`;
+  }
+  const pos=`${c.i+1} / ${c.list.length}`;
+  app.innerHTML=`<div class="card">
+   <div class="qhead"><span class="pill">${it.line?'Линия '+it.line:tp.name}</span><span class="small muted">${S.view==='exam'?'<span class="timer" id="timer"></span> · ':''}${pos} · ${it.pts} балл${it.pts===1?'':it.pts<5?'а':'ов'}</span></div>
+   <div class="q">${F(it.q)}</div><div class="small muted">${hint}</div>${body}<div id="fb"></div>
+   <div class="row" id="ctrl"></div></div>
+   <button class="btn ghost" id="quit">${S.view==='exam'?'Завершить вариант':'К темам'}</button>`;
+  wireQuestion(it,c);
+  if(S.view==='exam')tick();
+}
+function wireQuestion(it,c){
+  const ctrl=document.getElementById('ctrl'),fb=document.getElementById('fb');
+  const answerReady=()=>it.type==='part2'||(it.type==='multi'?c.ans.length===it.k:it.type==='match'?c.ans.length===it.rows.length&&!c.ans.includes(' '):it.type==='order'?c.ans.length===it.a.length:c.ans.trim().length>0);
+  function controls(){
+    if(!c.checked){ctrl.innerHTML=`<button class="btn" id="check" ${answerReady()?'':'disabled'}>${it.type==='part2'?'Показать эталон':'Проверить'}</button>`;document.getElementById('check').onclick=check}
+    else{ctrl.innerHTML=`<button class="btn" id="next">${c.i+1<c.list.length?'Дальше':'Готово'}</button>`;document.getElementById('next').onclick=next}
+  }
+  if(it.type==='multi')app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(c.checked)return;const v=b.dataset.v;c.ans=c.ans.includes(v)?c.ans.replace(v,''):(c.ans.length<it.k?c.ans+v:c.ans);renderKeep()});
+  if(it.type==='order')app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(c.checked)return;const v=b.dataset.v;c.ans=c.ans.includes(v)?c.ans.slice(0,c.ans.indexOf(v)):c.ans+v;renderKeep()});
+  if(it.type==='match')app.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{if(c.checked)return;const r=+b.dataset.r;let a=(c.ans||'').padEnd(it.rows.length,' ').split('');a[r]=b.dataset.v;c.ans=a.join('');renderKeep()});
+  if(it.type==='num'){const inp=document.getElementById('num');inp.oninput=()=>{c.ans=inp.value;const b=document.getElementById('check');if(b)b.disabled=!answerReady()};inp.onkeydown=e=>{if(e.key==='Enter'&&answerReady()&&!c.checked)check()}}
+  function renderKeep(){const y=window.scrollY;renderQuestion();window.scrollTo({top:y})}
+  function check(){
+    c.checked=true;
+    if(it.type==='part2'){
+      fb.innerHTML=`<div class="verdict" style="background:var(--acc-soft)"><strong>Эталон</strong><div class="sol">${F(it.sol)}</div>${it.trap?`<div class="trap">Ловушка: ${F(it.trap)}</div>`:''}
+      <strong style="margin-top:6px">Отметьте, что у вас есть (по критериям)</strong><div class="checks">${it.crit.map((k,i)=>`<label><input type="checkbox" id="cr${i}"> ${k}</label>`).join('')}</div></div>`;
+      ctrl.innerHTML=`<button class="btn" id="next">Засчитать и дальше</button>`;
+      document.getElementById('next').onclick=()=>{const got=it.crit.reduce((s,k,i)=>s+(document.getElementById('cr'+i).checked?1:0),0);const pts=Math.round(got/it.crit.length*it.pts);c.score+=pts;c.max+=it.pts;rec(it,pts===it.pts);c.checked=false;c.ans='';advance()};
+      return}
+    const pts=grade(it,c.ans.trim());c.score+=pts;c.max+=it.pts;rec(it,pts===it.pts);
+    if(it.type==='multi'||it.type==='order')app.querySelectorAll('.opt').forEach(b=>{const v=b.dataset.v;if(it.type==='multi'){if(it.a.includes(v))b.classList.add('right');else if(c.ans.includes(v))b.classList.add('wrong')}});
+    const exp=`<div class="sol">${F(it.ex)}</div>${it.trap?`<div class="trap">Ловушка: ${F(it.trap)}</div>`:''}`;
+    if(S.view==='exam'&&!S.exam.showAnswers){fb.innerHTML='';next();return}
+    fb.innerHTML=pts===it.pts?`<div class="verdict ok"><strong>Верно · +${pts}</strong>${exp}</div>`:
+      `<div class="verdict no"><strong>${pts?'Почти · +'+pts+' из '+it.pts:'Неверно'}</strong><div>Правильный ответ: <b style="font-family:var(--mono)">${it.a}</b>${c.ans.trim()?' · ваш: <span style="font-family:var(--mono)">'+esc(c.ans.trim())+'</span>':''}</div>${exp}</div>`;
+    controls();
+  }
+  function next(){c.checked=false;c.ans='';advance()}
+  controls();
+  document.getElementById('quit').onclick=()=>{if(S.view==='exam'){S.exam.done=true;clearInterval(S.exam.int);render()}else{S.session=null;render()}};
+}
+function advance(){const c=ctx();if(c.i+1<c.list.length){c.i++;render();window.scrollTo({top:0})}else{if(S.view==='exam'){S.exam.done=true;clearInterval(S.exam.int);render()}else{const s=S.session;S.session=null;renderHome();toast(`Сессия завершена: ${s.score} из ${s.max} баллов`)}}}
+
+function renderTheory(){
+  const sub=S.subject;
+  app.innerHTML=`<div><h1>Шпаргалки</h1><p class="muted" style="margin:6px 0 0">Сначала попробуй вспомнить сам, потом открывай. Так запоминается в разы лучше.</p></div>
+  <div class="theory">${THEORY[sub].map(([h,b],i)=>`<details class="th" ${i===0?'open':''}><summary>${h}</summary>${b}</details>`).join('')}</div>`;
+}
+
+function renderExamStart(){
+  const sub=S.subject,all=itemsOf(sub);
+  const full=sub==='chem'?{n1:28,n2:6,min:210}:{n1:21,n2:7,min:235};
+  app.innerHTML=`<div><h1>Вариант</h1><p class="muted" style="margin:6px 0 0">Задания вперемешку по всем темам, включая часть 2. Разбор — в конце, как на экзамене.</p></div>
+  <div class="card"><div class="checks"><label><input type="checkbox" id="show"> Показывать разбор после каждого задания</label></div>
+  <button class="btn" id="start-full">Полный вариант: ${full.n1+full.n2} заданий, ${Math.floor(full.min/60)} ч ${full.min%60} мин</button>
+  <button class="btn ghost" id="start">Мини-вариант: 12 заданий, 30 мин</button></div>`;
+  const go=(n1,n2,min)=>{const p1=shuffle(all.filter(i=>i.type!=='part2')).slice(0,n1),p2=sub==='chem'?pickLines(all,n2):shuffle(all.filter(i=>i.type==='part2')).slice(0,n2);
+    S.exam={sub,list:[...p1,...p2],i:0,ans:'',checked:false,score:0,max:0,showAnswers:document.getElementById('show').checked,end:Date.now()+min*60e3,done:false,log:[]};
+    S.exam.int=setInterval(tick,1000);render();window.scrollTo({top:0})};
+  document.getElementById('start').onclick=()=>go(10,2,30);
+  document.getElementById('start-full').onclick=()=>go(full.n1,full.n2,full.min);
+}
+function pickLines(all,n){const p2=all.filter(i=>i.type==='part2'),lines=[...new Set(p2.map(i=>i.line))].sort();
+  const out=lines.map(l=>shuffle(p2.filter(i=>i.line===l))[0]);return (n>=out.length?out:shuffle(out).slice(0,n).sort((a,b)=>a.line.localeCompare(b.line)));
+}
+function tick(){const e=S.exam;if(!e||e.done)return;const left=Math.max(0,e.end-Date.now());const el=document.getElementById('timer');
+  if(el)el.textContent=String(Math.floor(left/60e3)).padStart(2,'0')+':'+String(Math.floor(left/1e3)%60).padStart(2,'0');
+  if(!left){e.done=true;clearInterval(e.int);render()}}
+function renderExamResult(){
+  const e=S.exam,pct=e.max?Math.round(e.score/e.max*100):0;
+  app.innerHTML=`<div><h1>Результат</h1></div><div class="stats"><div class="stat"><b>${e.score}</b><span>первичных баллов</span></div><div class="stat"><b>${e.max}</b><span>максимум за отвеченное</span></div><div class="stat"><b>${pct}%</b><span>точность</span></div></div>
+  <div class="card"><p style="margin:0">${pct>=90?'Отлично. Держи темп и повторяй ошибки по расписанию.':pct>=70?'Хорошая база. Слабые темы — в «Тренировке»: прогресс по каждой виден в процентах.':'Начни с тем, где процент ниже всего, и шпаргалок к ним.'}</p>
+  <p class="small muted" style="margin:0">Перевод первичных баллов в тестовые публикует Рособрнадзор перед экзаменом, поэтому здесь показаны только первичные.</p></div>
+  <button class="btn" id="again">Новый вариант</button><button class="btn ghost" id="home">К тренировке</button>`;
+  document.getElementById('again').onclick=()=>{S.exam=null;render()};document.getElementById('home').onclick=()=>{S.exam=null;setView('train')};
+}
+
+function renderPrompt(){
+  app.innerHTML=`<div><h1>Промпт</h1><p class="muted" style="margin:6px 0 0">Промпт по лучшим практикам подготовки, чтобы развить этот тренажёр или собрать свой.</p></div>
+  <button class="btn" id="copy">Скопировать промпт</button><pre class="prompt" id="ptext"></pre>`;
+  document.getElementById('ptext').textContent=PROMPT;
+  document.getElementById('copy').onclick=()=>{navigator.clipboard.writeText(PROMPT).then(()=>toast('Скопировано'),()=>{const r=document.createRange();r.selectNodeContents(document.getElementById('ptext'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Выделено — нажмите «Копировать»')})};
+}
+
+/* ---------- boot ---------- */
+document.getElementById('sub-chem').onclick=()=>setSubject('chem');
+document.getElementById('sub-bio').onclick=()=>setSubject('bio');
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(['train','theory','exam','prompt'].includes(v)&&v!==S.view)setView(v)});
+document.body.classList.toggle('bio',S.subject==='bio');
+document.getElementById('sub-chem').setAttribute('aria-pressed',S.subject==='chem');document.getElementById('sub-bio').setAttribute('aria-pressed',S.subject==='bio');
+const h=location.hash.slice(1);setView(['train','theory','exam','prompt'].includes(h)?h:'train');
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}</script>
+</body>
+</html>
