@@ -1,0 +1,29 @@
+name: ZamerSmeta
+options:
+  bundleIdPrefix: ru.zamer
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  ZamerSmeta:
+    type: application
+    platform: iOS
+    sources:
+      - path: ZamerSmeta
+        excludes:
+          - "www/**"
+      - path: ZamerSmeta/www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.zamer.smeta.ios
+        PRODUCT_NAME: ZamerSmeta
+        MARKETING_VERSION: "2.5"
+        CURRENT_PROJECT_VERSION: "7"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        INFOPLIST_FILE: ZamerSmeta/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+    scheme: {}
