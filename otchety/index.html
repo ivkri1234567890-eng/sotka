@@ -39,8 +39,9 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
 <section id="gibddView" hidden>
 <p class="intro">Загрузите четыре исходника — приложение само определит, где какой, и сформирует по файлу Excel на каждого торгового представителя. Расчёт выполняется на устройстве.</p>
 <form id="gibddForm">
+ <div class="panel period"><label>Месяц<select id="gibddMonth"></select></label><label>Год<input id="gibddYear" type="number" min="2000" max="2100" required></label></div>
  <div class="panel">
-  <label>Исходники ГИБДД и CRM<input type="file" id="gibddFiles" multiple accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><small>Можно выбрать все четыре сразу или добавлять по одному.</small></label>
+  <label>Исходники ГИБДД и CRM<input type="file" id="gibddFiles" multiple accept=".xlsx,.xls,.csv"><small>Можно выбрать все четыре сразу или добавлять по одному. Подходят .xlsx, .xls и .csv. Фильтры сводной в файле регистраций не важны: данные берутся из встроенной модели.</small></label>
   <ul class="slots" id="gibddSlots"></ul>
  </div>
  <button id="gibddRun" disabled>Сформировать файлы менеджеров</button>
@@ -65,7 +66,7 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
  </div>
  <div class="panel">
   <h2>ГИБДД по менеджерам</h2>
-  <label>Регистрации ГИБДД, CRM — клиенты, CRM — события, Регионы ТП<input type="file" id="batchGibdd" multiple accept=".xlsx"><small>Выберите все четыре файла сразу. Месяц регистраций должен совпадать с закрытым месяцем.</small></label>
+  <label>Регистрации ГИБДД, CRM — клиенты, CRM — события, Регионы ТП<input type="file" id="batchGibdd" multiple accept=".xlsx,.xls,.csv"><small>Выберите все четыре файла сразу. Отчёт строится за закрытый месяц, фильтры сводной не важны.</small></label>
  </div>
  <div class="panel">
   <h2>Готовность пакета</h2>
@@ -78,7 +79,7 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
 </section>
 
 </main>
-<script src="jszip.min.js"></script><script src="xml-js.min.js"></script><script src="engine.js"></script><script src="gibdd-engine.js"></script>
+<script src="jszip.min.js"></script><script src="xml-js.min.js"></script><script src="engine.js"></script><script src="xlsx.full.min.js"></script><script src="gibdd-model.js"></script><script src="gibdd-engine.js"></script>
 <script>
 const el=id=>document.getElementById(id);
 const cap=s=>s[0].toUpperCase()+s.slice(1);

@@ -34,6 +34,9 @@ function gibddSlots(){
  el('gibddRun').disabled=gibddRoles.some(([k])=>!gibddFiles[k]);
 }
 function gibddReset(){gibddOutput=null;el('gibddResult').hidden=true;}
+months.forEach((m,i)=>el('gibddMonth').add(new Option(cap(m),i+1)));
+el('gibddMonth').value=prev.getMonth()+1;el('gibddYear').value=prev.getFullYear();
+el('gibddMonth').onchange=el('gibddYear').oninput=()=>{gibddReset();el('gibddStatus').textContent='';};
 
 el('gibddFiles').onchange=async e=>{
  const list=[...e.target.files];e.target.value='';
@@ -45,6 +48,10 @@ el('gibddFiles').onchange=async e=>{
   try{
    const role=await GibddEngine.classify(await file.arrayBuffer());
    if(role)gibddFiles[role]=file;else bad.push(file.name+' — не узнал таблицу');
+   if(role==='registrations'){
+    const p=await GibddEngine.peekPeriod(await file.arrayBuffer()).catch(()=>null);
+    if(p){el('gibddMonth').value=p.month;el('gibddYear').value=p.year;}
+   }
   }catch(err){bad.push(file.name+' — '+(err.message||'не открывается'));}
  }
  el('gibddStatus').textContent=bad.length?'Не подошли:\n'+bad.join('\n'):'';
@@ -57,7 +64,7 @@ el('gibddForm').onsubmit=async e=>{
  el('gibddStatus').textContent='Читаю исходники и формирую файлы…';
  try{
   const keys=gibddRoles.map(r=>r[0]);
-  gibddOutput=await GibddEngine.build(await Promise.all(keys.map(k=>gibddFiles[k].arrayBuffer())),keys.map(k=>gibddFiles[k].name));
+  gibddOutput=await GibddEngine.build(await Promise.all(keys.map(k=>gibddFiles[k].arrayBuffer())),keys.map(k=>gibddFiles[k].name),{month:+el('gibddMonth').value,year:+el('gibddYear').value});
   const r=gibddOutput, n=r.files.length;
   el('gibddTitle').textContent='Итог'+(r.period?' за '+gibddPeriod(r.period).toLowerCase():'');
   el('gibddTiles').replaceChildren(...[[r.total,'регистраций'],[r.distributed,'распределено'],[n,'файлов']].map(([v,t])=>{
@@ -66,6 +73,9 @@ el('gibddForm').onsubmit=async e=>{
   const notes=[];
   if(n!==8)notes.push('В справочнике менеджеров: '+n+' (ожидалось 8).');
   if(r.unknown.length)notes.push('Не попали ни к одному менеджеру:\n'+r.unknown.map(([k,v])=>'• '+k+' — '+v).join('\n'));
+  const F=GibddEngine.FILTERS;
+  if(r.source==='model')notes.unshift('Данные взяты из модели файла регистраций, фильтры сводной не учитывались. Условия: новые; классы '+F.classes.join(', ')+'; кузова '+F.bodies.join(', ')+'; все регионы и марки.');
+  else notes.unshift('Данные взяты со сводной: модель данных в файле не найдена'+(r.modelNote?' или не прочиталась ('+r.modelNote+')':'')+'. Проверьте, что в сводной нет лишних фильтров.');
   if(!r.hasBrands)notes.push('Разбивки по маркам нет: «Марка» стоит в фильтре сводной. Перенесите её в строки, чтобы появились столбцы «Марка | Итог».');
   el('gibddNotes').textContent=notes.join('\n\n');
   el('gibddPeople').replaceChildren(...r.summary.map((s,i)=>{

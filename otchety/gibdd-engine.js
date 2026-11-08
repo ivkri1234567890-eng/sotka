@@ -3,10 +3,21 @@
 (function (root) {
 'use strict';
 const ZipLib = (typeof require === 'function' && typeof JSZip === 'undefined') ? require('jszip') : JSZip;
+const Model = () => root.GibddModel || (typeof require === 'function' ? require('./gibdd-model.js') : null);
+const Sheets = () => root.XLSX || (typeof require === 'function' ? (() => { try { return require('xlsx'); } catch (e) { return null; } })() : null);
+
+/* Условия отчёта ГИБДД (единые для всех выгрузок): регион и марка не фильтруются. */
+const FILTERS = {
+  status: ['нов'],
+  classes: ['HDT', 'MDT'],
+  bodies: ['В18_Шасси 4х2', 'В45_Тягач 4х2', 'В33_Самосвал 6х4', 'В12_MDT1 4х2'],
+};
 
 const MONTHS = 'январь февраль март апрель май июнь июль август сентябрь октябрь ноябрь декабрь'.split(' ');
 const norm = x => String(x ?? '').normalize('NFKC').toLowerCase().replaceAll('ё', 'е')
   .replace(/[–—−]/g, '-').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const LOOK = { a: 'а', b: 'в', c: 'с', e: 'е', h: 'н', k: 'к', m: 'м', o: 'о', p: 'р', t: 'т', x: 'х', y: 'у' };
+const canon = x => norm(x).replace(/[abcehkmoptxy]/g, c => LOOK[c]);
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 const unxml = s => s.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e) =>
   e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ENT[e] ?? m));
@@ -18,7 +29,25 @@ const textOf = xml => { let out = ''; xml.replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').
 
 /* ---------- чтение книги ---------- */
 async function readBook(data) {
-  const zip = await ZipLib.loadAsync(data);
+  let bytes = data instanceof Uint8Array ? data : new Uint8Array(data.buffer ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) : data);
+  if (!(bytes[0] === 0x50 && bytes[1] === 0x4B)) {          // не .xlsx: .xls, .csv и т.п.
+    const X = Sheets();
+    if (!X) throw Error('Формат файла не поддерживается. Сохраните его как .xlsx.');
+    const isOle = bytes[0] === 0xD0 && bytes[1] === 0xCF;          // .xls (двоичный Excel)
+    let wb;
+    if (isOle || bytes[0] === 0x3C && bytes[1] === 0x3F) wb = X.read(bytes, { type: 'array', raw: true });
+    else {                                                            // текст: .csv / .txt
+      let text;
+      try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+      catch (e) { text = new TextDecoder('windows-1251').decode(bytes); }
+      text = text.replace(/^\uFEFF/, '');
+      const first = text.split(/\r?\n/, 1)[0];
+      const FS = [';', '\t', ','].sort((x, y) => first.split(y).length - first.split(x).length)[0];
+      wb = X.read(text, { type: 'string', raw: true, FS });
+    }
+    bytes = new Uint8Array(X.write(wb, { type: 'array', bookType: 'xlsx' }));
+  }
+  const zip = await ZipLib.loadAsync(bytes);
   const str = async p => { const f = zip.file(p); if (!f) return null; const x = await f.async('string'); return x.indexOf('<x:') >= 0 || /<\w+:(?:workbook|worksheet|sst|Relationships)\b/.test(x.slice(0, 600)) ? x.replace(/<(\/?)[A-Za-z][\w.-]*:(?=[A-Za-z])/g, '<$1') : x; };
   const wb = await str('xl/workbook.xml');
   if (!wb) throw Error('Файл не похож на книгу Excel (.xlsx).');
@@ -75,7 +104,7 @@ async function readBook(data) {
     }
     return out;
   }
-  return { sheets, rows };
+  return { sheets, rows, zip, workbookXml: wb };
 }
 
 /* ---------- распознавание таблиц ---------- */
@@ -120,6 +149,9 @@ async function detect(book) {
     }
     if (found.length) break;
   }
+  if (!found.some(f => f.role === 'registrations') && book.zip.file('xl/model/item.data') &&
+      /modelTable\b[^>]*name="[^"]*регистрац/i.test(book.workbookXml))
+    found.unshift({ role: 'registrations', sheet: null, headerRow: 0, h: null, head: [] });
   return found;
 }
 function readPeriod(head, headerRow) {
@@ -158,8 +190,90 @@ function regionKey(v) {
 }
 const isTotal = v => /(?:^|[ :])(?:общий итог|итог|итого|всего)$/.test(norm(v));
 
+/* ---------- регистрации из сводной (запасной путь) ---------- */
+async function pivotRecords(R, load) {
+  const h = R.h, out = [];
+  let last = { region: '', inn: '', owner: '' };
+  for (const row of await load(R)) {
+    let region = row.get(h.region).trim(), inn = cleanInn(row.get(h.inn)), owner = row.get(h.owner).trim();
+    const brand = h.brand ? row.get(h.brand).trim() : '';
+    if ([region, row.get(h.inn), owner, brand].some(isTotal)) continue;
+    const raw = row.get(h.count);
+    if (raw === '') continue;
+    const qty = Number(String(raw).replace(',', '.'));
+    if (!Number.isFinite(qty)) continue;
+    if (!region) region = last.region;
+    if (!inn && !owner && h.brand) { inn = last.inn; owner = last.owner; }
+    last = { region, inn, owner };
+    if (!region) continue;
+    out.push({ region, inn, owner, brand, qty });
+  }
+  return out;
+}
+
+/* ---------- регистрации из модели данных: все строки, свои фильтры ---------- */
+async function fromModel(zip, want) {
+  const M = Model().openModel(await zip.file('xl/model/item.data').async('uint8array'));
+  const pick = (cols) => M.tables.find(t => cols.every(c => { try { return M.has(t, c); } catch (e) { return false; } }));
+  const T = pick(['Кол-во', 'Кузов-план', 'Класс наш', 'Марка']);
+  const G = pick(['СубъектРФ', 'soato']);
+  const O = pick(['ИНН', 'Владелец', 'id_uaip_spisok_lic_filthy']);
+  if (!T || !G || !O) throw Error('в модели нет таблиц регистраций, географии или владельцев');
+  const col = (t, c) => M.column(t, c);
+  const mark = (c, test) => { const f = new Uint8Array(c.dict.length + 3); c.dict.forEach((v, i) => { f[i + 3] = test(v) ? 1 : 0; }); return f; };
+  const status = col(T, '.нов/бу'), cls = col(T, 'Класс наш'), body = col(T, 'Кузов-план'), qtyC = col(T, 'Кол-во');
+  const okStatus = mark(status, v => FILTERS.status.map(canon).includes(canon(v)));
+  const okCls = mark(cls, v => FILTERS.classes.map(canon).includes(canon(v)));
+  const okBody = mark(body, v => FILTERS.bodies.map(canon).includes(canon(v)));
+  // период: по полю «Дата» (серийная дата Excel), иначе по «.Год операции» / «.Месяц операции»
+  let ym;
+  if (M.has(T, 'Дата')) {
+    const d = col(T, 'Дата');
+    const conv = d.dict.map(v => { const n = Number(v); if (!Number.isFinite(n)) return 0; const t = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 864e5); return t.getUTCFullYear() * 100 + t.getUTCMonth() + 1; });
+    ym = i => { const id = d.ids[i]; return id >= 3 ? conv[id - 3] : 0; };
+  } else {
+    const y = col(T, '.Год операции'), m = col(T, '.Месяц операции');
+    ym = i => (+y.value(y.ids[i]) || 0) * 100 + (+m.value(m.ids[i]) || 0);
+  }
+  const n = qtyC.ids.length;
+  const base = new Uint8Array(n);
+  let latest = 0;
+  for (let i = 0; i < n; i++) {
+    if (okStatus[status.ids[i]] && okCls[cls.ids[i]] && okBody[body.ids[i]]) { base[i] = 1; const v = ym(i); if (v > latest) latest = v; }
+  }
+  if (!latest) throw Error('в модели нет регистраций, подходящих под условия отчёта');
+  const target = want ? want.year * 100 + want.month : latest;
+  const period = { month: target % 100, year: Math.floor(target / 100) };
+  const soato = col(T, 'soato'), owner = col(T, 'id_uaip_spisok_lic_filthy_max'), brand = col(T, 'Марка');
+  const agg = new Map();
+  for (let i = 0; i < n; i++) {
+    if (!base[i] || ym(i) !== target) continue;
+    const k = soato.ids[i] + '|' + owner.ids[i] + '|' + brand.ids[i];
+    agg.set(k, (agg.get(k) || 0) + Number(qtyC.value(qtyC.ids[i]) || 0));
+  }
+  if (!agg.size) {
+    const l = { month: latest % 100, year: Math.floor(latest / 100) };
+    throw Error('NOMONTH:В выгрузке нет регистраций за ' + MONTHS[period.month - 1] + ' ' + period.year + '. Последний месяц в данных — ' + MONTHS[l.month - 1] + ' ' + l.year + '.');
+  }
+  const gS = col(G, 'soato'), gR = col(G, 'СубъектРФ'), regionBySoato = new Map();
+  for (let i = 0; i < gS.ids.length; i++) regionBySoato.set(String(gS.value(gS.ids[i])), gR.value(gR.ids[i]) || '');
+  const need = new Set([...agg.keys()].map(k => String(owner.value(+k.split('|')[1]))));
+  const oId = col(O, 'id_uaip_spisok_lic_filthy'), oInn = col(O, 'ИНН'), oName = col(O, 'Владелец'), owners = new Map();
+  for (let i = 0; i < oId.ids.length; i++) {
+    const key = String(oId.value(oId.ids[i]));
+    if (need.has(key)) owners.set(key, [String(oInn.value(oInn.ids[i]) ?? ''), String(oName.value(oName.ids[i]) ?? '')]);
+  }
+  const records = [];
+  for (const [k, qty] of agg) {
+    const [s, o, b] = k.split('|').map(Number);
+    const [inn, name] = owners.get(String(owner.value(o))) || ['', ''];
+    records.push({ region: regionBySoato.get(String(soato.value(s))) || 'Регион не указан', inn: cleanInn(inn), owner: name.trim(), brand: String(brand.value(b) ?? '').trim(), qty });
+  }
+  return { records, period };
+}
+
 /* ---------- основной расчёт ---------- */
-async function build(buffers, names = []) {
+async function build(buffers, names = [], opts = {}) {
   const books = await Promise.all(buffers.map(b => readBook(b)));
   const roles = {};
   const detected = [];
@@ -200,22 +314,30 @@ async function build(buffers, names = []) {
   if (!managers.size) throw Error('В справочнике территорий не найдено ни одного торгового представителя.');
 
   /* регистрации */
-  const R = roles.registrations, h = R.h;
-  const period = readPeriod(R.head, R.headerRow);
+  const R = roles.registrations;
+  const want = opts.month && opts.year ? { month: +opts.month, year: +opts.year } : null;
+  const pivotPeriod = R.h ? readPeriod(R.head, R.headerRow) : null;
+  let records = null, period = null, source = 'pivot', modelNote = '';
+  if (R.book.zip.file('xl/model/item.data') && Model()) {
+    try {
+      const res = await fromModel(R.book.zip, want || pivotPeriod);
+      records = res.records; period = res.period; source = 'model';
+    } catch (err) {
+      const msg = err.message || String(err);
+      if (msg.startsWith('NOMONTH:')) throw Error(msg.slice(8));
+      modelNote = msg;
+    }
+  }
+  if (!records) {
+    if (!R.h) throw Error('Не удалось прочитать данные из модели файла регистраций' + (modelNote ? ' (' + modelNote + ')' : '') + ', а сводной с колонками СубъектРФ · ИНН · Владелец · Итог в файле нет.');
+    period = pivotPeriod;
+    if (want && period && (period.month !== want.month || period.year !== want.year))
+      throw Error('Сводная в файле регистраций за ' + MONTHS[period.month - 1] + ' ' + period.year + ', а выбран ' + MONTHS[want.month - 1] + ' ' + want.year + '.' + (modelNote ? ' Модель данных прочитать не удалось: ' + modelNote : ''));
+    records = await pivotRecords(R, load);
+  }
   const unknown = new Map(), regionTotals = new Map();
-  let total = 0, distributed = 0, last = { region: '', inn: '', owner: '' };
-  for (const row of await load(R)) {
-    let region = row.get(h.region).trim(), inn = cleanInn(row.get(h.inn)), owner = row.get(h.owner).trim();
-    const brand = h.brand ? row.get(h.brand).trim() : '';
-    if ([region, row.get(h.inn), owner, brand].some(isTotal)) continue;
-    const raw = row.get(h.count);
-    if (raw === '') continue;
-    const qty = Number(String(raw).replace(',', '.'));
-    if (!Number.isFinite(qty)) continue;
-    if (!region) region = last.region;
-    if (!inn && !owner && h.brand) { inn = last.inn; owner = last.owner; }
-    last = { region, inn, owner };
-    if (!region) continue;
+  let total = 0, distributed = 0;
+  for (const { region, inn, owner, brand, qty } of records) {
     total += qty;
     const key = regionKey(region);
     regionTotals.set(key, (regionTotals.get(key) || 0) + qty);
@@ -269,9 +391,9 @@ async function build(buffers, names = []) {
     });
   }
   return {
-    files, summary, period, total, distributed,
+    files, summary, period, total, distributed, source, modelNote,
     unknown: [...unknown].sort((a, b) => b[1] - a[1]),
-    hasBrands: !!h.brand, detected,
+    hasBrands: source === 'model' || !!R.h?.brand, detected,
   };
 }
 const ROLE_LABEL = { registrations: 'Регистрации ГИБДД', clients: 'CRM — клиенты', events: 'CRM — события', territories: 'Регионы ТП' };
@@ -385,6 +507,12 @@ async function classify(buf) {
   return null;
 }
 
-const api = { build, classify, bundle, MONTHS, ROLE_LABEL, regionKey, readBook };
+async function peekPeriod(buf) {
+  const book = await readBook(buf);
+  const hit = (await detect(book)).find(h => h.role === 'registrations' && h.h);
+  return hit ? readPeriod(hit.head, hit.headerRow) : null;
+}
+
+const api = { build, classify, peekPeriod, FILTERS, bundle, MONTHS, ROLE_LABEL, regionKey, readBook };
 if (typeof module === 'object' && module.exports) module.exports = api; else root.GibddEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

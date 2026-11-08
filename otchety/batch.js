@@ -29,13 +29,11 @@ const batchReports = [
    const files=[...el('batchGibdd').files], issues=[];
    if(!files.length)issues.push('добавьте четыре исходника');
    else if(files.length!==4)issues.push('нужно 4 файла, выбрано '+files.length);
-   else if(files.some(f=>!/\.xlsx$/i.test(f.name)))issues.push('все файлы должны быть XLSX');
+   else if(files.some(f=>!/\.(xlsx|xls|csv)$/i.test(f.name)))issues.push('подходят только .xlsx, .xls и .csv');
    return {files,issues};
   },
   async create(files,month,year){
-   const r=await GibddEngine.build(files,[...el('batchGibdd').files].map(f=>f.name));
-   if(r.period&&(r.period.month!==month||r.period.year!==year))
-    throw Error('регистрации за '+gibddPeriod(r.period).toLowerCase()+', а выбран '+months[month-1]+' '+year+'.');
+   const r=await GibddEngine.build(files,[...el('batchGibdd').files].map(f=>f.name),{month,year});
    const out=r.files.map(f=>({name:'ГИБДД_по_менеджерам/'+f.name,bytes:f.bytes}));
    if(r.unknown.length)out.push({name:'ГИБДД_по_менеджерам/Не_распределено.txt',bytes:r.unknown.map(([k,v])=>k+' — '+v).join('\n')});
    return out;
