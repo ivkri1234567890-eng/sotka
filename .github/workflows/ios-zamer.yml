@@ -6,12 +6,10 @@ on:
     paths: ["ios-zamer/**", ".github/workflows/ios-zamer.yml"]
 permissions:
   contents: write
-concurrency:
-  group: ios-zamer
-  cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: ios-zamer
