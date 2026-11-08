@@ -1,0 +1,146 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>Центр отчётов ДПГА</title>
+<style>
+:root{color-scheme:light dark;--bg:#eef2f8;--panel:#fff;--ink:#142338;--muted:#52657b;--line:#d3dce9;--blue:#1552ca}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,sans-serif}main{max-width:680px;margin:auto;padding:25px 18px 40px}h1{font-size:34px;margin:6px 0}p{line-height:1.45}.brand{color:var(--blue);font-size:13px;font-weight:800;letter-spacing:.13em}.intro,.tip,small{color:var(--muted)}.panel{padding:18px;background:var(--panel);border-radius:18px;margin-top:17px;border:1px solid var(--line)}label{display:block;font-weight:650;margin:0 0 15px}label:last-child{margin-bottom:0}input,select,button{font:inherit}input[type=file],select,input[type=number]{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}input::file-selector-button{font:inherit;padding:4px;margin-right:7px}.period,.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}.period label{margin:0}button{width:100%;border:0;border-radius:13px;padding:14px;font-weight:750;background:var(--blue);color:white;margin-top:16px;min-height:48px}button:disabled{opacity:.5}.check{font-weight:450;display:flex;align-items:flex-start;gap:8px;line-height:1.35}.check input{width:18px;height:18px;flex:none}.status{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.tiles{grid-template-columns:repeat(3,1fr);margin:10px 0}.tile{background:var(--bg);padding:8px;border-radius:10px}.tile b{display:block;font-size:22px}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}h2{font-size:20px;margin:0 0 10px}@media(prefers-color-scheme:dark){:root{--bg:#101827;--panel:#182438;--ink:#e7edf8;--muted:#afbdd0;--line:#32425b;--blue:#3a6bda}}
+.modes{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.modes button{flex:1 1 145px;margin:0;padding:9px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}.modes button[aria-pressed=true]{background:var(--blue);color:white}.secondary{background:var(--panel);color:var(--blue);border:1px solid var(--line)}
+.slots{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}.slots li{border:1px dashed var(--line);border-radius:10px;padding:9px 11px}.slots li.ok{border-style:solid;border-color:#2e8b57}.slots b{display:block}.slots small{display:block;overflow-wrap:anywhere}
+button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;border-radius:9px}
+[hidden]{display:none!important}
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px 18px}.gate form{width:min(360px,100%)}.gate input{width:100%;margin-top:8px;padding:12px;font-size:20px;letter-spacing:.3em;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}.err{color:#c0392b}</style>
+<div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h2 style="margin-top:8px">Центр отчётов ДПГА</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
+<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
+<form id="form">
+ <div class="panel period"><label>Месяц<select id="month"></select></label><label>Год<input id="year" type="number" min="2000" max="2100" required></label></div>
+ <div class="panel">
+  <label>1. Шаблон рейтинга<input type="file" id="template" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required><small>С предыдущим месяцем или пересчитываемым последним месяцем.</small></label>
+  <label>2. Прогноз продаж<input type="file" id="forecast" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label>
+  <label>3. Анализ реализации<input type="file" id="actual" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label>
+ </div>
+ <details class="panel"><summary>Дополнительные параметры</summary><p class="tip">Состав рейтинга берётся из шаблона. Перед исключением строк проверьте список сотрудников.</p><label class="check"><input type="checkbox" id="exclude">Исключить сотрудников, которых не удалось сопоставить</label><label class="check"><input type="checkbox" id="empty">Разрешить месяц без записей в одном из источников</label></details>
+ <button id="run">Сформировать Excel</button>
+</form>
+<p id="status" class="status" role="status" aria-live="polite"></p>
+<section class="panel" id="result" hidden><h2>Итог за период</h2><div id="tiles" class="tiles"></div><p id="notes" class="status"></p><table><thead><tr><th>ТП</th><th>Прогноз</th><th>Факт</th><th>НИ</th></tr></thead><tbody id="people"></tbody></table><button id="save">Поделиться или сохранить Excel</button></section>
+</section>
+<section id="meetingView" hidden>
+<p class="intro">Соберите PowerPoint за месяц и нарастающим итогом. Excel и шаблон обрабатываются в браузере.</p>
+<form id="meetingForm">
+ <div class="panel period"><label>Месяц<select id="meetingMonth"></select></label><label>Год<input id="meetingYear" type="number" min="2000" max="2100" required></label></div>
+ <div class="panel">
+  <label>Шаблон совещания<input type="file" id="meetingTemplate" accept=".pptx" required><small>Выберите согласованную презентацию от 02.11.2026 с тремя встроенными Excel-таблицами.</small></label>
+  <label>Планы и отгрузки<input type="file" id="meetingSource" accept=".xlsx"><small>Excel с листами «Планы» и «Отгрузки» и заполненным отчётным месяцем.</small></label>
+ </div>
+ <button id="meetingBuild">Сформировать PowerPoint</button>
+ <button id="meetingDemo" type="button" class="secondary">Проверить итоги в шаблоне</button>
+</form>
+<p id="meetingStatus" class="status" role="status" aria-live="polite"></p>
+<div id="meetingResult" class="panel" hidden><h2>План и факт</h2><div id="meetingTotals"></div><button id="meetingSave">Скачать PowerPoint</button></div>
+</section>
+<section id="gibddView" hidden>
+<p class="intro">Загрузите четыре исходника — приложение само определит, где какой, и сформирует по файлу Excel на каждого торгового представителя. Расчёт выполняется на устройстве.</p>
+<form id="gibddForm">
+ <div class="panel">
+  <label>Исходники ГИБДД и CRM<input type="file" id="gibddFiles" multiple accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><small>Можно выбрать все четыре сразу или добавлять по одному.</small></label>
+  <ul class="slots" id="gibddSlots"></ul>
+ </div>
+ <button id="gibddRun" disabled>Сформировать файлы менеджеров</button>
+</form>
+<p id="gibddStatus" class="status" role="status" aria-live="polite"></p>
+<section class="panel" id="gibddResult" hidden><h2 id="gibddTitle">Итог</h2><div id="gibddTiles" class="tiles"></div><p id="gibddNotes" class="status"></p><table><thead><tr><th>ТП</th><th>Машин</th><th>В CRM</th><th>Знали</th><th></th></tr></thead><tbody id="gibddPeople"></tbody></table><button id="gibddZip">Скачать все файлы (ZIP)</button></section>
+</section>
+<section id="batchView" hidden>
+<p class="intro">Загрузите исходники за закрытый месяц. Готовые отчёты скачаются одним ZIP. Обработка выполняется в браузере.</p>
+<form id="batchForm">
+ <div class="panel period"><label>Закрытый месяц<select id="batchMonth"></select></label><label>Год<input type="number" id="batchYear" min="2000" max="2100" required></label></div>
+ <div class="panel">
+  <h2>Рейтинг ТП</h2>
+  <label>Рейтинг за прошлый период или шаблон<input type="file" id="batchRatingTemplate" accept=".xlsx"></label>
+  <label>Согласованный прогноз продаж от 17-го числа<input type="file" id="batchForecast" accept=".xlsx"></label>
+  <label>Анализ реализации за закрытый месяц<input type="file" id="batchActual" accept=".xlsx"></label>
+ </div>
+ <div class="panel">
+  <h2>Презентация к оперативному совещанию</h2>
+  <label>Шаблон презентации<input type="file" id="batchMeetingTemplate" accept=".pptx"></label>
+  <label>Excel с листами «Планы» и «Отгрузки»<input type="file" id="batchMeetingSource" accept=".xlsx"></label>
+ </div>
+ <div class="panel">
+  <h2>ГИБДД по менеджерам</h2>
+  <label>Регистрации ГИБДД, CRM — клиенты, CRM — события, Регионы ТП<input type="file" id="batchGibdd" multiple accept=".xlsx"><small>Выберите все четыре файла сразу. Месяц регистраций должен совпадать с закрытым месяцем.</small></label>
+ </div>
+ <div class="panel">
+  <h2>Готовность пакета</h2>
+  <ul id="batchReady" aria-live="polite"></ul>
+  <button id="batchBuild" disabled>Собрать и скачать готовые отчёты</button>
+  <p id="batchStatus" class="status" role="status"></p>
+ </div>
+</form>
+
+</section>
+
+</main>
+<script src="jszip.min.js"></script><script src="xml-js.min.js"></script><script src="engine.js"></script><script src="gibdd-engine.js"></script>
+<script>
+const el=id=>document.getElementById(id);
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const now=new Date(), prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+months.forEach((m,i)=>el('month').add(new Option(cap(m),i+1)));
+el('month').value=prev.getMonth()+1;el('year').value=prev.getFullYear();
+let result, filename;
+el('form').addEventListener('input',()=>{result=null;el('result').hidden=true;el('status').textContent='';});
+el('form').onsubmit=async ev=>{
+ ev.preventDefault();result=null;el('result').hidden=true;el('run').disabled=true;
+ el('status').textContent='Читаю исходники и сверяю расчёт…';
+ try{
+  const picks=['template','forecast','actual'].map(id=>el(id).files[0]);
+  if(picks.some(f=>!f||!/\.xlsx$/i.test(f.name)))throw Error('Выберите три файла формата XLSX.');
+  if(picks.some(f=>f.size>30*1024*1024))throw Error('Один из файлов больше 30 МБ. Уменьшите выгрузку.');
+  const m=+el('month').value,y=+el('year').value;
+  result=await build(await Promise.all(picks.map(f=>f.arrayBuffer())),m,y,el('exclude').checked,el('empty').checked);
+  filename='Рейтинг_ТП_'+cap(months[m-1])+'_'+y+'.xlsx';
+  el('tiles').replaceChildren(...[[2,'Прогноз'],[5,'Факт'],[11,'Нарастающий']].map(([i,t])=>{
+   const d=document.createElement('div'), b=document.createElement('b');d.className='tile';b.textContent=result.totals[i];d.append(b,t);return d;
+  }));
+  el('notes').textContent=result.issues.length?'Исключены строки:\n'+result.issues.join('\n'):'';
+  el('people').replaceChildren(...result.valuesByRow.map(r=>{
+   const tr=document.createElement('tr');for(const v of [r.name,r.plan,r.fact,r.ytd]){const td=document.createElement('td');td.textContent=v;tr.append(td);}return tr;
+  }));
+  el('status').textContent='Готово. Проверьте итоги и сохраните файл.';
+  el('result').hidden=false;
+ }catch(e){el('status').textContent=e.message||String(e);}
+ finally{el('run').disabled=false;}
+};
+el('save').onclick=()=>{
+ if(!result)return;
+ const bridge=window.webkit?.messageHandlers?.saveReport;
+ if(bridge){
+  let b='';for(let i=0;i<result.bytes.length;i+=32768)b+=String.fromCharCode(...result.bytes.subarray(i,i+32768));
+  bridge.postMessage({name:filename,base64:btoa(b)});
+ }else{
+  const url=URL.createObjectURL(new Blob([result.bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ }
+};
+</script>
+
+<script src="meeting.js"></script><script src="meeting-ui.js"></script>
+
+<script src="gibdd-ui.js"></script>
+<script src="batch.js"></script>
+<script>
+(()=>{
+ const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
+ const open=()=>{gate.hidden=true;app.hidden=false;};
+ try{if(sessionStorage.getItem('dpga-auth')===HASH)open();}catch(e){}
+ if(!app.hidden)return;
+ el('pw').focus();
+ el('gateForm').onsubmit=async e=>{
+  e.preventDefault();
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(el('pw').value.trim()));
+  const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hex===HASH){try{sessionStorage.setItem('dpga-auth',HASH);}catch(e){}open();}
+  else{el('pwErr').hidden=false;el('pw').select();}
+ };
+})();
+</script>
+
+</html>
