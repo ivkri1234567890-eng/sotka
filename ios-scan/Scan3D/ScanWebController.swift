@@ -1,4 +1,5 @@
 import UIKit
+import simd
 import WebKit
 import ARKit
 #if canImport(RoomPlan)

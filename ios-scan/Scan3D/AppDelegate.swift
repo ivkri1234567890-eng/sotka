@@ -1,4 +1,5 @@
 import UIKit
+import simd
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {

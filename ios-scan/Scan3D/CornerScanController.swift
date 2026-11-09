@@ -1,4 +1,5 @@
 import UIKit
+import simd
 import ARKit
 import SceneKit
 

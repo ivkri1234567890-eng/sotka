@@ -1,4 +1,5 @@
 import UIKit
+import simd
 #if canImport(RoomPlan)
 import RoomPlan
 
@@ -161,7 +162,7 @@ enum RoomPlanConvert {
             let a = poly[best], b = poly[(best + 1) % poly.count], L = simd_distance(a, b)
             let ww = min(w, L)
             let bottom = max(0, c.y - h / 2 - floorY)
-            var o: [String: Any] = ["type": type, "wall": best, "offset": Double(max(0, min(L - ww, along - ww / 2))), "w": Double(ww), "h": Double(h)]
+            var o: [String: Any] = ["type": type, "wall": best, "offset": Double(max(Float(0), min(L - ww, along - ww / 2))), "w": Double(ww), "h": Double(h)]
             o["sill"] = type == "window" ? Double(bottom) : NSNull()
             ops.append(o)
         }
@@ -214,9 +215,12 @@ enum RoomPlanConvert {
     }
 
     static func intersect(_ a: simd_float2, _ b: simd_float2, _ c: simd_float2, _ d: simd_float2) -> simd_float2? {
-        let r = b - a, s = d - c, den = r.x * s.y - r.y * s.x
+        let r = b - a, s = d - c
+        let den: Float = r.x * s.y - r.y * s.x
         if abs(den) < 1e-4 { return nil }
-        let t = ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / den
+        let ca = c - a
+        let num: Float = ca.x * s.y - ca.y * s.x
+        let t: Float = num / den
         let p = a + r * t
         // reject far-away intersections of almost parallel walls
         return simd_distance(p, b) < 1.0 ? p : nil
