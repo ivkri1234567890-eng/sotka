@@ -245,10 +245,11 @@ async function fromModel(zip, want) {
   const target = want ? want.year * 100 + want.month : latest;
   const period = { month: target % 100, year: Math.floor(target / 100) };
   const soato = col(T, 'soato'), owner = col(T, 'id_uaip_spisok_lic_filthy_max'), brand = col(T, 'Марка');
+  const model = M.has(T, 'Модель') ? col(T, 'Модель') : null;
   const agg = new Map();
   for (let i = 0; i < n; i++) {
     if (!base[i] || ym(i) !== target) continue;
-    const k = soato.ids[i] + '|' + owner.ids[i] + '|' + brand.ids[i];
+    const k = soato.ids[i] + '|' + owner.ids[i] + '|' + brand.ids[i] + '|' + (model ? model.ids[i] : 0);
     agg.set(k, (agg.get(k) || 0) + Number(qtyC.value(qtyC.ids[i]) || 0));
   }
   if (!agg.size) {
@@ -265,9 +266,9 @@ async function fromModel(zip, want) {
   }
   const records = [];
   for (const [k, qty] of agg) {
-    const [s, o, b] = k.split('|').map(Number);
+    const [s, o, b, md] = k.split('|').map(Number);
     const [inn, name] = owners.get(String(owner.value(o))) || ['', ''];
-    records.push({ region: regionBySoato.get(String(soato.value(s))) || 'Регион не указан', inn: cleanInn(inn), owner: name.trim(), brand: String(brand.value(b) ?? '').trim(), qty });
+    records.push({ region: regionBySoato.get(String(soato.value(s))) || 'Регион не указан', inn: cleanInn(inn), owner: name.trim(), brand: String(brand.value(b) ?? '').trim(), model: model ? String(model.value(md) ?? '').trim() : '', qty });
   }
   return { records, period };
 }
@@ -304,7 +305,7 @@ async function build(buffers, names = [], opts = {}) {
     if (!managers.has(id)) managers.set(id, {
       id, full: who.replace(/\s+/g, ' '), surname: who.trim().split(/\s+/)[0],
       phone: row.get(h.phone).trim(), email: row.get(h.email).trim(), position: row.get(h.position).trim(),
-      regions: new Map(), owners: new Map(), brands: new Map(), clients: [], events: [],
+      regions: new Map(), owners: new Map(), brands: new Map(), details: new Map(), clients: [], events: [],
     });
     const key = regionKey(reg);
     managers.get(id).regions.has(key) || managers.get(id).regions.set(key, reg);
@@ -337,7 +338,7 @@ async function build(buffers, names = [], opts = {}) {
   }
   const unknown = new Map(), regionTotals = new Map();
   let total = 0, distributed = 0;
-  for (const { region, inn, owner, brand, qty } of records) {
+  for (const { region, inn, owner, brand, model = '', qty } of records) {
     total += qty;
     const key = regionKey(region);
     regionTotals.set(key, (regionTotals.get(key) || 0) + qty);
@@ -352,6 +353,11 @@ async function build(buffers, names = [], opts = {}) {
       if (owner && o.owner === 'ФИЗ ЛИЦО') o.owner = owner;
       o.qty += qty; m.owners.set(ownerKey, o);
       if (brand) m.brands.set(brand, (m.brands.get(brand) || 0) + qty);
+      if (brand) {
+        const dk = o.inn + '\u0001' + brand + '\u0001' + model;
+        const d = m.details.get(dk) || { key: ownerKey, inn: o.inn, brand, model, qty: 0 };
+        d.qty += qty; m.details.set(dk, d);
+      }
     }
   }
   if (!total) throw Error('В файле регистраций не нашлось строк с количеством.');
@@ -379,7 +385,7 @@ async function build(buffers, names = [], opts = {}) {
     const qty = owners.reduce((s, o) => s + o.qty, 0);
     const brands = [...m.brands].sort((a, b) => b[1] - a[1]);
     const regions = [...m.regions.entries()].map(([k, label]) => ({ label, qty: regionTotals.get(k) || 0 }));
-    const bytes = await managerWorkbook(m, owners, clients, events, brands, regions);
+    const bytes = await managerWorkbook(m, owners, clients, events, brands, regions, { period, source, details: [...m.details.values()] });
     const fname = m.surname.replace(/[\\/:*?"<>|]/g, '_') + '.xlsx';
     files.push({ name: fname, bytes });
     summary.push({
@@ -412,7 +418,7 @@ const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' +
 '<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders>' +
 '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-'<cellXfs count="10">' +
+'<cellXfs count="13">' +
 '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +                                                                  // 0
 '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' + // 1 заголовок
 '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>' +                           // 2 текст
@@ -422,7 +428,10 @@ const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' + // 6 скрытый заголовок
 '<xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +                                           // 7 ИНН-список
 '<xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>' + // 8 комментарий
-'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +                                                    // 9 примечание
+'<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+'<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>' +
+'<xf numFmtId="164" fontId="1" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>' +
+'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +                                                    // 9 примечание
 '</cellXfs><cellStyles count="1"><cellStyle name="Обычный" xfId="0" builtinId="0"/></cellStyles>' +
 '<dxfs count="1"><dxf><font><color rgb="FF006100"/></font><fill><patternFill><bgColor rgb="FFC6EFCE"/></patternFill></fill></dxf></dxfs>' +
 '</styleSheet>';
@@ -434,62 +443,136 @@ function cell(ref, v, s) {
   return `<c r="${ref}" s="${s ?? 0}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
 }
 
-async function managerWorkbook(m, owners, clients, events, brands, regions) {
-  const rows = new Map();
-  const put = (r, c, v, s) => { if (!rows.has(r)) rows.set(r, []); rows.get(r).push([c, cell(colName(c) + r, v, s)]); };
-  // A..H — владельцы и проверка по CRM
-  ['ИНН', 'Владелец', 'Итог', 'ИНН Клиента', 'ИНН Клиента', 'Есть в срм', 'Знали о потребности', 'Комментарий']
-    .forEach((t, i) => put(1, i + 1, t, i === 3 || i === 4 ? 6 : 1));
-  owners.forEach((o, i) => {
-    const r = i + 2;
-    put(r, 1, o.inn, 2); put(r, 2, o.owner, 2); put(r, 3, o.qty, 3);
-    put(r, 6, { f: `IFERROR(VLOOKUP(A${r},D:D,1,FALSE)," ")`, v: o.crm ? o.inn : ' ', str: 1 }, 2);
-    put(r, 7, { f: `IFERROR(VLOOKUP(A${r},E:E,1,FALSE)," ")`, v: o.need ? o.inn : ' ', str: 1 }, 2);
-    put(r, 8, '', 8);
-  });
-  const lastOwner = owners.length + 1, totalRow = lastOwner + 1;
-  put(totalRow, 1, 'Общий итог', 4); put(totalRow, 2, '', 4);
-  put(totalRow, 3, { f: `SUBTOTAL(9,C2:C${lastOwner})`, v: owners.reduce((s, o) => s + o.qty, 0) }, 5);
-  clients.forEach((inn, i) => put(i + 2, 4, inn, 7));
-  events.forEach((inn, i) => put(i + 2, 5, inn, 7));
-  // K..L — марки (если в выгрузке есть «Марка»)
-  if (brands.length) {
-    put(1, 11, 'Марка', 1); put(1, 12, 'Итог', 1);
-    brands.forEach(([b, q], i) => { put(i + 2, 11, b, 2); put(i + 2, 12, q, 3); });
-    const br = brands.length + 2;
-    put(br, 11, 'Общий итог', 4); put(br, 12, { f: `SUM(L2:L${br - 1})`, v: brands.reduce((s, x) => s + x[1], 0) }, 5);
-  }
-  // O..P — регионы менеджера
-  put(1, 15, 'Регионы менеджера', 1); put(1, 16, 'Поставлено на учёт', 1);
-  regions.forEach((g, i) => { put(i + 2, 15, g.label, 2); put(i + 2, 16, g.qty, 3); });
-  const gr = regions.length + 2;
-  put(gr, 15, 'Итого', 4); put(gr, 16, { f: `SUM(P2:P${gr - 1})`, v: regions.reduce((s, g) => s + g.qty, 0) }, 5);
-  if (m.phone || m.email) put(gr + 2, 15, [m.full, m.phone, m.email].filter(Boolean).join(' · '), 9);
-
-  const body = [...rows.keys()].sort((a, b) => a - b).map(r =>
-    `<row r="${r}"${r === 1 ? ' ht="30" customHeight="1"' : ''}>` + rows.get(r).sort((a, b) => a[0] - b[0]).map(x => x[1]).join('') + '</row>').join('');
-  const maxRow = Math.max(...rows.keys());
-  const cols = [[1, 15], [2, 46], [3, 9], [4, 14, 1], [5, 14, 1], [6, 14], [7, 14], [8, 36], [9, 4], [10, 4], [11, 18], [12, 9], [13, 4], [14, 4], [15, 30], [16, 12]]
-    .map(([c, w, hid]) => `<col min="${c}" max="${c}" width="${w}" customWidth="1"${hid ? ' hidden="1"' : ''}/>`).join('');
-  const sheetName = m.surname.replace(/[\\/?*[\]:]/g, '').slice(0, 31) || 'Менеджер';
-  const sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+function sheetXml({ rows, cols, heights = {}, freeze = 0, filter = '', cf = '', selected = false }) {
+  const keys = [...rows.keys()].sort((a, b) => a - b);
+  const body = keys.map(r => `<row r="${r}"${heights[r] ? ` ht="${heights[r]}" customHeight="1"` : ''}>` +
+    rows.get(r).sort((a, b) => a[0] - b[0]).map(x => x[1]).join('') + '</row>').join('');
+  const maxRow = keys.length ? keys[keys.length - 1] : 1;
+  const maxCol = Math.max(1, ...[...rows.values()].flat().map(x => x[0]));
+  const colXml = cols.map(([c, w, hid]) => `<col min="${c}" max="${c}" width="${w}" customWidth="1"${hid ? ' hidden="1"' : ''}/>`).join('');
+  const pane = freeze ? `<pane ySplit="${freeze}" topLeftCell="A${freeze + 1}" activePane="bottomLeft" state="frozen"/>` : '';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-    `<dimension ref="A1:P${maxRow}"/>` +
-    '<sheetViews><sheetView tabSelected="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
-    '<sheetFormatPr defaultRowHeight="14.4"/>' + `<cols>${cols}</cols><sheetData>${body}</sheetData>` +
-    (owners.length ? `<autoFilter ref="A1:H${lastOwner}"/>` : '') +
-    (owners.length ? `<conditionalFormatting sqref="F2:G${lastOwner}"><cfRule type="expression" dxfId="0" priority="1"><formula>LEN(TRIM(F2))&gt;0</formula></cfRule></conditionalFormatting>` : '') +
+    `<dimension ref="A1:${colName(maxCol)}${maxRow}"/>` +
+    `<sheetViews><sheetView${selected ? ' tabSelected="1"' : ''} workbookViewId="0">${pane}</sheetView></sheetViews>` +
+    '<sheetFormatPr defaultRowHeight="14.4"/>' + `<cols>${colXml}</cols><sheetData>${body}</sheetData>` +
+    (filter ? `<autoFilter ref="${filter}"/>` : '') + cf +
     '<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/></worksheet>';
+}
+const grid = () => { const rows = new Map(); return { rows, put: (r, c, v, s) => { if (!rows.has(r)) rows.set(r, []); rows.get(r).push([c, cell(colName(c) + r, v, s)]); } }; };
+const byCode = (a, b) => a < b ? -1 : a > b ? 1 : 0;             // как сортирует сводная Excel: латиница, затем кириллица
+
+async function managerWorkbook(m, owners, clients, events, brands, regions, extra = {}) {
+  const sheets = [];
+  const sheetName = m.surname.replace(/[\\/?*[\]:]/g, '').slice(0, 31) || 'Менеджер';
+  /* Лист 1 — владельцы и проверка по CRM */
+  {
+    const { rows, put } = grid();
+    ['ИНН', 'Владелец', 'Итог', 'ИНН Клиента', 'ИНН Клиента', 'Есть в срм', 'Знали о потребности', 'Комментарий']
+      .forEach((t, i) => put(1, i + 1, t, i === 3 || i === 4 ? 6 : 1));
+    owners.forEach((o, i) => {
+      const r = i + 2;
+      put(r, 1, o.inn, 2); put(r, 2, o.owner, 2); put(r, 3, o.qty, 3);
+      put(r, 6, { f: `IFERROR(VLOOKUP(A${r},D:D,1,FALSE)," ")`, v: o.crm ? o.inn : ' ', str: 1 }, 2);
+      put(r, 7, { f: `IFERROR(VLOOKUP(A${r},E:E,1,FALSE)," ")`, v: o.need ? o.inn : ' ', str: 1 }, 2);
+      put(r, 8, '', 8);
+    });
+    const lastOwner = owners.length + 1, totalRow = lastOwner + 1;
+    put(totalRow, 1, 'Общий итог', 4); put(totalRow, 2, '', 4);
+    put(totalRow, 3, { f: `SUBTOTAL(9,C2:C${lastOwner})`, v: owners.reduce((s, o) => s + o.qty, 0) }, 5);
+    clients.forEach((inn, i) => put(i + 2, 4, inn, 7));
+    events.forEach((inn, i) => put(i + 2, 5, inn, 7));
+    if (brands.length) {
+      put(1, 11, 'Марка', 1); put(1, 12, 'Итог', 1);
+      brands.forEach(([b, q], i) => { put(i + 2, 11, b, 2); put(i + 2, 12, q, 3); });
+      const br = brands.length + 2;
+      put(br, 11, 'Общий итог', 4); put(br, 12, { f: `SUM(L2:L${br - 1})`, v: brands.reduce((s, x) => s + x[1], 0) }, 5);
+    }
+    put(1, 15, 'Регионы менеджера', 1); put(1, 16, 'Поставлено на учёт', 1);
+    regions.forEach((g, i) => { put(i + 2, 15, g.label, 2); put(i + 2, 16, g.qty, 3); });
+    const gr = regions.length + 2;
+    put(gr, 15, 'Итого', 4); put(gr, 16, { f: `SUM(P2:P${gr - 1})`, v: regions.reduce((s, g) => s + g.qty, 0) }, 5);
+    if (m.phone || m.email) put(gr + 2, 15, [m.full, m.phone, m.email].filter(Boolean).join(' · '), 9);
+    sheets.push({
+      name: sheetName, filterDb: owners.length ? `$A$1:$H$${lastOwner}` : '',
+      xml: sheetXml({
+        rows, selected: true, freeze: 1, heights: { 1: 30 },
+        cols: [[1, 15], [2, 46], [3, 9], [4, 14, 1], [5, 14, 1], [6, 14], [7, 14], [8, 36], [9, 4], [10, 4], [11, 18], [12, 9], [13, 4], [14, 4], [15, 30], [16, 12]],
+        filter: owners.length ? `A1:H${lastOwner}` : '',
+        cf: owners.length ? `<conditionalFormatting sqref="F2:G${lastOwner}"><cfRule type="expression" dxfId="0" priority="1"><formula>LEN(TRIM(F2))&gt;0</formula></cfRule></conditionalFormatting>` : '',
+      }),
+    });
+  }
+  const details = (extra.details || []).filter(d => d.brand);
+  const nameByKey = new Map(owners.map(o => [o.inn, o.owner]));
+  if (details.length) {
+    /* Лист 2 — сводная: ИНН → Марка → Модель, как «СВОД-Валдай» */
+    const { rows, put } = grid();
+    const p = extra.period;
+    const cond = [
+      ['.нов/бу', FILTERS.status.join(', ')], ['Класс наш', FILTERS.classes.join(', ')], ['Кузов-план', FILTERS.bodies.join(', ')],
+      ['СубъектРФ', regions.map(g => g.label).join(', ')],
+      ['Год операции', p ? p.year : ''], ['Месяц операции', p ? p.month + ' (' + MONTHS[p.month - 1] + ')' : ''],
+    ];
+    if (extra.source !== 'model') cond.splice(0, 3);
+    cond.forEach(([k, v], i) => { put(i + 1, 1, k, 12); put(i + 1, 2, String(v), 0); });
+    let r = cond.length + 2;
+    put(r, 1, 'Сумма по столбцу Кол-во', 12); r++;
+    const head = r;
+    ['ИНН', 'Марка', 'Модель', 'Итог'].forEach((t, i) => put(r, i + 1, t, 1)); r++;
+    const tree = new Map();
+    for (const d of details) {
+      if (!tree.has(d.inn)) tree.set(d.inn, new Map());
+      const b = tree.get(d.inn); if (!b.has(d.brand)) b.set(d.brand, new Map());
+      const mm = b.get(d.brand); mm.set(d.model, (mm.get(d.model) || 0) + d.qty);
+    }
+    let grand = 0;
+    for (const inn of [...tree.keys()].sort(byCode)) {
+      let firstInn = true;
+      for (const brand of [...tree.get(inn).keys()].sort(byCode)) {
+        const models = tree.get(inn).get(brand); let firstBrand = true, sub = 0;
+        for (const model of [...models.keys()].sort(byCode)) {
+          const q = models.get(model); sub += q;
+          put(r, 1, firstInn ? inn : '', 2); put(r, 2, firstBrand ? brand : '', 2); put(r, 3, model, 2); put(r, 4, q, 3);
+          firstInn = firstBrand = false; r++;
+        }
+        put(r, 1, '', 2); put(r, 2, brand + ' Итог', 10); put(r, 3, '', 10); put(r, 4, sub, 11); r++;
+        grand += sub;
+      }
+    }
+    put(r, 1, 'Общий итог', 4); put(r, 2, '', 4); put(r, 3, '', 4); put(r, 4, grand, 5);
+    sheets.push({ name: 'Сводная', xml: sheetXml({ rows, freeze: head, cols: [[1, 16], [2, 24], [3, 22], [4, 10]] }) });
+
+    /* Лист 3 — что поставили на учёт: контрагент · марка · модель · количество */
+    const g2 = grid();
+    ['Контрагент', 'ИНН', 'Марка', 'Модель', 'Количество'].forEach((t, i) => g2.put(1, i + 1, t, 1));
+    const ownerTotal = new Map(owners.map(o => [o.inn, o.qty]));
+    const list = details.map(d => ({ ...d, owner: nameByKey.get(d.inn) || (d.inn === '-' ? 'ФИЗ ЛИЦО' : '') }))
+      .sort((a, b) => (ownerTotal.get(b.inn) || 0) - (ownerTotal.get(a.inn) || 0) || a.owner.localeCompare(b.owner, 'ru') ||
+        byCode(a.inn, b.inn) || byCode(a.brand, b.brand) || b.qty - a.qty || byCode(a.model, b.model));
+    list.forEach((d, i) => { const rr = i + 2; g2.put(rr, 1, d.owner, 2); g2.put(rr, 2, d.inn, 2); g2.put(rr, 3, d.brand, 2); g2.put(rr, 4, d.model, 2); g2.put(rr, 5, d.qty, 3); });
+    const last = list.length + 1;
+    g2.put(last + 1, 1, 'Итого', 4); [2, 3, 4].forEach(c => g2.put(last + 1, c, '', 4));
+    g2.put(last + 1, 5, { f: `SUBTOTAL(9,E2:E${last})`, v: list.reduce((s, d) => s + d.qty, 0) }, 5);
+    sheets.push({ name: 'Поставлено на учёт', filterDb: `$A$1:$E$${last}`,
+      xml: sheetXml({ rows: g2.rows, freeze: 1, filter: `A1:E${last}`, cols: [[1, 46], [2, 15], [3, 20], [4, 22], [5, 12]] }) });
+  }
+
   const zip = new ZipLib();
-  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  const n = sheets.length;
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
   zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
-  zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
-    `<sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets>` +
-    (owners.length ? `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${esc(sheetName)}'!$A$1:$H$${lastOwner}</definedName></definedNames>` : '') +
-    '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
-  zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  const defs = sheets.map((sh, i) => sh.filterDb ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${esc(sh.name)}'!${sh.filterDb}</definedName>` : '').join('');
+  zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets>' +
+    sheets.map((sh, i) => `<sheet name="${esc(sh.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets>' +
+    (defs ? `<definedNames>${defs}</definedNames>` : '') + '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
+  zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+    `<Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
   zip.file('xl/styles.xml', STYLES);
-  zip.file('xl/worksheets/sheet1.xml', sheet);
+  sheets.forEach((sh, i) => zip.file(`xl/worksheets/sheet${i + 1}.xml`, sh.xml));
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 }
 
