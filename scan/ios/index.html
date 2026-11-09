@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Сканер на iPhone</title>
+<style>
+:root{--bg:#f4f3f0;--surface:#fff;--ink:#1d1f22;--muted:#6b6f76;--line:#e3e0da;--acc:#e0620d}
+@media (prefers-color-scheme:dark){:root{--bg:#141517;--surface:#1f2124;--ink:#ecebe8;--muted:#a0a3a8;--line:#33363a;--acc:#ff8a3d}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px max(16px,env(safe-area-inset-left))}
+main{max-width:760px;margin:0 auto}h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:24px 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.btn{display:inline-block;background:var(--acc);color:#fff;text-decoration:none;font-weight:600;padding:11px 16px;border-radius:10px}
+.muted{color:var(--muted)}ol{padding-left:22px}li{margin:6px 0}code{background:var(--line);padding:1px 5px;border-radius:5px}
+</style>
+</head>
+<body><main>
+<h1>3D Сканер на iPhone</h1>
+<p class="muted">Установка без Mac — через шнур и ноутбук с Windows.</p>
+<div class="card"><p><a class="btn" href="Scan3D-1.0.ipa" download>Скачать Scan3D-1.0.ipa</a></p>
+<p class="muted" id="st">Статус сборки: <a href="build-status.txt">build-status.txt</a></p></div>
+
+<h2>Один раз на ноутбуке</h2>
+<ol>
+<li>Установите <b>iTunes</b> с сайта Apple (apple.com/itunes, версия для Windows — не из Microsoft Store). Нужен драйвер iPhone.</li>
+<li>Установите <b>Sideloadly</b> с сайта sideloadly.io.</li>
+<li>Скачайте файл <code>Scan3D-1.0.ipa</code> выше.</li>
+</ol>
+
+<h2>Установка</h2>
+<ol>
+<li>Подключите iPhone шнуром, разблокируйте и нажмите «Доверять этому компьютеру».</li>
+<li>Откройте Sideloadly: iPhone появится в списке. Перетащите в окно файл <code>.ipa</code>.</li>
+<li>Введите Apple ID (лучше отдельный, не основной) и нажмите <b>Start</b>. Sideloadly подпишет приложение и установит его.</li>
+<li>На iPhone: Настройки → Основные → VPN и управление устройством → ваш Apple ID → «Доверять».</li>
+<li>iOS 16 и новее: Настройки → Конфиденциальность и безопасность → Режим разработчика → включить, перезагрузить.</li>
+</ol>
+
+<h2>Что умеет на разных iPhone</h2>
+<ul>
+<li><b>iPhone с лидаром</b> (12 Pro, 13 Pro, 14 Pro, 15 Pro, 16 Pro, 17 Pro и Pro Max; iOS 16+): автоматический скан комнаты — стены, двери, окна и высота сами; скан предметов облаком точек; рулетка.</li>
+<li><b>Остальные iPhone</b> (XS / XR и новее): скан помещений по углам — отмечаете углы по полу, высоту, проёмы; рулетка. Скан предметов недоступен.</li>
+</ul>
+<h2>Важно</h2>
+<ul>
+<li>С бесплатным Apple ID приложение работает <b>7 дней</b>, потом повторите «Установку» тем же файлом — сохранённые сканы останутся.</li>
+<li>Готовый скан: кнопка «Отправить в «Замер и смета» / «Студию»» → «Сохранить в Файлы». В «Замер и смета»: ⚙ → «Восстановить копию» → выберите файл.</li>
+<li>Копии всех выгрузок лежат в «Файлы» → «На iPhone» → «3D Сканер».</li>
+</ul>
+</main>
+<script>fetch('build-status.txt',{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(t)document.getElementById('st').textContent='Статус сборки: '+(t.startsWith('ok')?'готово, '+t.split(' ')[1]:'ошибка — сборка повторяется');}).catch(()=>{})</script>
+</body></html>

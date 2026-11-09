@@ -78,14 +78,15 @@ function toZamer(scan){const rooms=scan.rooms.filter(r=>r.corners.length>=3);if(
   const id='scan'+ri+'_'+scan.id;layout[id]={x:cg[0]-cq[0],y:cg[1]-cq[1],rot,skew:Math.abs(normDeg(hd[0]-rot))};
   const ops=(r.ops||[]).filter(o=>o.w>0).map(o=>{const x={type:o.type==='window'?'window':'door',wall:o.wall+1,w:R3(o.w),h:R3(o.h||(o.type==='window'?1.4:2.0)),offset:R3(o.offset)};if(o.type==='window'&&o.sill!=null)x.sill=R3(o.sill);return x});
   return{id,name:r.name||'Помещение '+(ri+1),h:R3(r.h||2.7),walls,ops,points:[],fin:{floor:'laminate',walls:'paint',ceiling:'stretch'},cnt:{},comment:'Отсканировано 3D Сканером (AR). Погрешность ±1–3 см — проверьте ключевые размеры дальномером.'+(r.h?'':' Высота не измерена — принято 2,70 м.')}});
- const L=Object.values(layout),ox=Math.min(...L.map(v=>v.x)),oy=Math.min(...L.map(v=>v.y));for(const k in layout){const v=layout[k];layout[k]={x:R3(v.x-ox),y:R3(v.y-oy),rot:v.rot}}
+ if(new Set(rooms.map(r=>r.frame||0)).size>1)for(const k in layout)delete layout[k];
+ const L=Object.values(layout),ox=L.length?Math.min(...L.map(v=>v.x)):0,oy=L.length?Math.min(...L.map(v=>v.y)):0;for(const k in layout){const v=layout[k];layout[k]={x:R3(v.x-ox),y:R3(v.y-oy),rot:v.rot}}
  return{app:'3D Сканер',exported:new Date().toISOString(),settings:{},projects:[{id:'scan_'+scan.id,name:scan.name,kind:'flat',client:'',addr:'',date:new Date(scan.date).toLocaleDateString('ru-RU'),rooms:out,layout}]}}
 function minAreaRect(pts){if(pts.length<3)return null;const P=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],up=[];
  for(const p of P){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}for(const p of P.reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
  const H=lo.slice(0,-1).concat(up.slice(0,-1));let best=null;for(let i=0;i<H.length;i++){const a=H[i],b=H[(i+1)%H.length],L=dist(a,b)||1,ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L;let mn=1e9,mx=-1e9,mn2=1e9,mx2=-1e9;for(const p of H){const s=p[0]*ux+p[1]*uy,t=-p[0]*uy+p[1]*ux;mn=Math.min(mn,s);mx=Math.max(mx,s);mn2=Math.min(mn2,t);mx2=Math.max(mx2,t)}const A=(mx-mn)*(mx2-mn2);if(!best||A<best.A)best={A,w:Math.max(mx-mn,mx2-mn2),d:Math.min(mx-mn,mx2-mn2)}}return best}
 
 /* ---------- files ---------- */
-async function shareOrSave(name,blob){const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+async function shareOrSave(name,blob){if(IOS){const b=new Uint8Array(await blob.arrayBuffer());let bin='';for(let i=0;i<b.length;i+=32768)bin+=String.fromCharCode.apply(null,b.subarray(i,i+32768));webkit.messageHandlers.scan.postMessage({type:'share',name,mime:blob.type||'application/octet-stream',b64:btoa(bin)});return}const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Сохранено в «Загрузки»: '+name,4000)}
 function plyBlob(pts,n,floorY){const head=`ply\nformat binary_little_endian 1.0\ncomment 3D Scanner (WebXR depth), metres, Y up\nelement vertex ${n}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n`;
@@ -95,20 +96,25 @@ const heat=t=>[Math.round(255*Math.min(1,Math.max(0,1.5-Math.abs(4*t-3)))),Math.
 
 /* ---------- screens ---------- */
 const S={screen:'home',scan:null,cloud:null,support:null};
-async function checkSupport(){const s={xr:!!navigator.xr,ar:false};try{s.ar=s.xr&&await navigator.xr.isSessionSupported('immersive-ar')}catch(e){}S.support=s;render()}
+const IOS=!!(window.webkit&&webkit.messageHandlers&&webkit.messageHandlers.scan);
+const isIPhone=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+async function checkSupport(){if(IOS){S.support={xr:true,ar:true,ios:true,...(window.__iosCaps||{})};render();return}const s={xr:!!navigator.xr,ar:false};try{s.ar=s.xr&&await navigator.xr.isSessionSupported('immersive-ar')}catch(e){}S.support=s;render()}
 function render(){app.innerHTML=({home:vHome,room:vRoomReview,obj:vObjReview,help:vHelp}[S.screen]||vHome)();if(S.screen==='obj')mountViewer()}
 function vHome(){const s=S.support,list=scans();
  return`<h1>3D Сканер</h1><p class="muted">Комнаты — в «Замер и смета» и «Студию дизайна». Предметы — облаком точек и габаритами.</p>
- ${s&&!s.ar?`<div class="warn">${!s.xr?'Этот браузер не поддерживает дополненную реальность. Откройте сканер в <b>Google Chrome</b> на Android.':'Телефон не поддерживает AR. Нужны «Сервисы Google Play для AR» (ARCore) — установите их из Play Маркета и откройте сканер в Chrome.'}${/Android/.test(navigator.userAgent)?`<p style="margin:8px 0 0"><a class="btn sec" style="display:inline-block;text-decoration:none" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">Открыть в Chrome</a></p>`:''}</div>`:''}
- <div class="big" style="margin-top:12px"><button class="btn" data-a="startRoom" ${s&&s.ar?'':'disabled'}>Сканировать помещения<small>Углы по полу → высота → двери и окна. Несколько комнат за один проход — с их взаимным расположением.</small></button>
- <button class="btn sec" data-a="startObj" ${s&&s.ar?'':'disabled'}>Сканировать предмет<small>Облако точек по датчику глубины ARCore, габариты Ш×Г×В, файл PLY.</small></button>
+ ${s&&!s.ar&&isIPhone?`<div class="warn">На iPhone дополненная реальность в браузере не работает. Установите приложение «3D Сканер» для iPhone.<p style="margin:8px 0 0"><a class="btn" style="display:inline-block;text-decoration:none" href="ios/">Как установить на iPhone</a></p></div>`:''}
+ ${s&&!s.ar&&!isIPhone?`<div class="warn">${!s.xr?'Этот браузер не поддерживает дополненную реальность. Откройте сканер в <b>Google Chrome</b> на Android.':'Телефон не поддерживает AR. Нужны «Сервисы Google Play для AR» (ARCore) — установите их из Play Маркета и откройте сканер в Chrome.'}${/Android/.test(navigator.userAgent)?`<p style="margin:8px 0 0"><a class="btn sec" style="display:inline-block;text-decoration:none" href="intent://${location.host}${location.pathname}#Intent;scheme=https;package=com.android.chrome;end">Открыть в Chrome</a></p>`:''}</div>`:''}
+ <div class="big" style="margin-top:12px">${s&&s.ios&&s.roomplan?`<button class="btn" data-a="startRoomPlan">Сканировать помещения (LiDAR)<small>Автоматически: стены, двери, окна, высота. Просто обводите камерой комнату. Несколько комнат подряд.</small></button><button class="btn sec" data-a="startRoom">Помещения по углам<small>Вручную: отмечаете углы по полу, высоту, проёмы.</small></button>`:`<button class="btn" data-a="startRoom" ${s&&s.ar?'':'disabled'}>Сканировать помещения<small>Углы по полу → высота → двери и окна. Несколько комнат за один проход — с их взаимным расположением.</small></button>`}
+ <button class="btn sec" data-a="startObj" ${s&&s.ar&&!(s.ios&&!s.lidar)?'':'disabled'}>Сканировать предмет<small>${s&&s.ios?(s.lidar?'Облако точек по лидару, габариты Ш×Г×В, файл PLY.':'Нужен iPhone с лидаром (Pro / Pro Max, начиная с 12 Pro).'):'Облако точек по датчику глубины ARCore, габариты Ш×Г×В, файл PLY.'}</small></button>
  <button class="btn sec" data-a="startRuler" ${s&&s.ar?'':'disabled'}>AR-рулетка<small>Расстояние между двумя точками в пространстве.</small></button></div>
  <h2 style="margin-top:20px">Сохранённые сканы</h2>${list.length?list.map(x=>`<button class="item" data-a="open" data-id="${x.id}"><span class="grow"><b>${esc(x.name)}</b><br><span class="small muted">${x.type==='rooms'?x.rooms.length+' пом.':(x.n||0).toLocaleString('ru-RU')+' точек'} · ${new Date(x.date).toLocaleString('ru-RU')}</span></span><span>›</span></button>`).join(''):'<p class="muted small">Пока пусто.</p>'}
  <p><button class="btn sec" data-a="help">Как сканировать</button></p>`}
 function vHelp(){return`<h1>Как сканировать</h1><div class="card"><h3>Помещение</h3><ol class="small"><li>Включите свет, уберите с пола лишнее у стен. Медленно ведите телефоном над полом, пока не появится кольцо.</li><li>Наведите кольцо на угол комнаты у пола и нажмите «Угол». Обойдите все углы по порядку (по или против часовой — неважно).</li><li>«Замкнуть» — после последнего угла.</li><li>Высота: наведите кольцо на потолок или верх стены и нажмите «Высота». Не ловится — «Пропустить», введёте рулеткой.</li><li>Проёмы: «Дверь»/«Окно» → наведите на один край, «Край», затем на другой край. Затем верх (и низ окна) — или пропустите.</li><li>«Следующая комната» — продолжайте, не закрывая сканер: комнаты встанут на план так, как стоят на самом деле.</li></ol><p class="small muted">Точность ARCore — обычно 1–3 см на стену. Ключевые размеры (ниши под мебель, проёмы) проверяйте дальномером.</p></div>
  <div class="card"><h3>Предмет</h3><ol class="small"><li>Поставьте предмет на свободное место, отойдите на 1–2 м.</li><li>«Запись» и медленно обойдите предмет кругом, держа его в кадре.</li><li>«Стоп» — увидите облако точек и габариты. Файл PLY открывается в Blender, MeshLab, CloudCompare.</li></ol><p class="small muted">Нужен телефон с поддержкой глубины ARCore (Depth API). Мелкие детали меньше 3–5 см датчик не различает.</p></div>
  <button class="btn sec" data-a="home">Назад</button>`}
-function roomPlanSVG(scan,sel){const rooms=scan.rooms.filter(r=>r.corners.length>=2),all=rooms.flatMap(r=>r.corners);if(!all.length)return'';const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys),W=600,H=Math.max(260,Math.min(520,600*(mxy-mny+1)/(mxx-mnx+1))),pad=40,k=Math.min((W-2*pad)/Math.max(mxx-mnx,.5),(H-2*pad)/Math.max(mxy-mny,.5)),T=p=>[pad+(p[0]-mnx)*k,pad+(p[1]-mny)*k];
+function planRooms(scan){const rooms=scan.rooms.filter(r=>r.corners.length>=2),fr=[...new Set(rooms.map(r=>r.frame||0))];if(fr.length<2)return rooms;let x0=0;const out=[];
+ for(const f of fr){const g=rooms.filter(r=>(r.frame||0)===f),P=g.flatMap(r=>r.corners),mx=Math.min(...P.map(p=>p[0])),my=Math.min(...P.map(p=>p[1])),w=Math.max(...P.map(p=>p[0]))-mx;g.forEach(r=>out.push({...r,corners:r.corners.map(p=>[p[0]-mx+x0,p[1]-my])}));x0+=w+1}return out}
+function roomPlanSVG(scan,sel){const rooms=planRooms(scan),all=rooms.flatMap(r=>r.corners);if(!all.length)return'';const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys),W=600,H=Math.max(260,Math.min(520,600*(mxy-mny+1)/(mxx-mnx+1))),pad=40,k=Math.min((W-2*pad)/Math.max(mxx-mnx,.5),(H-2*pad)/Math.max(mxy-mny,.5)),T=p=>[pad+(p[0]-mnx)*k,pad+(p[1]-mny)*k];
  let s=`<svg class="plan" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;rooms.forEach((r,ri)=>{const P=r.corners.map(T);s+=`<polygon points="${P.map(p=>p.join(',')).join(' ')}" fill="${ri===sel?'#ffe2cc':'#ece7dc'}" stroke="#222" stroke-width="3"/>`;
   r.corners.forEach((a,i)=>{const b=r.corners[(i+1)%r.corners.length],A=T(a),B=T(b),m=[(A[0]+B[0])/2,(A[1]+B[1])/2];s+=`<text x="${m[0]}" y="${m[1]-6}" font-size="15" text-anchor="middle" fill="#222" paint-order="stroke" stroke="#fff" stroke-width="4">${fmt(dist(a,b),2)}</text>`});
   (r.ops||[]).forEach(o=>{const a=r.corners[o.wall],b=r.corners[(o.wall+1)%r.corners.length],L=dist(a,b)||1,t0=o.offset/L,t1=(o.offset+o.w)/L,A=T([a[0]+(b[0]-a[0])*t0,a[1]+(b[1]-a[1])*t0]),B=T([a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1]);s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${o.type==='window'?'#2f8fd6':'#e0620d'}" stroke-width="7"/>`});
@@ -143,7 +149,7 @@ function mountViewer(){const cv=$('#view3d'),c=S.cloud;if(!cv||!c)return;if(view
 const AR={};
 function ovSet({val,hint,info,btns}){if(val!=null)$('#ovVal').textContent=val;if(hint!=null)$('#ovHint').textContent=hint;if(info!=null)$('#ovInfo').innerHTML=info;if(btns)$('#ovBtns').innerHTML=btns.map(([a,t,cls])=>`<button class="btn ${cls||''}" data-ar="${a}">${t}</button>`).join('')}
 function label3D(text){const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');g.fillStyle='rgba(0,0,0,.65)';g.beginPath();g.roundRect?g.roundRect(0,0,256,64,14):g.rect(0,0,256,64);g.fill();g.fillStyle='#fff';g.font='bold 38px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,34);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(.24,.06,1);return s}
-async function startAR(mode){const req={requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay','local-floor'],domOverlay:{root:$('#ov')}};
+async function startAR(mode){if(IOS){webkit.messageHandlers.scan.postMessage({type:'start',mode});return}const req={requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay','local-floor'],domOverlay:{root:$('#ov')}};
  if(mode==='obj'){req.optionalFeatures.push('depth-sensing');req.depthSensing={usagePreference:['cpu-optimized'],dataFormatPreference:['luminance-alpha','float32']}}
  let session;try{session=await navigator.xr.requestSession('immersive-ar',req)}catch(e){toast('AR не запустился: '+e.message,4000);return}
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.xr.setReferenceSpaceType('local');renderer.domElement.style.display='none';document.body.appendChild(renderer.domElement);
@@ -207,23 +213,30 @@ function sampleDepth(frame,ref){AR.frame++;if(AR.frame%3)return;const pose=frame
   tmpV.set(u*2-1,1-v*2,-1,1).applyMatrix4(invP);tmpV.multiplyScalar(1/tmpV.w);const k=d/-tmpV.z;tmpV.set(tmpV.x*k,tmpV.y*k,-d,1).applyMatrix4(viewM);
   const key=Math.round(tmpV.x*100)+','+Math.round(tmpV.y*100)+','+Math.round(tmpV.z*100);if(AR.vox.has(key)||AR.n>=400000)continue;AR.vox.add(key);AR.pts[AR.n*3]=tmpV.x;AR.pts[AR.n*3+1]=tmpV.y;AR.pts[AR.n*3+2]=tmpV.z;AR.n++}
  AR.cloud.geometry.attributes.position.needsUpdate=true;AR.cloud.geometry.setDrawRange(0,AR.n);if(AR.hit&&AR.hit.horiz&&(AR.floorY==null||AR.hit.y<AR.floorY))AR.floorY=AR.hit.y}}
+function saveRooms(rooms){if(!rooms.length){render();return}
+ const sc={id:uid(),type:'rooms',name:'Скан '+new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),date:Date.now(),rooms:rooms.map((r,i)=>({name:r.name||'Помещение '+(i+1),frame:r.frame||0,corners:r.corners.map(p=>[Math.round(p[0]*1000)/1000,Math.round(p[1]*1000)/1000]),h:r.h?Math.round(r.h*1000)/1000:null,ops:r.ops||[]}))};
+ const l=scans();l.unshift(sc);saveScans(l);S.scan=sc;S.screen='room';render()}
 async function finishAR(){const m=AR.mode;
- if(m==='room'){if(AR.cur.corners.length>=3){AR.cur.name='Помещение '+(AR.rooms.length+1);delete AR.cur.mk;AR.rooms.push(AR.cur)}if(!AR.rooms.length){render();return}
-  const sc={id:uid(),type:'rooms',name:'Скан '+new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),date:Date.now(),rooms:AR.rooms.map(r=>({name:r.name,corners:r.corners.map(p=>[Math.round(p[0]*1000)/1000,Math.round(p[1]*1000)/1000]),h:r.h?Math.round(r.h*1000)/1000:null,ops:r.ops}))};
-  const l=scans();l.unshift(sc);saveScans(l);S.scan=sc;S.screen='room';render()}
- else if(m==='obj'){if(!AR.n){render();return}const n=AR.n,pts=AR.pts.slice(0,n*3),fy=AR.floorY;let dims=null;
+ if(m==='room'){if(AR.cur.corners.length>=3){AR.cur.name='Помещение '+(AR.rooms.length+1);delete AR.cur.mk;AR.rooms.push(AR.cur)}saveRooms(AR.rooms)}
+ else if(m==='obj'){if(!AR.n){render();return}await saveCloud(AR.pts.slice(0,AR.n*3),AR.n,AR.floorY)}
+ else render()}
+async function saveCloud(pts,n,fy){let dims=null;
   const above=[];let ymax=-Infinity,ymin=Infinity;for(let i=0;i<n;i++){const y=pts[i*3+1];if(fy==null||y>fy+.02){above.push([pts[i*3],pts[i*3+2]]);ymax=Math.max(ymax,y);ymin=Math.min(ymin,y)}}
   const rect=minAreaRect(above);if(rect)dims={w:rect.w,d:rect.d,h:fy!=null?ymax-fy:ymax-ymin};
   const id=uid(),meta={id,type:'cloud',name:'Предмет '+new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),date:Date.now(),n,dims,floorY:fy};
   try{await IDB.put({id,points:pts})}catch(e){toast('Облако не сохранилось в памяти телефона — выгрузите его сразу',4000)}
   const l=scans();l.unshift(meta);saveScans(l);S.cloud={...meta,points:pts};S.screen='obj';render()}
- else render()}
+/* results from the native iPhone app */
+window.__iosResult=function(mode,data){try{if(!data){render();return}
+ if(mode==='obj'){const bin=atob(data.points||''),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const pts=new Float32Array(u.buffer);const n=Math.floor(pts.length/3);if(!n){toast('Точек нет — попробуйте ближе и медленнее');render();return}saveCloud(pts,n,data.floorY==null?null:data.floorY)}
+ else if(mode==='room'||mode==='roomplan'){const rooms=(data.rooms||[]).filter(r=>r.corners&&r.corners.length>=3);if(!rooms.length){toast('Помещение не распознано — попробуйте ещё раз');render();return}saveRooms(rooms)}
+ else render()}catch(e){toast('Ошибка обработки скана: '+e.message,5000)}};
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{const ar=e.target.closest('[data-ar]');if(ar){arAction(ar.dataset.ar);return}
  if(e.target.id==='ovExit'){if(AR.mode==='room'&&AR.step!=='corners'&&AR.cur.corners.length>=3)arAction('finish');else AR.session&&AR.session.end();return}
  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
- if(a==='startRoom')startAR('room');else if(a==='startObj')startAR('obj');else if(a==='startRuler')startAR('ruler');
+ if(a==='startRoomPlan')startAR('roomplan');else if(a==='startRoom')startAR('room');else if(a==='startObj')startAR('obj');else if(a==='startRuler')startAR('ruler');
  else if(a==='home'){S.screen='home';render()}else if(a==='help'){S.screen='help';render()}
  else if(a==='open'){const x=scans().find(s=>s.id===b.dataset.id);if(!x)return;if(x.type==='rooms'){S.scan=x;S.screen='room';render()}else{let rec=null;try{rec=await IDB.get(x.id)}catch(err){}if(!rec){toast('Облако точек не найдено в памяти');return}S.cloud={...x,points:rec.points};S.screen='obj';render()}}
  else if(a==='delScan'){if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Точно удалить?';return}const id=(S.screen==='room'?S.scan:S.cloud).id;saveScans(scans().filter(s=>s.id!==id));try{await IDB.del(id)}catch(err){}S.screen='home';render()}

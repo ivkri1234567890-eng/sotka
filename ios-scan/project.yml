@@ -1,0 +1,34 @@
+name: Scan3D
+options:
+  bundleIdPrefix: ru.zamer
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  Scan3D:
+    type: application
+    platform: iOS
+    sources:
+      - path: Scan3D
+        excludes:
+          - "www/**"
+      - path: Scan3D/www
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - sdk: ARKit.framework
+      - sdk: SceneKit.framework
+      - sdk: RoomPlan.framework
+        weak: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.zamer.scan3d
+        PRODUCT_NAME: Scan3D
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        INFOPLIST_FILE: Scan3D/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+    scheme: {}
