@@ -18,8 +18,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ru.zamer.smeta.ios
         PRODUCT_NAME: ZamerSmeta
-        MARKETING_VERSION: "2.5"
-        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "2.6"
+        CURRENT_PROJECT_VERSION: "8"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.0"
         INFOPLIST_FILE: ZamerSmeta/Info.plist

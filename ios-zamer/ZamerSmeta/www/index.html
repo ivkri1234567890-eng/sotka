@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Замер и смета 2.5</title>
+<title>Замер и смета 2.6</title>
 <meta name="theme-color" content="#f4f3f0"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Замер и смета">
 <style>
 :root{--bg:#f4f3f0;--surface:#fff;--ink:#1d1f22;--muted:#6b6f76;--line:#e3e0da;--acc:#e0620d;--acc-ink:#fff;--acc-soft:#fde9d9;--ok:#1f8a5b;--bad:#c2412d;--blue:#2f6fd0;
@@ -68,6 +68,7 @@ td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .warn{background:var(--acc-soft);color:var(--acc);border-radius:10px;padding:8px 10px;font-size:13px}
 .cmp td.best{color:var(--ok);font-weight:700}
 .badge{display:inline-block;font:600 11px var(--font);background:var(--acc-soft);color:var(--acc);border-radius:999px;padding:2px 8px;vertical-align:middle;margin-left:4px}.rfdev{padding:10px;margin:-2px 0 10px}.kbd{margin:0 0 12px}.kbd input{font-family:var(--mono)}
+.selbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--acc);border-radius:10px;padding:8px 10px;margin:8px 0;font-size:14px}.selbar .grow{flex:1}.btn.sm{min-height:34px;padding:6px 10px;font-size:13px}svg.fence{width:100%;height:auto;display:block;border-radius:10px}input.pin{width:90px;min-height:34px;padding:4px 6px;text-align:right}.electrical-point{cursor:grab;touch-action:none}
 .linkbtn{border:0;background:none;color:var(--acc);font:600 12px var(--font);padding:0 4px;cursor:pointer}.elev{width:100%;height:auto;display:block}.arcbox{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:10px}.tabs button:disabled{opacity:.4}
 .log{font:12px var(--mono);white-space:pre-wrap;max-height:220px;overflow:auto;background:var(--bg);border-radius:10px;padding:8px}
 .swatch{width:44px;height:44px;padding:2px;border-radius:10px}
@@ -923,7 +924,7 @@ vRoom=function(){const p=P(),r=RM(),base=oldVRoom24();if(!p||!r)return base;ensu
  return base+`<div class="card list" id="objectTools"><h3>${esc(k.n)}</h3>${extra}${k.seats&&geo(r).closed&&num(r.seats)>0?`<p class="small">${fmt(geo(r).floor/num(r.seats),1)} м² на рабочее место</p>`:''}</div>`};
 
 const oldVSettings24=vSettings;
-vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">Bosch, Leica и другие Bluetooth-дальномеры. Включите Bluetooth на приборе и нажмите «Подключить»: появится список найденных устройств. Каждый замер приходит в приложение.</p>').replace('версия 2.3','версия 2.5').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
+vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">Bosch, Leica и другие Bluetooth-дальномеры. Включите Bluetooth на приборе и нажмите «Подключить»: появится список найденных устройств. Каждый замер приходит в приложение.</p>').replace('версия 2.3','версия 2.6').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
 const oldVHome24=vHome;
 vHome=function(){let h=oldVHome24().replace('Подключите дальномер Bosch GLM','Подключите Bluetooth-дальномер (Bosch, Leica и др.)');for(const p of DB.projects)if(p.kind&&p.kind!=='flat')h=h.replace(new RegExp('(data-a="open" data-id="'+p.id+'">[\\s\\S]*?<div class="t">[^<]*)'),m=>m+' <span class="badge">'+esc(kindOf(p).n)+'</span>');return h};
 
@@ -1298,7 +1299,168 @@ validateBackup=function(data){oldValidate25(data);for(const p of data.projects)f
 
 const oldPointTag25=pointTag;pointTag=function(room,index){const pt=(room.points||[])[index],c=ELECTRICAL[pt&&pt.type]?.code||'?';return c.length>1?c+'-'+(index+1):oldPointTag25(room,index)};
 
-window.__test={DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
+/* Version 2.6: drag points on the room plan and on wall elevations, quick delete, measurement screen without prices,
+   fence measurement with a live calculator. */
+
+/* ---------- drag & drop of electrical points ---------- */
+const DRAG={on:false,suppress:false};
+function svgXY(svg,e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+function dragLabel(svg,x,y,text){let t=svg.querySelector('#dragTip');if(!t){t=document.createElementNS('http://www.w3.org/2000/svg','text');t.id='dragTip';t.setAttribute('font-size','13');t.setAttribute('font-weight','700');t.setAttribute('fill','#e0620d');t.setAttribute('paint-order','stroke');t.setAttribute('stroke','#fff');t.setAttribute('stroke-width','4');t.setAttribute('text-anchor','middle');svg.appendChild(t)}t.setAttribute('x',x);t.setAttribute('y',Math.max(14,y-18));t.textContent=text}
+const mm=v=>Math.round(v*1000);
+function wallSnap(room,local){const segs=geo(room).segments;let best=null;segs.forEach((s,i)=>{const n=s.curve?80:20;for(let k=0;k<=n;k++){const t=k/n,q=s.at(t),d=Math.hypot(q[0]-local[0],q[1]-local[1]);if(!best||d<best.d)best={d,wall:i+1,t,q,len:s.length}}});
+ if(!best)return null;const s=segs[best.wall-1];for(let it=0;it<20;it++){const dt=1/(s.curve?80:20)/(it+2);for(const t of[best.t-dt,best.t+dt]){if(t<0||t>1)continue;const q=s.at(t),d=Math.hypot(q[0]-local[0],q[1]-local[1]);if(d<best.d)Object.assign(best,{d,t,q})}}
+ best.offset=Math.round(best.t*best.len*100)/100;best.q=s.at(Math.min(1,best.offset/(best.len||1)));return best}
+document.addEventListener('pointerdown',e=>{
+ const g=e.target.closest('svg.plan [data-a="selectpoint"]');if(g&&R.view==='room'){const room=RM(),svg=g.ownerSVGElement,i=num(g.dataset.i),pt=room&&room.points[i];if(!pt)return;
+  const P=planPrims(room,600,440,46),start=electricalPosition(room,pt);if(!start)return;e.preventDefault();svg.setPointerCapture&&svg.setPointerCapture(e.pointerId);
+  Object.assign(DRAG,{on:true,kind:'plan',svg,g,i,room,P,start,moved:false,id:e.pointerId,x0:e.clientX,y0:e.clientY,res:null});UI.pointIndex=i;UI.selPoint=true;return}
+ const m=e.target.closest('svg.elev [data-a="epick"]');if(m&&R.view==='project'&&R.tab==='elec'){const svg=m.ownerSVGElement,p=P(),room=p.rooms.find(x=>x.id===svg.dataset.room),i=num(m.dataset.i),pt=room&&room.points[i];if(!pt)return;e.preventDefault();svg.setPointerCapture&&svg.setPointerCapture(e.pointerId);
+  Object.assign(DRAG,{on:true,kind:'elev',svg,g:m,i,room,pt,moved:false,id:e.pointerId,x0:e.clientX,y0:e.clientY,res:null,k:+svg.dataset.k,ox:+svg.dataset.ox,oy:+svg.dataset.oy,H:+svg.dataset.h,L:+svg.dataset.l,sx:svg.dataset.ox*1+num(pt.offset)*svg.dataset.k,sy:+svg.dataset.oy+(+svg.dataset.h-num(pt.height))*svg.dataset.k})}},true);
+document.addEventListener('pointermove',e=>{if(!DRAG.on||e.pointerId!==DRAG.id)return;if(!DRAG.moved&&Math.hypot(e.clientX-DRAG.x0,e.clientY-DRAG.y0)<6)return;DRAG.moved=true;e.preventDefault();
+ const q=svgXY(DRAG.svg,e);
+ if(DRAG.kind==='plan'){const{P,room,start}=DRAG,local=[(q.x-P.ox)/P.s,(q.y-P.oy)/P.s],pt=room.points[DRAG.i],def=ELECTRICAL[pt.type];let pos,label;
+  if(def.wall){const w=wallSnap(room,local);if(!w)return;pos=w.q;DRAG.res={wall:w.wall,offset:w.offset};label='стена '+w.wall+' · '+mm(w.offset)+' мм'}
+  else{const x=Math.round(local[0]*100)/100,y=Math.round(local[1]*100)/100;if(!pointInside23(room,[x,y]))return;pos=[x,y];DRAG.res={x,y};label='X '+mm(x)+' · Y '+mm(y)}
+  DRAG.g.setAttribute('transform',`translate(${(pos[0]-start[0])*P.s} ${(pos[1]-start[1])*P.s})`);dragLabel(DRAG.svg,P.ox+pos[0]*P.s,P.oy+pos[1]*P.s,label)}
+ else{const{k,ox,oy,H,L}=DRAG,off=Math.max(0,Math.min(L,Math.round((q.x-ox)/k*100)/100)),h=Math.max(0,Math.min(H,Math.round((H-(q.y-oy)/k)*100)/100)),x=ox+off*k,y=oy+(H-h)*k;
+  DRAG.res={offset:off,height:h};DRAG.g.setAttribute('transform',`translate(${x-DRAG.sx} ${y-DRAG.sy})`);dragLabel(DRAG.svg,x,y,mm(off)+' от угла · h '+mm(h))}},{passive:false});
+function endDrag(e){if(!DRAG.on||e.pointerId!==DRAG.id)return;const d={...DRAG};DRAG.on=false;
+ if(!d.moved||!d.res){if(d.kind==='elev'){DRAG.suppress=false}return}
+ DRAG.suppress=true;setTimeout(()=>DRAG.suppress=false,350);const pt=d.room.points[d.i];if(!pt)return;Object.assign(pt,d.res);
+ if(d.kind==='elev'){UI.eEdit=d.i;UI.eType=pt.type;UI.eAlong=pt.offset;UI.eH=pt.height;UI.eFrom='start';UI.eChord=false}
+ save();render();toast('Точка '+pointTag(d.room,d.i)+' перемещена')}
+document.addEventListener('pointerup',endDrag,true);
+document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('svg.plan [data-a="selectpoint"],svg.elev [data-a="epick"]'))e.preventDefault()},{passive:false,capture:true});document.addEventListener('pointercancel',endDrag,true);
+document.addEventListener('click',e=>{if(DRAG.suppress&&e.target.closest('svg.plan,svg.elev')){e.stopPropagation();e.preventDefault()}},true);
+
+/* elevation: expose scale for dragging, selected point bar, quick delete in list */
+const oldElevSVG26=elevSVG;
+elevSVG=function(r,wi,opt={}){const L=wlen(r,wi),H=num(r.h)||2.7,W=640,pad=64,k=Math.min((W-2*pad)/L,300/H);
+ return oldElevSVG26(r,wi,opt).replace('<svg class="elev"',`<svg class="elev" data-room="${r.id}" data-k="${k}" data-ox="${pad}" data-oy="34" data-h="${H}" data-l="${L}" style="touch-action:none"`)};
+const oldVElec26=vElec;
+vElec=function(p){let h=oldVElec26(p);const r=p.rooms.find(x=>x.id===UI.eRoom),pt=r&&UI.eEdit!=null?r.points[UI.eEdit]:null;
+ if(pt){const d=ELECTRICAL[pt.type];h=h.replace('<p class="small muted" style="margin:6px 0 0">Развёртка стены',`<div class="selbar"><b>${pointTag(r,UI.eEdit)}</b> ${esc(d.name)} · ${d.wall?mm(num(pt.offset))+' мм от угла '+pt.wall+', h '+mm(num(pt.height)):'потолок'}<span class="grow"></span><button class="btn ghost danger sm" data-a="edel">Удалить</button><button class="icon" data-a="enew" aria-label="Снять выбор">×</button></div><p class="small muted" style="margin:6px 0 0">Перетащите точку пальцем — вдоль стены и по высоте. Развёртка стены`)}
+ else h=h.replace('<p class="small muted" style="margin:6px 0 0">Развёртка стены','<p class="small muted" style="margin:6px 0 0">Точки можно перетаскивать пальцем. Развёртка стены');
+ return h.replace(/<tr data-a="epick" data-i="(\d+)" style="cursor:pointer">([\s\S]*?)<\/tr>/g,(m0,i,inner)=>`<tr data-a="epick" data-i="${i}" style="cursor:pointer">${inner}<td class="n"><button class="icon" data-a="edelx" data-i="${i}" aria-label="Удалить точку">×</button></td></tr>`)};
+
+/* ---------- measurement screen: no prices; estimate mode opened from «Смета» ---------- */
+const oldVRoom26=vRoom;
+vRoom=function(){let h=oldVRoom26();const r=RM();if(!r)return h;const g=geo(r);
+ const a=h.indexOf('<div class="card"><details id="minorWorks">'),f=a>=0?h.indexOf('<div class="foot">',a):-1;
+ if(a<0||f<0)return h;
+ const estPart=h.slice(a,f),tail=h.slice(f);
+ if(UI.roomEst){const top=h.slice(0,h.indexOf('<svg'));return top+`<div class="card"><div class="row"><span class="grow small">Смета помещения: отделка, работы, цены</span><button class="btn ghost sm" data-a="roommeasure">К замеру</button></div></div>`+estPart+foot('<button class="btn sec" data-a="backest">К смете объекта</button><button class="btn" data-a="pdfshare">PDF клиенту</button>')}
+ let m=h.slice(0,a)+`<div class="card"><div class="row"><span class="grow small muted">Отделка, работы и цены помещения — в разделе «Смета», чтобы замер оставался чистым.</span><button class="btn ghost sm" data-a="roomest">Смета помещения</button></div></div>`+tail;
+ if(UI.selPoint&&r.points&&r.points[UI.pointIndex]){const i=num(UI.pointIndex),pt=r.points[i],d=ELECTRICAL[pt.type];if(d)m=m.replace(/(<svg[^>]*class="plan"[\s\S]*?<\/svg>)/,`$1<div class="selbar"><b>${pointTag(r,i)}</b> ${esc(d.name)} · ${d.wall?'стена '+pt.wall+', '+mm(num(pt.offset))+' мм, h '+mm(num(pt.height)):'X '+mm(num(pt.x))+' · Y '+mm(num(pt.y))}<span class="grow"></span><button class="btn ghost danger sm" data-a="delpoint" data-i="${i}">Удалить</button><button class="icon" data-a="unselpoint" aria-label="Снять выбор">×</button></div>`)}
+ const vol=g.closed?g.floor*num(r.h):0,gap=g.closed?0:g.gap;
+ m=m.replace('<span>Откосы, м.п.</span></div>','<span>Откосы, м.п.</span></div><div><b>'+fmt(vol)+'</b><span>Объём, м³</span></div><div><b>'+(r.walls.length?(g.closed?'0':mm(gap))+' мм':'—')+'</b><span>Невязка контура</span></div>');
+ return m.replace('<p class="small muted">Выберите тип, затем нажмите на план.','<p class="small muted">Перетаскивайте точки на плане пальцем: стенные скользят по стенам, светильники — по комнате. Выберите тип, затем нажмите на план.')};
+const oldVProject26=vProject;
+vProject=function(){let h=oldVProject26();const p=P();if(!p)return h;
+ if(R.tab==='rooms')h=h.replace(/<div class="small">[^<]*₽<\/div><\/button>/g,'</button>');
+ if(R.tab==='est')for(const r of p.rooms)h=h.replace('<div class="card"><h3>'+esc(r.name)+' <span class="muted small">',`<div class="card"><div class="row" style="justify-content:flex-end;margin-bottom:-28px"><button class="btn ghost sm" data-a="roomest" data-id="${r.id}">Отделка и цены</button></div><h3>${esc(r.name)} <span class="muted small">`);
+ if(R.tab==='fence'){const body=vFence(p),i=h.lastIndexOf('<div class="foot">');h=i>=0?h.slice(0,i)+body+h.slice(i):h+body}
+ return h.replace(/(<button data-a="tab" data-t="info")/,`<button data-a="tab" data-t="fence" aria-pressed="${R.tab==='fence'}">Забор</button>$1`)};
+
+/* ---------- fence: measurement and live calculator ---------- */
+const FENCE_TYPES={prof:{n:'Профнастил',unit:'лист',w:1.15},shtak:{n:'Евроштакетник',unit:'шт',w:.118},wood:{n:'Деревянный штакетник',unit:'шт',w:.1},rabica:{n:'Сетка-рабица',unit:'рулон 10 м',w:10},panel:{n:'3D-панели (сварная сетка)',unit:'панель',w:2.5}};
+const GATE_TYPES={swing:'Ворота распашные',slide:'Ворота откатные',wicket:'Калитка'};
+const fenceOf=p=>{const f=p.fence=p.fence&&typeof p.fence==='object'?p.fence:{};f.segs=f.segs||[];f.gates=f.gates||[];f.prm=Object.assign({type:'prof',h:2,step:2.5,depth:1.2,rows:2,gap:.03,both:false,post:'60×60',demol:0},f.prm||{});return f};
+const fprice=()=>DB.settings.fprice=DB.settings.fprice&&typeof DB.settings.fprice==='object'?DB.settings.fprice:{};
+function fencePts(f){const pts=[[0,0]];let hd=0;f.segs.forEach((s,i)=>{if(i>0)hd+=num(s.t);const a=hd*Math.PI/180,[x,y]=pts[pts.length-1];pts.push([x+num(s.len)*Math.cos(a),y+num(s.len)*Math.sin(a)])});return pts}
+function fenceCalc(p){const f=fenceOf(p),m=f.prm,T=FENCE_TYPES[m.type]||FENCE_TYPES.prof,L=f.segs.reduce((s,x)=>s+num(x.len),0),G=f.gates.reduce((s,x)=>s+num(x.w),0),Lf=Math.max(0,L-G),step=Math.max(.5,num(m.step)||2.5);
+ let spans=0;f.segs.forEach((s,i)=>{const eff=Math.max(0,num(s.len)-f.gates.filter(g=>num(g.seg)===i+1).reduce((a,g)=>a+num(g.w),0));if(eff>0)spans+=Math.ceil(eff/step-1e-9)});
+ const posts=f.segs.length?Math.max(0,spans+(f.closed?0:1)):0,heavy=f.gates.filter(g=>g.type!=='wicket').length*2+f.gates.filter(g=>g.type==='wicket').length*2,postLen=num(m.h)+num(m.depth)+.05;
+ const rows=Math.max(0,Math.round(num(m.rows))),lagM=Lf*rows,lagPipes=Math.ceil(lagM*1.05/6-1e-9);
+ let cover=0;if(m.type==='prof')cover=Math.ceil(Lf/T.w-1e-9);else if(m.type==='rabica')cover=Math.ceil(Lf*1.05/10-1e-9);else if(m.type==='panel')cover=Math.ceil(Lf/2.5-1e-9);else cover=Math.ceil(Lf/(T.w+Math.max(0,num(m.gap)))-1e-9)*(m.both?2:1);
+ const screws=m.type==='prof'?cover*rows*3:(m.type==='shtak'||m.type==='wood')?cover*rows*2:0,concrete=posts*Math.PI*.1*.1*num(m.depth)*1.1+heavy*Math.PI*.125*.125*(num(m.depth)+.2)*1.1,caps=posts+heavy;
+ const gc=k=>f.gates.filter(g=>g.type===k).length;
+ const M=[['cover',T.n+(m.type==='prof'?' (лист, полезная ширина 1,15 м, h '+fmt(m.h,2)+' м)':''),T.unit,cover],['post','Столб '+m.post+', длина '+fmt(postLen,2)+' м','шт',posts],['postH','Столб ворот/калитки, усиленный, длина '+fmt(postLen+.2,2)+' м','шт',heavy],
+  ['lag','Лага — профтруба 40×20, 6 м','шт',lagPipes],['screw',m.type==='prof'?'Саморез кровельный':'Саморез','шт',screws],['concrete','Бетон для столбов','м³',Math.round(concrete*100)/100],['cap','Заглушка/колпак на столб','шт',caps],
+  ['g_swing','Ворота распашные (комплект)','шт',gc('swing')],['g_slide','Ворота откатные (комплект)','шт',gc('slide')],['g_wicket','Калитка (комплект)','шт',gc('wicket')]].filter(x=>x[3]>0);
+ const W=[['w_mount','Монтаж забора','м.п.',Math.round(Lf*100)/100],['w_post','Установка столба с бетонированием','шт',posts+heavy],['w_swing','Установка распашных ворот','шт',gc('swing')],['w_slide','Установка откатных ворот','шт',gc('slide')],['w_wicket','Установка калитки','шт',gc('wicket')],['w_demol','Демонтаж старого забора','м.п.',num(m.demol)]].filter(x=>x[3]>0);
+ const pr=fprice(),line=([k,n,u,q])=>({k,n,u,q,p:num(pr[k]),sum:q*num(pr[k])});const mats=M.map(line),works=W.map(line);
+ return{L,G,Lf,posts,heavy,lagM,mats,works,tm:mats.reduce((s,x)=>s+x.sum,0),tw:works.reduce((s,x)=>s+x.sum,0)}}
+function fenceSVG(f){const pts=fencePts(f);if(pts.length<2)return'<div class="card small muted">Добавьте первый пролёт — здесь появится схема забора.</div>';
+ const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys),W=600,H=340,pad=44,s=Math.min((W-2*pad)/Math.max(maxX-minX,.5),(H-2*pad)/Math.max(maxY-minY,.5)),T=p=>[pad+(p[0]-minX)*s+((W-2*pad)-(maxX-minX)*s)/2,pad+(p[1]-minY)*s+((H-2*pad)-(maxY-minY)*s)/2];
+ const step=Math.max(.5,num(f.prm.step)||2.5);let out=`<svg class="fence" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема забора"><rect width="${W}" height="${H}" fill="#fbfaf6"/>`;
+ f.segs.forEach((sg,i)=>{const a=pts[i],b=pts[i+1],A=T(a),B=T(b),len=num(sg.len),gates=f.gates.filter(g=>num(g.seg)===i+1);out+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#556070" stroke-width="6" stroke-linecap="round"/>`;
+  for(const g of gates){const o=g.off==null?(len-num(g.w))/2:num(g.off),t0=o/len,t1=(o+num(g.w))/len,P0=[A[0]+(B[0]-A[0])*t0,A[1]+(B[1]-A[1])*t0],P1=[A[0]+(B[0]-A[0])*t1,A[1]+(B[1]-A[1])*t1];out+=`<line x1="${P0[0]}" y1="${P0[1]}" x2="${P1[0]}" y2="${P1[1]}" stroke="${g.type==='wicket'?'#2f8a5a':'#e0620d'}" stroke-width="10"/>`}
+  const n=Math.max(1,Math.ceil(len/step-1e-9));for(let k=0;k<=n;k++){if(k===0&&i>0)continue;const t=k/n,x=A[0]+(B[0]-A[0])*t,y=A[1]+(B[1]-A[1])*t;out+=`<rect x="${x-5}" y="${y-5}" width="10" height="10" fill="#1d1f22"/>`}
+  const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,ang=Math.atan2(B[1]-A[1],B[0]-A[0]),nx=-Math.sin(ang)*22,ny=Math.cos(ang)*22;out+=`<text x="${mx+nx}" y="${my+ny+4}" font-size="19" font-weight="600" text-anchor="middle" fill="#222" paint-order="stroke" stroke="#fff" stroke-width="4">${i+1}: ${fmt(len,2)} м</text>`});
+ return out+`<text x="10" y="${H-10}" font-size="15" fill="#666">■ столбы (шаг ≤ ${fmt(step,2)} м) · оранжевым — ворота, зелёным — калитка</text></svg>`}
+function fenceCalcHTML(p){const C=fenceCalc(p),row=x=>`<tr><td>${esc(x.n)}</td><td class="n">${fmt(x.q,2)}</td><td>${esc(x.u)}</td><td class="n"><input class="pin" inputmode="decimal" data-fp="${x.k}" value="${x.p||''}" placeholder="0" aria-label="Цена: ${esc(x.n)}"></td><td class="n" data-fs="${x.k}">${rub(x.sum)}</td></tr>`;
+ return`<div class="stat"><div><b>${fmt(C.L,2)}</b><span>Длина всего, м</span></div><div><b>${fmt(C.Lf,2)}</b><span>Без ворот, м</span></div><div><b>${C.posts+C.heavy}</b><span>Столбов</span></div><div><b>${fmt(C.lagM,1)}</b><span>Лаги, м</span></div></div>
+ <div class="tablewrap"><table class="cmp fcalc"><tr><th>Материалы</th><th class="n">Кол-во</th><th>Ед.</th><th class="n">Цена, ₽</th><th class="n">Сумма</th></tr>${C.mats.map(row).join('')||'<tr><td colspan="5" class="small muted">Добавьте пролёты.</td></tr>'}
+ <tr><th>Работы</th><th></th><th></th><th></th><th></th></tr>${C.works.map(row).join('')}</table></div>
+ <div class="tot"><span>Материалы</span><b>${rub(C.tm)}</b></div><div class="tot"><span>Работы</span><b>${rub(C.tw)}</b></div><div class="tot big"><span>Итого</span><span>${rub(C.tm+C.tw)}</span></div>
+ <p class="small muted">Цены — ваши: вводятся один раз и запоминаются для следующих заборов. Количества пересчитываются сразу при изменении любого поля. Столбы, саморезы и бетон — ориентировочно, по шагу столбов и числу лаг.</p>`}
+function vFence(p){const f=fenceOf(p),m=f.prm,turns=[[90,'↱ Вправо 90°'],[-90,'↰ Влево 90°'],[0,'↑ Прямо'],['c','Угол…']];if(UI.fTurn==null)UI.fTurn=90;
+ const inp=(k,l,v,mode='decimal')=>`<label class="f">${l}<input inputmode="${mode}" data-fz="${k}" value="${v??''}"></label>`;
+ return`<div class="card">${fenceSVG(f)}</div>
+ <div class="card"><h3>Замер забора</h3><p class="small muted">Мерьте по линии забора от угла до угла. Каждый замер дальномером сразу добавляет пролёт с выбранным поворотом.</p>
+ ${f.segs.length?`<div class="small muted" style="margin:8px 0 4px">Поворот перед следующим пролётом</div><div class="chips">${turns.map(([k,n])=>`<button class="chip" data-a="fturn" data-t="${k}" aria-pressed="${k==='c'?![90,-90,0].includes(UI.fTurn):UI.fTurn===k}">${n}</button>`).join('')}</div>${![90,-90,0].includes(UI.fTurn)?`<label class="f" style="margin-top:6px">Угол, ° (вправо +, влево −)<input inputmode="decimal" id="fang" value="${UI.fTurn}"></label>`:''}`:''}
+ <div class="row" style="margin-top:10px"><input class="grow" id="fseg" inputmode="decimal" placeholder="Длина пролёта, м"><button class="btn" data-a="fadd">+ Пролёт</button></div>
+ ${f.segs.length?`<div class="walls" style="margin-top:10px">${f.segs.map((s,i)=>`<div class="w"><span class="num">${i+1}</span><input inputmode="decimal" data-fz="seg.${i}.len" value="${fmt(s.len,3)}" aria-label="Длина пролёта ${i+1}"><input inputmode="decimal" data-fz="seg.${i}.t" value="${i?s.t:'—'}" ${i?'':'disabled'} aria-label="Поворот перед пролётом ${i+1}"><button class="icon" data-a="fdel" data-i="${i}" aria-label="Удалить пролёт">×</button></div>`).join('')}</div>
+ <label class="row small" style="margin-top:8px"><input type="checkbox" data-a="fclosed" ${f.closed?'checked':''} style="width:22px;min-height:22px"> Замкнутый контур (забор по периметру участка, последний пролёт приходит к первому столбу)</label>`:''}</div>
+ <div class="card"><h3>Ворота и калитки</h3><div class="chips">${Object.entries(GATE_TYPES).map(([k,n])=>`<button class="chip" data-a="fgtype" data-t="${k}" aria-pressed="${(UI.fgType||'swing')===k}">${n}</button>`).join('')}</div>
+ <div class="grid3" style="margin-top:8px"><label class="f">Пролёт №<input inputmode="numeric" id="fgseg" value="${f.segs.length||1}"></label><label class="f">Ширина, м<input inputmode="decimal" id="fgw" value="${(UI.fgType||'swing')==='wicket'?'1':'3.5'}"></label><label class="f">Отступ, м<input inputmode="decimal" id="fgoff" placeholder="по центру"></label></div><button class="btn sec" data-a="fgadd">+ Добавить</button>
+ ${f.gates.length?`<table style="margin-top:8px">${f.gates.map((g,i)=>`<tr><td>${GATE_TYPES[g.type]}</td><td class="small">пролёт ${g.seg}, ${fmt(g.w,2)} м</td><td class="n"><button class="icon" data-a="fgdel" data-i="${i}" aria-label="Удалить">×</button></td></tr>`).join('')}</table>`:''}</div>
+ <div class="card"><h3>Параметры забора</h3><div class="chips">${Object.entries(FENCE_TYPES).map(([k,t])=>`<button class="chip" data-a="ftype" data-t="${k}" aria-pressed="${m.type===k}">${t.n}</button>`).join('')}</div>
+ <div class="grid3" style="margin-top:10px">${inp('h','Высота, м',m.h)}${inp('step','Шаг столбов, м',m.step)}${inp('depth','Заглубление, м',m.depth)}${inp('rows','Рядов лаг',m.rows,'numeric')}${['shtak','wood'].includes(m.type)?inp('gap','Зазор, м',m.gap):''}${inp('demol','Демонтаж старого, м',m.demol||'')}</div>
+ <div class="chips" style="margin-top:6px">${['60×60','80×80','60×40','100×100'].map(x=>`<button class="chip" data-a="fpost" data-t="${x}" aria-pressed="${m.post===x}">Столб ${x}</button>`).join('')}${['shtak','wood'].includes(m.type)?`<button class="chip" data-a="fboth" aria-pressed="${!!m.both}">С двух сторон (шахматка)</button>`:''}</div></div>
+ <div class="card"><h3>Смета забора</h3><div id="fcalc">${fenceCalcHTML(p)}</div><div class="row wrap" style="margin-top:8px"><button class="btn" data-a="fexport" data-m="share">Отправить смету (CSV)</button><button class="btn sec" data-a="fexport" data-m="save">Сохранить</button></div></div>`}
+function fenceCSV(p){const C=fenceCalc(p),f=fenceOf(p),rows=[['Объект',p.name],['Забор',FENCE_TYPES[f.prm.type].n+', высота '+fmt(f.prm.h,2)+' м'],['Длина всего, м',C.L],['Без ворот, м',C.Lf],[],['Пролёт','Длина, м','Поворот, °']];
+ f.segs.forEach((s,i)=>rows.push([i+1,num(s.len),i?num(s.t):'']));rows.push([],['Наименование','Кол-во','Ед.','Цена','Сумма']);[...C.mats,...C.works].forEach(x=>rows.push([x.n,x.q,x.u,x.p,x.sum]));rows.push([],['Итого','','','',C.tm+C.tw]);return csv(rows)}
+function fenceAdd(p,len){const f=fenceOf(p);if(!(len>0)||len>1000){toast('Длина пролёта — от 0 до 1000 м');return}let t=f.segs.length?UI.fTurn:0;if(t==='c'||!Number.isFinite(+t))t=num($('#fang')?.value);f.segs.push({len:r3(len),t:f.segs.length?num(t):0});save();render();toast('Пролёт '+f.segs.length+': '+fmt(len,3)+' м')}
+let fSaveT=null;
+document.addEventListener('input',e=>{const el=e.target,p=P();if(!p||R.tab!=='fence'||R.view!=='project')return;
+ if(el.dataset.fp!=null){fprice()[el.dataset.fp]=el.value.trim()===''?0:num(el.value)}
+ else if(el.dataset.fz){const f=fenceOf(p),k=el.dataset.fz,v=el.value.trim();if(k.startsWith('seg.')){const[,i,key]=k.split('.');const s=f.segs[+i];if(!s||v==='')return;const n=num(v);if(key==='len'&&!(n>0))return;s[key]=n}else{if(v===''&&k!=='demol')return;f.prm[k]=num(v)}}
+ else return;
+ const C=fenceCalc(p),box=$('#fcalc');if(box){const keep=document.activeElement&&document.activeElement.dataset.fp;if(el.dataset.fz){box.innerHTML=fenceCalcHTML(p);const svgBox=app.querySelector('svg.fence');if(svgBox)svgBox.outerHTML=fenceSVG(fenceOf(p))}else{for(const x of[...C.mats,...C.works]){const td=box.querySelector(`[data-fs="${x.k}"]`);if(td)td.textContent=rub(x.sum)}const t=box.querySelectorAll('.tot');if(t.length===3){t[0].lastElementChild.textContent=rub(C.tm);t[1].lastElementChild.textContent=rub(C.tw);t[2].lastElementChild.textContent=rub(C.tm+C.tw)}}if(keep&&!box.contains(document.activeElement)){const n=box.querySelector(`[data-fp="${keep}"]`);if(n){n.focus();const L=n.value.length;n.setSelectionRange&&n.setSelectionRange(L,L)}}}
+ clearTimeout(fSaveT);fSaveT=setTimeout(save,500)},true);
+
+/* rangefinder → fence span */
+const oldOnMeasure26=onMeasure;
+onMeasure=function(v){if(R.view==='project'&&R.tab==='fence'&&P()){UI.last=v;fenceAdd(P(),v);return}return oldOnMeasure26(v)};
+
+/* actions */
+const oldAction26=handleUpgradeAction23;
+handleUpgradeAction23=function(action,button,room){const p=P();
+ const A={
+  edelx:()=>{const r=p.rooms.find(x=>x.id===UI.eRoom),i=num(button.dataset.i);if(r&&r.points[i]){const tag=pointTag(r,i);r.points.splice(i,1);if(UI.eEdit===i)UI.eEdit=null;else if(UI.eEdit>i)UI.eEdit--;save();render();toast('Удалено: '+tag)}},
+  unselpoint:()=>{UI.selPoint=false;render()},
+  roomest:()=>{const id=button.dataset.id||(RM()&&RM().id);if(!id)return;UI.roomEst=true;UI.target='wall';UI.placeType='';if(R.view==='room'){render();window.scrollTo(0,0)}else go('room',{rid:id})},
+  roommeasure:()=>{UI.roomEst=false;render();window.scrollTo(0,0)},
+  backest:()=>{UI.roomEst=false;go('project',{pid:p.id,tab:'est'})},
+  fturn:()=>{const t=button.dataset.t;UI.fTurn=t==='c'?(Number.isFinite(+UI.fTurn)&&![90,-90,0].includes(+UI.fTurn)?UI.fTurn:45):+t;render()},
+  fadd:()=>fenceAdd(p,num($('#fseg').value)),
+  fdel:()=>{const f=fenceOf(p),i=num(button.dataset.i);f.segs.splice(i,1);if(f.segs[0])f.segs[0].t=0;f.gates=f.gates.filter(g=>g.seg!==i+1).map(g=>({...g,seg:g.seg>i+1?g.seg-1:g.seg}));save();render()},
+  fclosed:()=>{const f=fenceOf(p);f.closed=!f.closed;save();render()},
+  fgtype:()=>{UI.fgType=button.dataset.t;render()},
+  fgadd:()=>{const f=fenceOf(p),seg=Math.round(num($('#fgseg').value)),w=num($('#fgw').value),offRaw=$('#fgoff').value.trim(),s=f.segs[seg-1];if(!s){toast('Нет такого пролёта');return}if(!(w>0)){toast('Укажите ширину');return}
+   const off=offRaw===''?null:num(offRaw),len=num(s.len),o=off==null?(len-w)/2:off;if(o<0||o+w>len+.001){toast('Не помещается в пролёте '+seg+' ('+fmt(len,2)+' м)');return}
+   const busy=f.gates.filter(g=>g.seg===seg).some(g=>{const a=g.off==null?(len-g.w)/2:g.off;return Math.min(o+w,a+g.w)-Math.max(o,a)>.001});if(busy){toast('Пересекается с другими воротами');return}
+   f.gates.push({type:UI.fgType||'swing',seg,w:r3(w),off:off==null?null:r3(off)});save();render()},
+  fgdel:()=>{fenceOf(p).gates.splice(num(button.dataset.i),1);save();render()},
+  ftype:()=>{fenceOf(p).prm.type=button.dataset.t;if(button.dataset.t==='panel')fenceOf(p).prm.step=2.5;save();render()},
+  fpost:()=>{fenceOf(p).prm.post=button.dataset.t;save();render()},fboth:()=>{const m=fenceOf(p).prm;m.both=!m.both;save();render()},
+  fexport:()=>outFile(p.name+' — смета забора.csv','text/csv',utf8(fenceCSV(p)),button.dataset.m)};
+ if(action==='room'&&!button.dataset.n)UI.roomEst=false;
+ if(action==='back'&&UI.roomEst){UI.roomEst=false;R.tab='est'}
+ if(action==='delpoint')UI.selPoint=false;
+ if(A[action]){A[action]();return true}
+ return oldAction26(action,button,room)};
+const oldChange26=handleUpgradeChange23;
+handleUpgradeChange23=function(event){const el=event.target;if(el.dataset.fp!=null||el.dataset.fz)return true;return oldChange26(event)};
+
+/* backup validation for fence */
+const oldValidate26=validateBackup;
+validateBackup=function(data){oldValidate26(data);if(data.settings.fprice!=null){if(typeof data.settings.fprice!=='object')throw Error('Повреждены цены забора');for(const v of Object.values(data.settings.fprice))if(!Number.isFinite(v)||v<0)throw Error('Повреждены цены забора')}
+ for(const p of data.projects){const f=p.fence;if(f==null)continue;if(typeof f!=='object'||!Array.isArray(f.segs||[])||!Array.isArray(f.gates||[]))throw Error('Повреждён замер забора');if((f.segs||[]).length>500)throw Error('Слишком много пролётов');for(const s of f.segs||[])if(!Number.isFinite(s.len)||s.len<=0||!Number.isFinite(s.t))throw Error('Повреждён пролёт забора');for(const g of f.gates||[])if(!GATE_TYPES[g.type]||!Number.isFinite(g.w)||!Number.isInteger(g.seg))throw Error('Повреждены ворота')}};
+
+window.__test={DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},fenceCalc,fenceCSV,geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
 
 render();
 </script>

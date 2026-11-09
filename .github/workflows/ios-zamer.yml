@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p Payload ../zamer/ios
           cp -R build/Build/Products/Release-iphoneos/ZamerSmeta.app Payload/
-          zip -qry ../zamer/ios/ZamerSmeta-2.5.ipa Payload
+          zip -qry ../zamer/ios/ZamerSmeta-2.6.ipa Payload
           echo "ok $(date -u +%FT%TZ) ${GITHUB_SHA}" > ../zamer/ios/build-status.txt
       - name: Failure log
         if: failure()
