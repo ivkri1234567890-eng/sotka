@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14161a">
+<title>3D Сканер</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+/* Layout: dark instrument UI — AR overlay on top of camera, review screens as stacked cards. */
+:root{--bg:#14161a;--surface:#1e2127;--sunk:#262a31;--ink:#eef0f2;--muted:#9aa1ab;--line:#333841;--acc:#ff8a3d;--ok:#4cc38a;--bad:#ff6b5b;--font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"Roboto Mono",Consolas,monospace}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--font);-webkit-tap-highlight-color:transparent}
+body{padding:env(safe-area-inset-top) max(16px,env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+h1{font-size:24px;margin:12px 0 4px}h2{font-size:18px;margin:0 0 8px}h3{font-size:15px;margin:0 0 6px}
+.muted{color:var(--muted)}.small{font-size:13px}.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.btn{appearance:none;border:0;background:var(--acc);color:#1a0d02;font:700 15px var(--font);padding:12px 16px;border-radius:12px;min-height:46px;cursor:pointer}
+.btn.sec{background:var(--sunk);color:var(--ink);border:1px solid var(--line)}.btn.ok{background:var(--ok);color:#06210f}.btn.bad{background:transparent;color:var(--bad);border:1px solid var(--line)}
+.btn:disabled{opacity:.4}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.grow{flex:1}
+.big{display:grid;gap:10px;grid-template-columns:1fr}.big .btn{text-align:left;padding:16px}.big .btn small{display:block;font-weight:500;opacity:.8;margin-top:3px}
+input{font:15px var(--font);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:40px;width:100%;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}th{color:var(--muted);font-weight:600;font-size:12px}
+td input{min-height:34px;padding:4px 6px}
+.item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--sunk);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px;margin:6px 0;font:15px var(--font);cursor:pointer}
+.warn{background:#3a2a17;border-left:3px solid var(--acc);padding:10px 12px;border-radius:8px;font-size:14px}
+svg.plan{width:100%;height:auto;display:block;background:#f7f6f2;border-radius:10px}
+#view3d{width:100%;height:60vh;display:block;border-radius:12px;background:#0d0f12;touch-action:none}
+/* AR overlay */
+#ov{position:fixed;inset:0;display:none;pointer-events:none;color:#fff;font:15px var(--font)}
+#ov.on{display:block}
+#ov .top{position:absolute;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:linear-gradient(#000a,#0000);pointer-events:auto}
+#ov .bot{position:absolute;left:0;right:0;bottom:0;padding:12px 12px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c);display:grid;gap:8px;pointer-events:auto}
+#ov .val{font:700 30px var(--mono);text-shadow:0 1px 3px #000}#ov .hint{font-size:14px;opacity:.9;text-shadow:0 1px 3px #000}
+#ov .btns{display:flex;gap:8px;flex-wrap:wrap}#ov .btns .btn{flex:1 1 30%;min-height:54px}
+#ov .cross{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #0008}
+#ov .exit{position:absolute;right:12px;top:calc(10px + env(safe-area-inset-top));pointer-events:auto}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));background:#fff;color:#111;padding:10px 16px;border-radius:10px;z-index:30;max-width:calc(100% - 32px);font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="ov"><div class="top"><div class="val" id="ovVal">—</div><div class="hint" id="ovHint">Медленно ведите телефоном по полу, пока не появится кольцо</div></div><div class="cross" id="cross"></div><button class="btn sec exit" id="ovExit">Готово</button><div class="bot"><div class="hint" id="ovInfo"></div><div class="btns" id="ovBtns"></div></div></div>
+<div id="toast" hidden></div>
+<script src="lib/three.min.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmt=(n,d=2)=>(+n||0).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const mm=v=>Math.round(v*1000);const uid=()=>Math.random().toString(36).slice(2,9);
+function toast(t,ms=2600){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>e.hidden=true,ms)}
+const LS={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+
+/* ---------- storage: rooms in localStorage, point clouds in IndexedDB ---------- */
+const IDB={db:null,async open(){if(this.db)return this.db;return this.db=await new Promise((res,rej)=>{const r=indexedDB.open('scan3d',1);r.onupgradeneeded=()=>r.result.createObjectStore('clouds',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+ async put(o){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('clouds','readwrite');t.objectStore('clouds').put(o);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
+ async get(id){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction('clouds').objectStore('clouds').get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+ async del(id){const db=await this.open();return new Promise(res=>{const t=db.transaction('clouds','readwrite');t.objectStore('clouds').delete(id);t.oncomplete=res})}};
+const scans=()=>LS.get('scan3d:list',[]);const saveScans=l=>LS.set('scan3d:list',l);
+
+/* ---------- geometry ---------- */
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const normDeg=a=>{a=((a+180)%360+360)%360-180;return Math.abs(a+180)<1e-9?180:a};
+const polyArea=P=>{let s=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];s+=a[0]*b[1]-b[0]*a[1]}return s/2};
+function projOnSeg(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(L*L);return{t,along:t*L,d:Math.abs((p[0]-a[0])*dy-(p[1]-a[1])*dx)/L,L}}
+function nearestWall(C,p){let best=null;for(let i=0;i<C.length;i++){const q=projOnSeg(p,C[i],C[(i+1)%C.length]);const tt=Math.max(0,Math.min(1,q.t)),dd=Math.hypot(p[0]-(C[i][0]+(C[(i+1)%C.length][0]-C[i][0])*tt),p[1]-(C[i][1]+(C[(i+1)%C.length][1]-C[i][1])*tt));if(!best||dd<best.dd)best={i,dd,...q}}return best}
+/* rooms of one session → backup of «Замер и смета» (also opened by «Студия дизайна») */
+function toZamer(scan){const rooms=scan.rooms.filter(r=>r.corners.length>=3);if(!rooms.length)throw Error('Нет замкнутых помещений');
+ const hdg=C=>C.map((a,i)=>{const b=C[(i+1)%C.length];return Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI}),rotP=(p,deg)=>{const a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c]},cen=P=>{const A=polyArea(P);if(Math.abs(A)<1e-9)return P.reduce((q,p)=>[q[0]+p[0]/P.length,q[1]+p[1]/P.length],[0,0]);let x=0,y=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],f=a[0]*b[1]-b[0]*a[1];x+=(a[0]+b[0])*f;y+=(a[1]+b[1])*f}return[x/(6*A),y/(6*A)]};
+ const A0=hdg(rooms[0].corners)[0],layout={},R3=v=>Math.round(v*1000)/1000;
+ const out=rooms.map((r,ri)=>{const C=r.corners.map(p=>rotP(p,-A0)),n=C.length,hd=hdg(C);
+  const walls=C.map((a,i)=>({len:R3(dist(a,C[(i+1)%n])),t:i?Math.round(normDeg(hd[i]-hd[i-1])*100)/100:0}));
+  /* the app accepts only rot 0/90/180/270: take the nearest one and place the room by its centre */
+  const rot=((Math.round(hd[0]/90)*90)%360+360)%360,Q=C.map(p=>rotP([p[0]-C[0][0],p[1]-C[0][1]],-hd[0]+rot)),mx=Math.min(...Q.map(p=>p[0])),my=Math.min(...Q.map(p=>p[1])),cq=cen(Q.map(p=>[p[0]-mx,p[1]-my])),cg=cen(C);
+  const id='scan'+ri+'_'+scan.id;layout[id]={x:cg[0]-cq[0],y:cg[1]-cq[1],rot,skew:Math.abs(normDeg(hd[0]-rot))};
+  const ops=(r.ops||[]).filter(o=>o.w>0).map(o=>{const x={type:o.type==='window'?'window':'door',wall:o.wall+1,w:R3(o.w),h:R3(o.h||(o.type==='window'?1.4:2.0)),offset:R3(o.offset)};if(o.type==='window'&&o.sill!=null)x.sill=R3(o.sill);return x});
+  return{id,name:r.name||'Помещение '+(ri+1),h:R3(r.h||2.7),walls,ops,points:[],fin:{floor:'laminate',walls:'paint',ceiling:'stretch'},cnt:{},comment:'Отсканировано 3D Сканером (AR). Погрешность ±1–3 см — проверьте ключевые размеры дальномером.'+(r.h?'':' Высота не измерена — принято 2,70 м.')}});
+ const L=Object.values(layout),ox=Math.min(...L.map(v=>v.x)),oy=Math.min(...L.map(v=>v.y));for(const k in layout){const v=layout[k];layout[k]={x:R3(v.x-ox),y:R3(v.y-oy),rot:v.rot}}
+ return{app:'3D Сканер',exported:new Date().toISOString(),settings:{},projects:[{id:'scan_'+scan.id,name:scan.name,kind:'flat',client:'',addr:'',date:new Date(scan.date).toLocaleDateString('ru-RU'),rooms:out,layout}]}}
+function minAreaRect(pts){if(pts.length<3)return null;const P=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],up=[];
+ for(const p of P){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}for(const p of P.reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}
+ const H=lo.slice(0,-1).concat(up.slice(0,-1));let best=null;for(let i=0;i<H.length;i++){const a=H[i],b=H[(i+1)%H.length],L=dist(a,b)||1,ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L;let mn=1e9,mx=-1e9,mn2=1e9,mx2=-1e9;for(const p of H){const s=p[0]*ux+p[1]*uy,t=-p[0]*uy+p[1]*ux;mn=Math.min(mn,s);mx=Math.max(mx,s);mn2=Math.min(mn2,t);mx2=Math.max(mx2,t)}const A=(mx-mn)*(mx2-mn2);if(!best||A<best.A)best={A,w:Math.max(mx-mn,mx2-mn2),d:Math.min(mx-mn,mx2-mn2)}}return best}
+
+/* ---------- files ---------- */
+async function shareOrSave(name,blob){const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+ try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Сохранено в «Загрузки»: '+name,4000)}
+function plyBlob(pts,n,floorY){const head=`ply\nformat binary_little_endian 1.0\ncomment 3D Scanner (WebXR depth), metres, Y up\nelement vertex ${n}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n`;
+ const hb=new TextEncoder().encode(head),buf=new ArrayBuffer(hb.length+n*15),dv=new DataView(buf);new Uint8Array(buf).set(hb);let o=hb.length;let y0=Infinity,y1=-Infinity;for(let i=0;i<n;i++){y0=Math.min(y0,pts[i*3+1]);y1=Math.max(y1,pts[i*3+1])}
+ for(let i=0;i<n;i++){dv.setFloat32(o,pts[i*3],true);dv.setFloat32(o+4,pts[i*3+1],true);dv.setFloat32(o+8,pts[i*3+2],true);const t=(pts[i*3+1]-y0)/((y1-y0)||1),c=heat(t);dv.setUint8(o+12,c[0]);dv.setUint8(o+13,c[1]);dv.setUint8(o+14,c[2]);o+=15}return new Blob([buf],{type:'application/octet-stream'})}
+const heat=t=>[Math.round(255*Math.min(1,Math.max(0,1.5-Math.abs(4*t-3)))),Math.round(255*Math.min(1,Math.max(0,1.5-Math.abs(4*t-2)))),Math.round(255*Math.min(1,Math.max(0,1.5-Math.abs(4*t-1))))];
+
+/* ---------- screens ---------- */
+const S={screen:'home',scan:null,cloud:null,support:null};
+async function checkSupport(){const s={xr:!!navigator.xr,ar:false};try{s.ar=s.xr&&await navigator.xr.isSessionSupported('immersive-ar')}catch(e){}S.support=s;render()}
+function render(){app.innerHTML=({home:vHome,room:vRoomReview,obj:vObjReview,help:vHelp}[S.screen]||vHome)();if(S.screen==='obj')mountViewer()}
+function vHome(){const s=S.support,list=scans();
+ return`<h1>3D Сканер</h1><p class="muted">Комнаты — в «Замер и смета» и «Студию дизайна». Предметы — облаком точек и габаритами.</p>
+ ${s&&!s.ar?`<div class="warn">${!s.xr?'Этот браузер не поддерживает дополненную реальность. Откройте сканер в <b>Google Chrome</b> на Android.':'Телефон не поддерживает AR. Нужны «Сервисы Google Play для AR» (ARCore) — установите их из Play Маркета и откройте сканер в Chrome.'}</div>`:''}
+ <div class="big" style="margin-top:12px"><button class="btn" data-a="startRoom" ${s&&s.ar?'':'disabled'}>Сканировать помещения<small>Углы по полу → высота → двери и окна. Несколько комнат за один проход — с их взаимным расположением.</small></button>
+ <button class="btn sec" data-a="startObj" ${s&&s.ar?'':'disabled'}>Сканировать предмет<small>Облако точек по датчику глубины ARCore, габариты Ш×Г×В, файл PLY.</small></button>
+ <button class="btn sec" data-a="startRuler" ${s&&s.ar?'':'disabled'}>AR-рулетка<small>Расстояние между двумя точками в пространстве.</small></button></div>
+ <h2 style="margin-top:20px">Сохранённые сканы</h2>${list.length?list.map(x=>`<button class="item" data-a="open" data-id="${x.id}"><span class="grow"><b>${esc(x.name)}</b><br><span class="small muted">${x.type==='rooms'?x.rooms.length+' пом.':(x.n||0).toLocaleString('ru-RU')+' точек'} · ${new Date(x.date).toLocaleString('ru-RU')}</span></span><span>›</span></button>`).join(''):'<p class="muted small">Пока пусто.</p>'}
+ <p><button class="btn sec" data-a="help">Как сканировать</button></p>`}
+function vHelp(){return`<h1>Как сканировать</h1><div class="card"><h3>Помещение</h3><ol class="small"><li>Включите свет, уберите с пола лишнее у стен. Медленно ведите телефоном над полом, пока не появится кольцо.</li><li>Наведите кольцо на угол комнаты у пола и нажмите «Угол». Обойдите все углы по порядку (по или против часовой — неважно).</li><li>«Замкнуть» — после последнего угла.</li><li>Высота: наведите кольцо на потолок или верх стены и нажмите «Высота». Не ловится — «Пропустить», введёте рулеткой.</li><li>Проёмы: «Дверь»/«Окно» → наведите на один край, «Край», затем на другой край. Затем верх (и низ окна) — или пропустите.</li><li>«Следующая комната» — продолжайте, не закрывая сканер: комнаты встанут на план так, как стоят на самом деле.</li></ol><p class="small muted">Точность ARCore — обычно 1–3 см на стену. Ключевые размеры (ниши под мебель, проёмы) проверяйте дальномером.</p></div>
+ <div class="card"><h3>Предмет</h3><ol class="small"><li>Поставьте предмет на свободное место, отойдите на 1–2 м.</li><li>«Запись» и медленно обойдите предмет кругом, держа его в кадре.</li><li>«Стоп» — увидите облако точек и габариты. Файл PLY открывается в Blender, MeshLab, CloudCompare.</li></ol><p class="small muted">Нужен телефон с поддержкой глубины ARCore (Depth API). Мелкие детали меньше 3–5 см датчик не различает.</p></div>
+ <button class="btn sec" data-a="home">Назад</button>`}
+function roomPlanSVG(scan,sel){const rooms=scan.rooms.filter(r=>r.corners.length>=2),all=rooms.flatMap(r=>r.corners);if(!all.length)return'';const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys),W=600,H=Math.max(260,Math.min(520,600*(mxy-mny+1)/(mxx-mnx+1))),pad=40,k=Math.min((W-2*pad)/Math.max(mxx-mnx,.5),(H-2*pad)/Math.max(mxy-mny,.5)),T=p=>[pad+(p[0]-mnx)*k,pad+(p[1]-mny)*k];
+ let s=`<svg class="plan" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;rooms.forEach((r,ri)=>{const P=r.corners.map(T);s+=`<polygon points="${P.map(p=>p.join(',')).join(' ')}" fill="${ri===sel?'#ffe2cc':'#ece7dc'}" stroke="#222" stroke-width="3"/>`;
+  r.corners.forEach((a,i)=>{const b=r.corners[(i+1)%r.corners.length],A=T(a),B=T(b),m=[(A[0]+B[0])/2,(A[1]+B[1])/2];s+=`<text x="${m[0]}" y="${m[1]-6}" font-size="15" text-anchor="middle" fill="#222" paint-order="stroke" stroke="#fff" stroke-width="4">${fmt(dist(a,b),2)}</text>`});
+  (r.ops||[]).forEach(o=>{const a=r.corners[o.wall],b=r.corners[(o.wall+1)%r.corners.length],L=dist(a,b)||1,t0=o.offset/L,t1=(o.offset+o.w)/L,A=T([a[0]+(b[0]-a[0])*t0,a[1]+(b[1]-a[1])*t0]),B=T([a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1]);s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${o.type==='window'?'#2f8fd6':'#e0620d'}" stroke-width="7"/>`});
+  const c=P.reduce((q,p)=>[q[0]+p[0]/P.length,q[1]+p[1]/P.length],[0,0]);s+=`<text x="${c[0]}" y="${c[1]}" font-size="17" font-weight="700" text-anchor="middle" fill="#111">${esc(r.name||'Помещение '+(ri+1))}</text><text x="${c[0]}" y="${c[1]+20}" font-size="14" text-anchor="middle" fill="#444">${fmt(Math.abs(polyArea(r.corners)),2)} м²</text>`});
+ return s+'</svg>'}
+function vRoomReview(){const sc=S.scan;return`<div class="row"><button class="btn sec" data-a="home">‹ Сканы</button><span class="grow"></span><button class="btn bad" data-a="delScan">Удалить</button></div>
+ <h1><input data-f="name" value="${esc(sc.name)}" aria-label="Название"></h1><div class="card">${roomPlanSVG(sc)}<p class="small muted" style="margin:8px 0 0">Оранжевым — двери, синим — окна. Комнаты стоят так, как были отсканированы.</p></div>
+ ${sc.rooms.map((r,ri)=>`<div class="card"><div class="row"><input data-f="r.${ri}.name" value="${esc(r.name||'Помещение '+(ri+1))}" class="grow" aria-label="Название помещения"><button class="btn bad" data-a="delRoom" data-i="${ri}">×</button></div>
+  <table style="margin-top:8px"><tr><td>Площадь</td><td class="n">${fmt(Math.abs(polyArea(r.corners)),2)} м²</td></tr><tr><td>Высота, м</td><td><input inputmode="decimal" data-f="r.${ri}.h" value="${r.h?fmt(r.h,3):''}" placeholder="не измерена"></td></tr><tr><td>Стены, м</td><td class="n small">${r.corners.map((a,i)=>fmt(dist(a,r.corners[(i+1)%r.corners.length]),3)).join(' · ')}</td></tr></table>
+  ${(r.ops||[]).length?`<table style="margin-top:8px"><tr><th>Проём</th><th>Стена</th><th>Ширина</th><th>Высота</th><th>Подок.</th><th></th></tr>${r.ops.map((o,oi)=>`<tr><td>${o.type==='window'?'Окно':'Дверь'}</td><td>${o.wall+1}</td><td><input inputmode="decimal" data-f="o.${ri}.${oi}.w" value="${fmt(o.w,3)}"></td><td><input inputmode="decimal" data-f="o.${ri}.${oi}.h" value="${o.h?fmt(o.h,3):''}" placeholder="—"></td><td>${o.type==='window'?`<input inputmode="decimal" data-f="o.${ri}.${oi}.sill" value="${o.sill!=null?fmt(o.sill,3):''}" placeholder="—">`:''}</td><td><button class="btn bad" style="min-height:34px;padding:4px 10px" data-a="delOp" data-r="${ri}" data-i="${oi}">×</button></td></tr>`).join('')}</table>`:'<p class="small muted">Проёмов нет.</p>'}</div>`).join('')}
+ <div class="card"><h2>Выгрузка</h2><p class="small muted">Сохраните файл JSON. В «Замер и смета»: ⚙ → «Восстановить копию» → выберите файл — объект добавится к вашим, ничего не сотрётся. В «Студии дизайна»: «Загрузить JSON из «Замер и смета»».</p><button class="btn" data-a="exportZamer">Отправить в «Замер и смета» / «Студию»</button></div>`}
+function vObjReview(){const c=S.cloud;return`<div class="row"><button class="btn sec" data-a="home">‹ Сканы</button><span class="grow"></span><button class="btn bad" data-a="delScan">Удалить</button></div>
+ <h1><input data-f="cname" value="${esc(c.name)}" aria-label="Название"></h1><canvas id="view3d"></canvas>
+ <div class="card"><table><tr><td>Точек</td><td class="n">${c.n.toLocaleString('ru-RU')}</td></tr>${c.dims?`<tr><td>Габарит Ш × Г × В</td><td class="n">${mm(c.dims.w)} × ${mm(c.dims.d)} × ${mm(c.dims.h)} мм</td></tr>`:''}</table><p class="small muted">Габарит — по точкам выше пола, точность 1–3 см. Тяните — вращение, щипок/колесо — приближение.</p>
+ <div class="row"><button class="btn" data-a="exportPly">Отправить PLY</button><button class="btn sec" data-a="exportDims">Габариты (CSV)</button></div></div>`}
+
+/* ---------- 3D viewer for clouds ---------- */
+let viewer=null;
+function mountViewer(){const cv=$('#view3d'),c=S.cloud;if(!cv||!c)return;if(viewer){viewer.r.dispose();viewer=null}
+ const r=new THREE.WebGLRenderer({canvas:cv,antialias:true});r.setPixelRatio(Math.min(2,devicePixelRatio));r.setSize(cv.clientWidth,cv.clientHeight,false);
+ const sc=new THREE.Scene(),g=new THREE.BufferGeometry(),pos=c.points.subarray(0,c.n*3),col=new Float32Array(c.n*3);let y0=Infinity,y1=-Infinity,cx=0,cy=0,cz=0;
+ for(let i=0;i<c.n;i++){y0=Math.min(y0,pos[i*3+1]);y1=Math.max(y1,pos[i*3+1]);cx+=pos[i*3];cy+=pos[i*3+1];cz+=pos[i*3+2]}cx/=c.n||1;cy/=c.n||1;cz/=c.n||1;
+ for(let i=0;i<c.n;i++){const h=heat((pos[i*3+1]-y0)/((y1-y0)||1));col[i*3]=h[0]/255;col[i*3+1]=h[1]/255;col[i*3+2]=h[2]/255}
+ g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));sc.add(new THREE.Points(g,new THREE.PointsMaterial({size:.008,vertexColors:true})));
+ const cam=new THREE.PerspectiveCamera(55,cv.clientWidth/cv.clientHeight,.01,100),st={th:.6,ph:1,r:Math.max(1.2,(y1-y0)*2.5)};
+ const place=()=>{cam.position.set(cx+st.r*Math.sin(st.ph)*Math.sin(st.th),cy+st.r*Math.cos(st.ph),cz+st.r*Math.sin(st.ph)*Math.cos(st.th));cam.lookAt(cx,cy,cz);r.render(sc,cam)};place();
+ const P=new Map();cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);P.set(e.pointerId,[e.clientX,e.clientY])};cv.onpointerup=cv.onpointercancel=e=>P.delete(e.pointerId);
+ cv.onpointermove=e=>{if(!P.has(e.pointerId))return;const p=P.get(e.pointerId);if(P.size===2){const o=[...P.entries()].find(([k])=>k!==e.pointerId)[1],d0=Math.hypot(p[0]-o[0],p[1]-o[1]),d1=Math.hypot(e.clientX-o[0],e.clientY-o[1]);if(d1)st.r=Math.max(.2,Math.min(30,st.r*d0/d1))}else{st.th-=(e.clientX-p[0])*.01;st.ph=Math.max(.1,Math.min(3,st.ph-(e.clientY-p[1])*.008))}P.set(e.pointerId,[e.clientX,e.clientY]);place()};
+ cv.onwheel=e=>{e.preventDefault();st.r=Math.max(.2,Math.min(30,st.r*Math.exp(e.deltaY*.001)));place()};viewer={r}}
+
+/* ---------- AR ---------- */
+const AR={};
+function ovSet({val,hint,info,btns}){if(val!=null)$('#ovVal').textContent=val;if(hint!=null)$('#ovHint').textContent=hint;if(info!=null)$('#ovInfo').innerHTML=info;if(btns)$('#ovBtns').innerHTML=btns.map(([a,t,cls])=>`<button class="btn ${cls||''}" data-ar="${a}">${t}</button>`).join('')}
+function label3D(text){const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');g.fillStyle='rgba(0,0,0,.65)';g.beginPath();g.roundRect?g.roundRect(0,0,256,64,14):g.rect(0,0,256,64);g.fill();g.fillStyle='#fff';g.font='bold 38px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,34);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(.24,.06,1);return s}
+async function startAR(mode){const req={requiredFeatures:['hit-test'],optionalFeatures:['dom-overlay','local-floor'],domOverlay:{root:$('#ov')}};
+ if(mode==='obj'){req.optionalFeatures.push('depth-sensing');req.depthSensing={usagePreference:['cpu-optimized'],dataFormatPreference:['luminance-alpha','float32']}}
+ let session;try{session=await navigator.xr.requestSession('immersive-ar',req)}catch(e){toast('AR не запустился: '+e.message,4000);return}
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(devicePixelRatio);renderer.setSize(innerWidth,innerHeight);renderer.xr.enabled=true;renderer.xr.setReferenceSpaceType('local');renderer.domElement.style.display='none';document.body.appendChild(renderer.domElement);
+ await renderer.xr.setSession(session);const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera();scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1));
+ const reticle=new THREE.Mesh(new THREE.RingGeometry(.05,.065,40).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0xff8a3d}));reticle.matrixAutoUpdate=false;reticle.visible=false;scene.add(reticle);
+ const viewerSpace=await session.requestReferenceSpace('viewer'),hitSource=await session.requestHitTestSource({space:viewerSpace});
+ Object.assign(AR,{mode,session,renderer,scene,reticle,hit:null,floorY:null,rooms:[],cur:{corners:[],ops:[],h:null},step:'corners',objs:[],ruler:[],pts:new Float32Array(3*400000),n:0,vox:new Set(),rec:false,frame:0,depthOK:false,cloud:null});
+ if(mode==='obj'){AR.cloud=new THREE.Points(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(AR.pts,3)),new THREE.PointsMaterial({size:.01,color:0x4cc38a}));AR.cloud.geometry.setDrawRange(0,0);AR.cloud.frustumCulled=false;scene.add(AR.cloud)}
+ $('#ov').classList.add('on');document.body.style.overflow='hidden';arUI();
+ session.addEventListener('end',()=>{$('#ov').classList.remove('on');document.body.style.overflow='';renderer.setAnimationLoop(null);renderer.domElement.remove();finishAR()});
+ renderer.setAnimationLoop((t,frame)=>{if(!frame)return;const ref=renderer.xr.getReferenceSpace(),hits=frame.getHitTestResults(hitSource);
+  if(hits.length){const pose=hits[0].getPose(ref);reticle.visible=true;reticle.matrix.fromArray(pose.transform.matrix);const p=pose.transform.position,o=pose.transform.orientation,q=new THREE.Quaternion(o.x,o.y,o.z,o.w),nrm=new THREE.Vector3(0,1,0).applyQuaternion(q);
+   AR.hit={x:p.x,y:p.y,z:p.z,horiz:nrm.y>.9,vert:Math.abs(nrm.y)<.35}}else{reticle.visible=false;AR.hit=null}
+  if(mode==='obj'&&AR.rec)sampleDepth(frame,ref);
+  arTick();renderer.render(scene,camera)})}
+function addMarker(x,y,z,color=0xffffff){const m=new THREE.Mesh(new THREE.SphereGeometry(.02,12,8),new THREE.MeshBasicMaterial({color}));m.position.set(x,y,z);AR.scene.add(m);AR.objs.push(m);return m}
+function addLine(a,b,color=0xffffff){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]),l=new THREE.Line(g,new THREE.LineBasicMaterial({color,depthTest:false}));AR.scene.add(l);AR.objs.push(l);return l}
+function addLabel(text,x,y,z){const s=label3D(text);s.position.set(x,y,z);AR.scene.add(s);AR.objs.push(s);return s}
+let preview=null,previewLabel=null;
+function arTick(){const h=AR.hit,c=AR.cur;if(preview){AR.scene.remove(preview);preview=null}if(previewLabel){AR.scene.remove(previewLabel);previewLabel=null}
+ if(AR.mode==='room'){if(AR.step==='corners'){if(h&&c.corners.length){const a=c.corners[c.corners.length-1],y=AR.floorY,d=dist(a,[h.x,h.z]);preview=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a[0],y,a[1]),new THREE.Vector3(h.x,y,h.z)]),new THREE.LineBasicMaterial({color:0xff8a3d}));AR.scene.add(preview);ovSet({val:fmt(d,3)+' м'})}else if(h)ovSet({val:c.corners.length?'—':'Угол 1'})}
+  else if(AR.step==='height'){ovSet({val:h&&AR.floorY!=null&&h.y-AR.floorY>.5?fmt(h.y-AR.floorY,3)+' м':'—'})}
+  else if(AR.step.startsWith('op')){const o=AR.op;if(h&&AR.floorY!=null){if(AR.step==='opE2'&&o.e1){const d=dist(o.e1,[h.x,h.z]);ovSet({val:fmt(d,3)+' м'})}else if(AR.step==='opTop'||AR.step==='opSill')ovSet({val:fmt(h.y-AR.floorY,3)+' м'});else ovSet({val:'—'})}}}
+ else if(AR.mode==='ruler'){if(h&&AR.ruler.length===1){const a=AR.ruler[0];ovSet({val:fmt(Math.hypot(h.x-a[0],h.y-a[1],h.z-a[2]),3)+' м'})}}
+ else if(AR.mode==='obj'){ovSet({val:AR.n.toLocaleString('ru-RU')+' точек'})}}
+function arUI(){const c=AR.cur,rn=AR.rooms.length+1;
+ if(AR.mode==='room'){if(AR.step==='corners')ovSet({hint:c.corners.length?'Наведите кольцо на следующий угол у пола и нажмите «Угол»':'Наведите кольцо на угол комнаты у пола',info:`Помещение ${rn} · углов: ${c.corners.length}`,btns:[['corner','Угол'],...(c.corners.length?[['undo','Отменить','sec']]:[]),...(c.corners.length>=3?[['close','Замкнуть','ok']]:[])]});
+  else if(AR.step==='height')ovSet({hint:'Наведите кольцо на потолок или верх стены и нажмите «Высота»',info:`Помещение ${rn}: ${c.corners.length} стен`,btns:[['height','Высота'],['skipH','Пропустить','sec']]});
+  else if(AR.step==='ops')ovSet({val:'Проёмы',hint:'Добавьте двери и окна или переходите к следующей комнате',info:`Помещение ${rn}: проёмов ${c.ops.length}`,btns:[['door','Дверь'],['window','Окно'],['next','Следующая комната','sec'],['finish','Готово','ok']]});
+  else if(AR.step==='opE1')ovSet({hint:'Наведите кольцо на один край проёма (у пола или на стене) и нажмите «Край»',btns:[['e1','Край'],['opCancel','Отмена','sec']]});
+  else if(AR.step==='opE2')ovSet({hint:'Теперь на другой край проёма',btns:[['e2','Край'],['opCancel','Отмена','sec']]});
+  else if(AR.step==='opSill')ovSet({hint:'Наведите на низ окна (подоконник) на стене',btns:[['sill','Низ окна'],['skipSill','Пропустить','sec']]});
+  else if(AR.step==='opTop')ovSet({hint:'Наведите на верх проёма на стене',btns:[['top','Верх'],['skipTop','Пропустить','sec']]})}
+ else if(AR.mode==='ruler')ovSet({hint:AR.ruler.length?'Наведите на вторую точку':'Наведите на первую точку и нажмите «Точка»',info:AR.rulerLog||'',btns:[['rpt','Точка'],...(AR.ruler.length?[['rclear','Сброс','sec']]:[])]});
+ else ovSet({hint:AR.rec?'Медленно обходите предмет, держите его в кадре':'Отойдите на 1–2 м от предмета и нажмите «Запись»',info:AR.depthOK===false&&AR.frame>30?'<b>Телефон не отдаёт глубину</b> — облако точек не строится. Нужен телефон с ARCore Depth API.':'',btns:[[AR.rec?'stop':'rec',AR.rec?'Пауза':'Запись',AR.rec?'sec':''],['clear','Сначала','sec']]})}
+function needHit(){if(!AR.hit){toast('Кольцо не видно — медленно поведите телефоном');return false}return true}
+function arAction(a){const h=AR.hit,c=AR.cur;
+ if(a==='corner'){if(!needHit())return;if(AR.floorY==null){if(!h.horiz){toast('Наведите на пол');return}AR.floorY=h.y}const p=[h.x,h.z];if(c.corners.length&&dist(p,c.corners[c.corners.length-1])<.05){toast('Слишком близко к предыдущему углу');return}
+  c.corners.push(p);c.mk=c.mk||[];c.mk.push(addMarker(h.x,AR.floorY,h.z,0xff8a3d));if(c.corners.length>1){const a2=c.corners[c.corners.length-2];c.mk.push(addLine([a2[0],AR.floorY,a2[1]],[p[0],AR.floorY,p[1]],0xffffff));c.mk.push(addLabel(fmt(dist(a2,p),2),(a2[0]+p[0])/2,AR.floorY+.05,(a2[1]+p[1])/2))}}
+ else if(a==='undo'){c.corners.pop();const k=c.corners.length?3:1;for(let i=0;i<k&&c.mk&&c.mk.length;i++){AR.scene.remove(c.mk.pop())}if(!c.corners.length&&!AR.rooms.length)AR.floorY=null}
+ else if(a==='close'){const a2=c.corners[c.corners.length-1],p=c.corners[0];addLine([a2[0],AR.floorY,a2[1]],[p[0],AR.floorY,p[1]]);addLabel(fmt(dist(a2,p),2),(a2[0]+p[0])/2,AR.floorY+.05,(a2[1]+p[1])/2);AR.step='height';toast('Контур замкнут: '+fmt(Math.abs(polyArea(c.corners)),2)+' м²')}
+ else if(a==='height'){if(!needHit())return;const hh=h.y-AR.floorY;if(hh<1.5||hh>8){toast('Высота '+fmt(hh,2)+' м — наведите точнее на потолок');return}c.h=hh;AR.step='ops';drawWalls(c)}
+ else if(a==='skipH'){AR.step='ops'}
+ else if(a==='door'||a==='window'){AR.op={type:a};AR.step='opE1'}
+ else if(a==='e1'){if(!needHit())return;AR.op.e1=[h.x,h.z];addMarker(h.x,h.y,h.z,0x2f8fd6);AR.step='opE2'}
+ else if(a==='e2'){if(!needHit())return;const o=AR.op,e2=[h.x,h.z],mid=[(o.e1[0]+e2[0])/2,(o.e1[1]+e2[1])/2],w=nearestWall(c.corners,mid),A=c.corners[w.i],B=c.corners[(w.i+1)%c.corners.length],q1=projOnSeg(o.e1,A,B),q2=projOnSeg(e2,A,B);
+  o.wall=w.i;o.offset=Math.max(0,Math.min(q1.along,q2.along));o.w=Math.abs(q1.along-q2.along);if(o.w<.2){toast('Ширина '+fmt(o.w,2)+' м — слишком узко, повторите');AR.step='opE1';return}addMarker(h.x,h.y,h.z,0x2f8fd6);AR.step=o.type==='window'?'opSill':'opTop';toast((o.type==='window'?'Окно':'Дверь')+' на стене '+(w.i+1)+': '+fmt(o.w,3)+' м')}
+ else if(a==='sill'){if(!needHit())return;AR.op.sill=Math.max(0,h.y-AR.floorY);AR.step='opTop'}else if(a==='skipSill'){AR.step='opTop'}
+ else if(a==='top'||a==='skipTop'){const o=AR.op;if(a==='top'){if(!needHit())return;const top=h.y-AR.floorY;o.h=o.type==='window'&&o.sill!=null?top-o.sill:top;if(!(o.h>.2)){toast('Верх ниже низа — повторите');return}}c.ops.push({type:o.type,wall:o.wall,offset:o.offset,w:o.w,h:o.h||null,sill:o.sill??null});AR.op=null;AR.step='ops'}
+ else if(a==='opCancel'){AR.op=null;AR.step='ops'}
+ else if(a==='next'||a==='finish'){if(c.corners.length>=3){c.name='Помещение '+(AR.rooms.length+1);delete c.mk;AR.rooms.push(c)}AR.cur={corners:[],ops:[],h:null};AR.step='corners';if(a==='finish'){AR.session.end();return}toast('Помещение сохранено. Сканируйте следующее')}
+ else if(a==='rpt'){if(!needHit())return;AR.ruler.push([h.x,h.y,h.z]);addMarker(h.x,h.y,h.z,0xff8a3d);if(AR.ruler.length===2){const[p,q]=AR.ruler,d=Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]);addLine(p,q,0xff8a3d);addLabel(fmt(d,3)+' м',(p[0]+q[0])/2,(p[1]+q[1])/2+.04,(p[2]+q[2])/2);AR.rulerLog=(AR.rulerLog?AR.rulerLog+'<br>':'')+'Замер: <b>'+fmt(d,3)+' м</b>';AR.ruler=[]}}
+ else if(a==='rclear'){AR.ruler=[]}
+ else if(a==='rec'){AR.rec=true}else if(a==='stop'){AR.rec=false}else if(a==='clear'){AR.n=0;AR.vox.clear();AR.cloud.geometry.setDrawRange(0,0)}
+ arUI()}
+function drawWalls(c){const y0=AR.floorY,H=c.h,n=c.corners.length;for(let i=0;i<n;i++){const a=c.corners[i],b=c.corners[(i+1)%n];addLine([a[0],y0+H,a[1]],[b[0],y0+H,b[1]],0x4cc38a);addLine([a[0],y0,a[1]],[a[0],y0+H,a[1]],0x4cc38a)}}
+const tmpV=new THREE.Vector4(),invP=new THREE.Matrix4(),viewM=new THREE.Matrix4();
+function sampleDepth(frame,ref){AR.frame++;if(AR.frame%3)return;const pose=frame.getViewerPose(ref);if(!pose)return;for(const view of pose.views){let di=null;try{di=frame.getDepthInformation(view)}catch(e){}if(!di){AR.depthOK=false;if(AR.frame===33)arUI();continue}AR.depthOK=true;
+ invP.fromArray(view.projectionMatrix).invert();viewM.fromArray(view.transform.matrix);const GX=48,GY=36;
+ for(let j=0;j<GY;j++)for(let i=0;i<GX;i++){const u=(i+.5)/GX,v=(j+.5)/GY;let d;try{d=di.getDepthInMeters(u,v)}catch(e){continue}if(!(d>.15&&d<4))continue;
+  tmpV.set(u*2-1,1-v*2,-1,1).applyMatrix4(invP);tmpV.multiplyScalar(1/tmpV.w);const k=d/-tmpV.z;tmpV.set(tmpV.x*k,tmpV.y*k,-d,1).applyMatrix4(viewM);
+  const key=Math.round(tmpV.x*100)+','+Math.round(tmpV.y*100)+','+Math.round(tmpV.z*100);if(AR.vox.has(key)||AR.n>=400000)continue;AR.vox.add(key);AR.pts[AR.n*3]=tmpV.x;AR.pts[AR.n*3+1]=tmpV.y;AR.pts[AR.n*3+2]=tmpV.z;AR.n++}
+ AR.cloud.geometry.attributes.position.needsUpdate=true;AR.cloud.geometry.setDrawRange(0,AR.n);if(AR.hit&&AR.hit.horiz&&(AR.floorY==null||AR.hit.y<AR.floorY))AR.floorY=AR.hit.y}}
+async function finishAR(){const m=AR.mode;
+ if(m==='room'){if(AR.cur.corners.length>=3){AR.cur.name='Помещение '+(AR.rooms.length+1);delete AR.cur.mk;AR.rooms.push(AR.cur)}if(!AR.rooms.length){render();return}
+  const sc={id:uid(),type:'rooms',name:'Скан '+new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),date:Date.now(),rooms:AR.rooms.map(r=>({name:r.name,corners:r.corners.map(p=>[Math.round(p[0]*1000)/1000,Math.round(p[1]*1000)/1000]),h:r.h?Math.round(r.h*1000)/1000:null,ops:r.ops}))};
+  const l=scans();l.unshift(sc);saveScans(l);S.scan=sc;S.screen='room';render()}
+ else if(m==='obj'){if(!AR.n){render();return}const n=AR.n,pts=AR.pts.slice(0,n*3),fy=AR.floorY;let dims=null;
+  const above=[];let ymax=-Infinity,ymin=Infinity;for(let i=0;i<n;i++){const y=pts[i*3+1];if(fy==null||y>fy+.02){above.push([pts[i*3],pts[i*3+2]]);ymax=Math.max(ymax,y);ymin=Math.min(ymin,y)}}
+  const rect=minAreaRect(above);if(rect)dims={w:rect.w,d:rect.d,h:fy!=null?ymax-fy:ymax-ymin};
+  const id=uid(),meta={id,type:'cloud',name:'Предмет '+new Date().toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),date:Date.now(),n,dims,floorY:fy};
+  try{await IDB.put({id,points:pts})}catch(e){toast('Облако не сохранилось в памяти телефона — выгрузите его сразу',4000)}
+  const l=scans();l.unshift(meta);saveScans(l);S.cloud={...meta,points:pts};S.screen='obj';render()}
+ else render()}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{const ar=e.target.closest('[data-ar]');if(ar){arAction(ar.dataset.ar);return}
+ if(e.target.id==='ovExit'){if(AR.mode==='room'&&AR.step!=='corners'&&AR.cur.corners.length>=3)arAction('finish');else AR.session&&AR.session.end();return}
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+ if(a==='startRoom')startAR('room');else if(a==='startObj')startAR('obj');else if(a==='startRuler')startAR('ruler');
+ else if(a==='home'){S.screen='home';render()}else if(a==='help'){S.screen='help';render()}
+ else if(a==='open'){const x=scans().find(s=>s.id===b.dataset.id);if(!x)return;if(x.type==='rooms'){S.scan=x;S.screen='room';render()}else{let rec=null;try{rec=await IDB.get(x.id)}catch(err){}if(!rec){toast('Облако точек не найдено в памяти');return}S.cloud={...x,points:rec.points};S.screen='obj';render()}}
+ else if(a==='delScan'){if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Точно удалить?';return}const id=(S.screen==='room'?S.scan:S.cloud).id;saveScans(scans().filter(s=>s.id!==id));try{await IDB.del(id)}catch(err){}S.screen='home';render()}
+ else if(a==='delRoom'){S.scan.rooms.splice(+b.dataset.i,1);persistScan();render()}
+ else if(a==='delOp'){S.scan.rooms[+b.dataset.r].ops.splice(+b.dataset.i,1);persistScan();render()}
+ else if(a==='exportZamer'){if(!S.scan.rooms.some(r=>r.corners.length>=3)){toast('Нет замкнутых помещений');return}await shareOrSave(S.scan.name.replace(/[\\/:*?"<>|]/g,'-')+'.json',new Blob([JSON.stringify(toZamer(S.scan))],{type:'application/json'}))}
+ else if(a==='exportPly'){await shareOrSave(S.cloud.name.replace(/[\\/:*?"<>|]/g,'-')+'.ply',plyBlob(S.cloud.points,S.cloud.n,S.cloud.floorY))}
+ else if(a==='exportDims'){const c=S.cloud,t='﻿Предмет;Ширина, мм;Глубина, мм;Высота, мм;Точек\r\n'+[c.name,c.dims?mm(c.dims.w):'',c.dims?mm(c.dims.d):'',c.dims?mm(c.dims.h):'',c.n].join(';');await shareOrSave(c.name.replace(/[\\/:*?"<>|]/g,'-')+'.csv',new Blob([t],{type:'text/csv'}))}});
+function persistScan(){const l=scans(),i=l.findIndex(s=>s.id===S.scan.id);if(i>=0){l[i]=S.scan;saveScans(l)}}
+document.addEventListener('change',e=>{const f=e.target.dataset.f;if(!f)return;const v=e.target.value.trim(),n=Number(v.replace(',','.'));
+ if(f==='name'){S.scan.name=v||S.scan.name;persistScan();return}
+ if(f==='cname'){S.cloud.name=v||S.cloud.name;const l=scans(),i=l.findIndex(s=>s.id===S.cloud.id);if(i>=0){l[i].name=S.cloud.name;saveScans(l)}return}
+ const p=f.split('.');if(p[0]==='r'){const r=S.scan.rooms[+p[1]];if(p[2]==='name')r.name=v;else{if(v===''){r.h=null}else if(!(n>1&&n<10)){toast('Высота — в метрах, например 2,7');render();return}else r.h=n}}
+ else if(p[0]==='o'){const o=S.scan.rooms[+p[1]].ops[+p[2]];if(v===''){o[p[3]]=p[3]==='w'?o.w:null}else if(!(n>=0&&n<10)){toast('Введите метры');render();return}else o[p[3]]=n}
+ persistScan();render()});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();checkSupport();
+window.__scan={toZamer,minAreaRect,plyBlob,S,render,scans,saveScans};
+</script>
+</body>
+</html>
