@@ -1,1 +1,88 @@
-pending
+failed 2026-11-09T19:51:53Z e15a7ac24d5217dfa17a28ffa1242526e5aacd5d
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:136:65: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:136:25: error: cannot find type 'simd_float4x4' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:136:49: error: cannot find type 'simd_float3' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:181:53: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:190:66: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:216:102: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:216:32: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:216:50: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:216:68: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:216:86: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:226:53: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:226:35: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:137:21: error: cannot find 'simd_float4' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:153:26: error: cannot find 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:161:72: error: cannot find 'simd_distance' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:164:95: error: cannot convert value of type 'Duration' to expected argument type 'Float'
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:156:86: error: cannot find 'simd_length' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:157:25: error: cannot find 'simd_dot' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:158:25: error: cannot find 'simd_distance' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:192:30: error: cannot find 'simd_float3' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:192:87: error: cannot find 'simd_float3' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:191:38: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:191:51: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:207:19: error: cannot find type 'simd_float2' in scope
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:219:13: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/ScanWebController.swift:187:11: warning: 'contentEdgeInsets' was deprecated in iOS 15.0: This property is ignored when using UIButtonConfiguration
+** BUILD FAILED **
+                         ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:161:72: error: cannot find 'simd_distance' in scope
+            let a = poly[best], b = poly[(best + 1) % poly.count], L = simd_distance(a, b)
+                                                                       ^~~~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:164:95: error: cannot convert value of type 'Duration' to expected argument type 'Float'
+            var o: [String: Any] = ["type": type, "wall": best, "offset": Double(max(0, min(L - ww, along - ww / 2))), "w": Double(ww), "h": Double(h)]
+                                                                                              ^
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:156:86: error: cannot find 'simd_length' in scope
+                let a = poly[i], b = poly[(i + 1) % poly.count], ab = b - a, L = max(simd_length(ab), 1e-6)
+                                                                                     ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:157:25: error: cannot find 'simd_dot' in scope
+                let t = simd_dot(center - a, ab) / (L * L), tt = min(1, max(0, t))
+                        ^~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:158:25: error: cannot find 'simd_distance' in scope
+                let d = simd_distance(center, a + ab * tt)
+                        ^~~~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:192:30: error: cannot find 'simd_float3' in scope
+            (xz(w.transform, simd_float3(-w.dimensions.x / 2, 0, 0)), xz(w.transform, simd_float3(w.dimensions.x / 2, 0, 0)))
+                             ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:192:87: error: cannot find 'simd_float3' in scope
+            (xz(w.transform, simd_float3(-w.dimensions.x / 2, 0, 0)), xz(w.transform, simd_float3(w.dimensions.x / 2, 0, 0)))
+                                                                                      ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:191:38: error: cannot find type 'simd_float2' in scope
+        var segs = walls.map { w -> (simd_float2, simd_float2) in
+                                     ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:191:51: error: cannot find type 'simd_float2' in scope
+        var segs = walls.map { w -> (simd_float2, simd_float2) in
+                                                  ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:207:19: error: cannot find type 'simd_float2' in scope
+        var pts: [simd_float2] = []
+                  ^~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift:219:13: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+        let t = ((c.x - a.x) * s.y - (c.y - a.y) * s.x) / den
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/sotka/sotka/ios-scan/Scan3D/ScanWebController.swift:187:11: warning: 'contentEdgeInsets' was deprecated in iOS 15.0: This property is ignored when using UIButtonConfiguration
+        b.contentEdgeInsets = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+          ^
+
+Failed frontend command:
+/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/runner/work/sotka/sotka/ios-scan/Scan3D/AppDelegate.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/CornerScanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/DepthScanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/ScanWebController.swift /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/supplementaryOutputs-1 -target arm64-apple-ios15.0 -Xllvm -aarch64-use-tbi -enable-objc-interop -stack-check -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk -I /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos -F /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos -no-color-diagnostics -g -debug-info-format\=dwarf -dwarf-version\=4 -module-cache-path /Users/runner/work/sotka/sotka/ios-scan/build/ModuleCache.noindex -swift-version 5 -enforce-exclusivity\=checked -O -serialize-debugging-options -const-gather-protocols-file /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/Scan3D_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/runner/work/sotka/sotka/ios-scan/build/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/runner/work/sotka/sotka/ios-scan -resource-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift -file-compilation-dir /Users/runner/work/sotka/sotka/ios-scan -Xcc -ivfsstatcache -Xcc /Users/runner/work/sotka/sotka/ios-scan/build/SDKStatCaches.noindex/iphoneos18.5-22F76-a529daf784b3616c7c04a36aeb7f5c05.sdkstatcache -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Scan3D-generated-files.hmap -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Scan3D-own-target-headers.hmap -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Scan3D-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Scan3D-project-headers.hmap -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/include -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/DerivedSources -module-name Scan3D -frontend-parseable-output -disable-clang-spi -target-sdk-version 18.5 -target-sdk-name iphoneos18.5 -external-plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins\#/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -external-plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/lib/swift/host/plugins\#/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server -in-process-plugin-server-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins -plugin-path /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/lib/swift/host/plugins -enable-default-cmo -num-threads 4 -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/AppDelegate.o -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/CornerScanController.o -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/DepthScanController.o -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/RoomPlanController.o -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/ScanWebController.o -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/GeneratedAssetSymbols.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/AppDelegate.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/CornerScanController.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/DepthScanController.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/RoomPlanController.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/ScanWebController.o -index-unit-output-path /Scan3D.build/Release-iphoneos/Scan3D.build/Objects-normal/arm64/GeneratedAssetSymbols.o
+LinkAssetCatalog /Users/runner/work/sotka/sotka/ios-scan/Scan3D/Assets.xcassets (in target 'Scan3D' from project 'Scan3D')
+    cd /Users/runner/work/sotka/sotka/ios-scan
+    builtin-linkAssetCatalog --thinned /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app --plist-output /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/AppIcon60x60@2x.png (in target 'Scan3D' from project 'Scan3D')
+note: Emplaced /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/Assets.car (in target 'Scan3D' from project 'Scan3D')
+note: Emplaced /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/AppIcon76x76@2x~ipad.png (in target 'Scan3D' from project 'Scan3D')
+
+ProcessInfoPlistFile /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/Info.plist /Users/runner/work/sotka/sotka/ios-scan/Scan3D/Info.plist (in target 'Scan3D' from project 'Scan3D')
+    cd /Users/runner/work/sotka/sotka/ios-scan
+    builtin-infoPlistUtility /Users/runner/work/sotka/sotka/ios-scan/Scan3D/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/PkgInfo -expandbuildsettings -format binary -platform iphoneos -additionalcontentfile /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/assetcatalog_generated_info.plist -requiredArchitecture arm64 -o /Users/runner/work/sotka/sotka/ios-scan/build/Build/Products/Release-iphoneos/Scan3D.app/Info.plist
+
+note: Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone (in target 'Scan3D' from project 'Scan3D')
+** BUILD FAILED **
+
+
+The following build commands failed:
+	CompileSwift normal arm64 (in target 'Scan3D' from project 'Scan3D')
+	SwiftCompile normal arm64 Compiling\ AppDelegate.swift,\ CornerScanController.swift,\ DepthScanController.swift,\ RoomPlanController.swift,\ ScanWebController.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/AppDelegate.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/CornerScanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/DepthScanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/RoomPlanController.swift /Users/runner/work/sotka/sotka/ios-scan/Scan3D/ScanWebController.swift /Users/runner/work/sotka/sotka/ios-scan/build/Build/Intermediates.noindex/Scan3D.build/Release-iphoneos/Scan3D.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Scan3D' from project 'Scan3D')
+	Building project Scan3D with scheme Scan3D and configuration Release
+(3 failures)
