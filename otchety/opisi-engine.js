@@ -363,6 +363,13 @@ function replaceCells(tr, values) {
   values.forEach((v, i) => { if (v === undefined || !cells[i]) return; out = out.replace(cells[i], setCellText(cells[i], v)); });
   return out;
 }
+function registerLine(e) {
+  const out = ['Опись № ' + e.no + (e.transferDate ? ' от ' + e.transferDate : '') + (e.invoice ? ' к УПД № ' + e.invoice + (e.date ? ' от ' + e.date : '') : '')];
+  if (e.vins && e.vins.length) out.push(e.vins.length > 3 ? e.vins.length + ' автомобилей' : 'VIN: ' + e.vins.join(', '));
+  const docs = [e.poa ? 'доверенность № ' + e.poa : '', e.act ? 'акт № ' + e.act : '', e.sheetsTotal ? 'листов: ' + e.sheetsTotal : ''].filter(Boolean);
+  if (docs.length) out.push(docs.join(', '));
+  return out.join('\n');
+}
 async function registerDocx(entries, s, templateB64) {
   const zip = await ZipLib.loadAsync(b64(templateB64));
   const xml = await zip.file('word/document.xml').async('string');
@@ -386,8 +393,7 @@ async function registerDocx(entries, s, templateB64) {
   if (fioRow) hx = hx.replace(fioRow, replaceCells(fioRow, [undefined, s.sender, undefined, s.phone]));
   // строки
   const ir = rowsOf(T[1].xml), tmpl = ir[1];
-  const newRows = entries.map((e, i) => replaceCells(tmpl, [String(i + 1), s.where, s.to,
-    'Опись № ' + e.no + ' к УПД № ' + e.invoice + (e.date ? ' от ' + e.date : '') + (e.vins.length > 3 ? '\n' + e.vins.length + ' автомобилей' : e.vins.length ? '\nVIN: ' + e.vins.join(', ') : '')]));
+  const newRows = entries.map((e, i) => replaceCells(tmpl, [String(i + 1), s.where, s.to, registerLine(e)]));
   let ix = T[1].xml;
   for (const r of ir.slice(1)) ix = ix.replace(r, '');
   ix = ix.replace('</w:tbl>', newRows.join('') + '</w:tbl>');
@@ -405,6 +411,97 @@ async function registerDocx(entries, s, templateB64) {
   const doc = xml.slice(0, bStart) + out.join('') + (sect ? sect.xml : '') + xml.slice(bEnd);
   zip.file('word/document.xml', doc);
   return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+}
+
+/* ---------- чтение заполненных описей (.docx, в т.ч. внутри ZIP) ---------- */
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const xtext = x => { let t = ''; for (const m of x.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:br\b[^>]*\/>|<w:tab\/>|<\/w:p>/g)) t += m[1] != null ? m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'") : m[0].startsWith('<w:tab') ? ' ' : '\n'; return t.replace(/[ \u00a0]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n+/g, '\n').trim(); };
+function parseTransferDate(t) {
+  const m = /дата[^«\d]{0,10}«\s*(\d{1,2})\s*»\s*([а-яё]+|\d{1,2})\s*(\d{2,4})/i.exec(t);
+  if (m) { const mo = /^\d+$/.test(m[2]) ? +m[2] : MONTHS_GEN.findIndex(x => x.startsWith(m[2].toLowerCase().slice(0, 3))) + 1; let y = +m[3]; if (y < 100) y += 2000; if (mo >= 1) return pad(+m[1], 2) + '.' + pad(mo, 2) + '.' + y; }
+  const d = /дата[^\d]{0,15}(\d{1,2})[./](\d{1,2})[./](\d{2,4})/i.exec(t);
+  if (d) { let y = +d[3]; if (y < 100) y += 2000; return pad(+d[1], 2) + '.' + pad(+d[2], 2) + '.' + y; }
+  return '';
+}
+async function parseOpis(bytes, name) {
+  const z = await ZipLib.loadAsync(bytes);
+  const f = z.file('word/document.xml');
+  if (!f) throw Error('не документ Word');
+  const xml = await f.async('string');
+  const body = xml.slice(xml.indexOf('<w:body>') + 8, xml.lastIndexOf('</w:body>'));
+  const parts = topLevel(body);
+  const paras = parts.filter(p => p.tag === 'p').map(p => xtext(p.xml));
+  const head = paras.join('\n');
+  if (!/опись/i.test(head)) throw Error('не похоже на опись');
+  const e = { file: name, no: null, transferDate: parseTransferDate(head), buyer: '', recipient: '', invoice: '', date: '', vins: [], poa: '', act: '', sheets: {}, sheetsTotal: 0, gave: '', took: '' };
+  const nm = /№\s*(\d{1,6})\b/.exec(head) || /Opis_0*(\d+)/i.exec(name);
+  if (nm) e.no = +nm[1];
+  const sig = /Передал[аи]?:\s*_*\s*\/\s*([^/]+?)\s*\/[\s\S]*?Принял[аи]?:\s*_*\s*\/\s*([^/]+?)\s*\//i.exec(head);
+  if (sig) { e.gave = clean(sig[1]); e.took = clean(sig[2]); }
+  for (const t of parts.filter(p => p.tag === 'tbl')) for (const tr of rowsOf(t.xml)) {
+    const c = cellsOf(tr).map(xtext);
+    if (c.length < 2) continue;
+    const label = c[0].toLowerCase(), val = c[1], sh = c[2] ? c[2].trim() : '';
+    let key = null;
+    if (/^покупател/.test(label)) { key = 'buyer'; e.buyer = clean(val); }
+    else if (/^получател/.test(label)) { key = 'recipient'; e.recipient = clean(val); }
+    else if (/упд|сч[её]т/.test(label)) { key = 'upd'; const m = /№?\s*([^\s]+\/\d{6,8}|[^\s]+)\s*(?:от\s*(\d{2}\.\d{2}\.\d{4}))?/.exec(val.replace(/^№\s*/, '')); if (m) { e.invoice = clean(m[1]); e.date = m[2] || (parseInvoice(e.invoice) ? ddmmyyyy(parseInvoice(e.invoice)) : ''); } }
+    else if (/vin|автомобил/.test(label)) { key = 'vin'; e.vins = val.split(/[\s,;]+/).map(clean).filter(v => v.length >= 8); }
+    else if (/^доверенност/.test(label)) { key = 'poa'; e.poa = clean(val).replace(/^№\s*/, ''); }
+    else if (/^акт/.test(label)) { key = 'act'; e.act = clean(val).replace(/^№\s*/, ''); }
+    if (key && sh) { e.sheets[key] = sh; const n = parseFloat(sh.replace(',', '.')); if (Number.isFinite(n)) e.sheetsTotal += n; }
+  }
+  e.sheetsTotal = Math.round(e.sheetsTotal * 100) / 100;
+  return e;
+}
+async function readOpisi(files, onProgress) {
+  const items = [], issues = [];
+  const list = [];
+  for (const f of files) {
+    const b = f.bytes instanceof Uint8Array ? f.bytes : new Uint8Array(f.bytes);
+    if (/\.zip$/i.test(f.name) || (b[0] === 0x50 && b[1] === 0x4B && !(await ZipLib.loadAsync(b)).file('word/document.xml'))) {
+      const z = await ZipLib.loadAsync(b);
+      for (const n of Object.keys(z.files)) if (/\.docx$/i.test(n) && !/^__MACOSX\/|\/\._|^~\$|\/~\$/.test(n) && !z.files[n].dir) list.push({ name: n.split('/').pop(), get: () => z.file(n).async('uint8array'), from: f.name });
+    } else list.push({ name: f.name, get: async () => b });
+  }
+  let i = 0;
+  for (const it of list) {
+    try { const e = await parseOpis(await it.get(), it.name); if (!e.no) issues.push({ level: 'ошибка', text: 'Не найден номер описи', where: it.name }); else items.push(e); }
+    catch (err) { issues.push({ level: 'ошибка', text: 'Файл пропущен: ' + (err.message || err), where: it.name }); }
+    if (onProgress) onProgress(++i, list.length);
+  }
+  const seen = new Map(), uniq = [];
+  for (const e of items.sort((a, b) => a.no - b.no)) {
+    const prev = seen.get(e.no);
+    if (prev) { issues.push({ level: 'внимание', text: 'Опись № ' + e.no + ' загружена дважды (' + prev.file + ', ' + e.file + ') — в реестр включена один раз' + (invKey(prev.invoice) !== invKey(e.invoice) ? '. ВНИМАНИЕ: у них разные счета-фактуры!' : ''), where: e.file }); continue; }
+    seen.set(e.no, e); uniq.push(e);
+    if (!e.invoice) issues.push({ level: 'внимание', text: 'В описи № ' + e.no + ' не найден номер УПД', where: e.file });
+    if (!e.vins.length) issues.push({ level: 'внимание', text: 'В описи № ' + e.no + ' не найдены VIN', where: e.file });
+  }
+  const nums = uniq.map(e => e.no), gaps = [];
+  for (let k = 1; k < nums.length; k++) if (nums[k] - nums[k - 1] > 1 && nums[k] - nums[k - 1] < 50) gaps.push(nums[k - 1] + 1 === nums[k] - 1 ? String(nums[k - 1] + 1) : (nums[k - 1] + 1) + '–' + (nums[k] - 1));
+  if (gaps.length) issues.push({ level: 'инфо', text: 'В загруженных описях пропущены номера: ' + gaps.slice(0, 30).join(', ') + (gaps.length > 30 ? '…' : ''), where: '' });
+  return { items: uniq, issues };
+}
+/* сверка с реестром и перенос заполненных реквизитов */
+function mergeFilled(items, reg) {
+  const out = { updated: 0, mismatch: [], unknown: [] };
+  if (!reg) return out;
+  const byNo = new Map(reg.entries.map(e => [e.no, e]));
+  const stamp = today();
+  for (const o of items) {
+    const e = byNo.get(o.no);
+    if (!e) { out.unknown.push(o.no); continue; }
+    if (o.invoice && e.invoice && invKey(o.invoice) !== invKey(e.invoice)) { out.mismatch.push('№ ' + o.no + ': в описи УПД ' + o.invoice + ', в реестре ' + e.invoice); continue; }
+    const ch = [];
+    const set = (k, v, label) => { if (v && String(e[k] || '') !== String(v)) { ch.push(label + ': ' + (e[k] || '—') + ' → ' + v); e[k] = v; } };
+    set('poa', o.poa, 'доверенность'); set('act', o.act, 'акт'); set('sheets', o.sheetsTotal ? String(o.sheetsTotal) : '', 'листов'); set('transferDate', o.transferDate, 'дата передачи');
+    if (o.poa && e.hasPoa !== 'есть') { e.hasPoa = 'есть'; }
+    if (o.act && e.hasAct !== 'есть') { e.hasAct = 'есть'; }
+    if (ch.length) { e.history = (e.history ? e.history + '\n' : '') + stamp + ': из заполненной описи — ' + ch.join('; '); out.updated++; }
+  }
+  reg.updated = stamp;
+  return out;
 }
 
 /* ---------- Excel: реестр ---------- */
@@ -488,6 +585,6 @@ async function bundle(touched, reg, issues, settings, templateB64, onProgress) {
   return z.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 }
 
-const api = { readSales, groupSales, plan, number, apply, nextNumber, emptyRegistry, readRegistry, fromJson, opisDocx, registerDocx, registryXlsx, bundle, fileName, STATUSES, CHECK, ddmmyyyy, today };
+const api = { readOpisi, parseOpis, mergeFilled, registerLine, readSales, groupSales, plan, number, apply, nextNumber, emptyRegistry, readRegistry, fromJson, opisDocx, registerDocx, registryXlsx, bundle, fileName, STATUSES, CHECK, ddmmyyyy, today };
 if (typeof module === 'object' && module.exports) module.exports = api; else root.OpisiEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

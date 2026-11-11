@@ -229,6 +229,60 @@ let lastZip = null;
 $('opAgain').onclick = () => { if (lastZip) saveFile(lastZip.name, lastZip.zip, 'application/zip'); };
 $('opNext').onclick = () => { resetImport(); $('opImportStatus').textContent = 'Выберите следующий отчёт.'; };
 
+/* ---------- реестр по заполненным описям ---------- */
+let filled = null;
+$('opFilled').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (!files.length) return;
+  filled = null; $('opFilledBuild').disabled = true; $('opFilledTiles').hidden = true; $('opFilledIssuesBox').hidden = true;
+  $('opFilledStatus').textContent = 'Читаю описи…';
+  try {
+    const list = await Promise.all(files.map(async f => ({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) })));
+    filled = await O.readOpisi(list, (i, n) => { if (i % 25 === 0 || i === n) $('opFilledStatus').textContent = 'Читаю описи: ' + i + ' из ' + n; });
+    const it = filled.items;
+    if (!it.length) { $('opFilledStatus').textContent = 'Не найдено ни одной описи. Нужны Word-файлы описей (.docx) или ZIP с ними.'; }
+    else {
+      const nums = it.map(e => e.no);
+      $('opFilledStatus').textContent = 'Описей: ' + it.length + ' (№ ' + nums[0] + (nums.length > 1 ? '–' + nums[nums.length - 1] : '') + ').';
+      const tiles = [[it.length, 'описей'], [it.reduce((s, e) => s + e.vins.length, 0), 'автомобилей'], [it.filter(e => e.transferDate).length, 'с датой передачи'], [it.filter(e => e.poa).length, 'с доверенностью'], [it.filter(e => e.act).length, 'с актом'], [Math.round(it.reduce((s, e) => s + e.sheetsTotal, 0) * 100) / 100, 'листов']];
+      $('opFilledTiles').replaceChildren(...tiles.map(([v, l]) => { const d = document.createElement('div'); d.className = 'tile'; const b = document.createElement('b'); b.textContent = v; d.append(b, l); return d; }));
+      $('opFilledTiles').hidden = false;
+      $('opFilledBuild').disabled = false;
+    }
+    const iss = filled.issues.slice();
+    if (reg && it.length) {
+      const byNo = new Map(reg.entries.map(e => [e.no, e]));
+      const unknown = it.filter(e => !byNo.has(e.no)).map(e => e.no);
+      const mism = it.filter(e => byNo.has(e.no) && e.invoice && byNo.get(e.no).invoice.replace(/\s/g, '') !== e.invoice.replace(/\s/g, '')).map(e => '№ ' + e.no + ': в описи УПД ' + e.invoice + ', в реестре ' + byNo.get(e.no).invoice);
+      if (unknown.length) iss.push({ level: 'внимание', text: 'Нет в реестре описей: № ' + unknown.slice(0, 40).join(', ') + (unknown.length > 40 ? '…' : '') });
+      for (const m of mism.slice(0, 50)) iss.push({ level: 'ошибка', text: 'Опись не совпадает с реестром — ' + m });
+    }
+    $('opFilledMerge').disabled = !reg; if (!reg) $('opFilledMerge').checked = false;
+    const ul = $('opFilledIssues'); ul.replaceChildren();
+    for (const x of iss) { const li = document.createElement('li'); li.className = x.level === 'ошибка' ? 'err' : ''; li.textContent = x.text + (x.where ? ' — ' + x.where : ''); ul.append(li); }
+    $('opFilledIssuesSum').textContent = 'Замечания: ' + iss.length;
+    $('opFilledIssuesBox').hidden = !iss.length;
+  } catch (err) { $('opFilledStatus').textContent = 'Не удалось прочитать: ' + (err.message || err); }
+};
+$('opFilledBuild').onclick = async () => {
+  if (!filled || !filled.items.length) return;
+  const s = settings(), it = filled.items, nums = it.map(e => e.no);
+  $('opFilledBuild').disabled = true;
+  try {
+    const doc = await O.registerDocx(it, s, window.OpisiBlank);
+    const name = 'Реестр передачи — описи ' + nums[0] + (nums.length > 1 ? '-' + nums[nums.length - 1] : '') + '.docx';
+    saveFile(name, doc, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    let msg = 'Реестр сформирован: ' + it.length + ' описей.';
+    if ($('opFilledMerge').checked && reg) {
+      const m = O.mergeFilled(it, reg);
+      await saveReg(); renderReg();
+      msg += ' В реестре описей обновлено записей: ' + m.updated + '.' + (m.mismatch.length ? ' Не обновлены из-за расхождения УПД: ' + m.mismatch.length + ' (см. замечания).' : '');
+    }
+    $('opFilledStatus').textContent = msg;
+  } catch (err) { $('opFilledStatus').textContent = 'Не удалось сформировать реестр: ' + (err.message || err); }
+  finally { $('opFilledBuild').disabled = false; }
+};
+
 /* ---------- старт ---------- */
 loadSettings();
 idb.get('registry').then(v => { if (v) { reg = JSON.parse(v); } renderReg(); }).catch(() => renderReg());

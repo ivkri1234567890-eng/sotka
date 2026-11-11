@@ -71,6 +71,16 @@ details.panel summary{font-weight:750;cursor:pointer}</style>
  <label>Excel «Анализ реализации а/м» (.xlsx, .xls)<input type="file" id="opImport" multiple accept=".xlsx,.xls,.csv" disabled><small id="opImportHint">Сначала загрузите реестр описей.</small></label>
  <p id="opImportStatus" class="status"></p>
 </div>
+<div class="panel">
+ <h2>Реестр по заполненным описям</h2>
+ <p class="tip">Загрузите заполненные описи — Word-файлы по одному, пачкой или ZIP-архивом. Программа соберёт из них один реестр на исходящую корреспонденцию. Реквизиты отправителя берутся из настроек внизу страницы.</p>
+ <label>Описи (.docx или .zip)<input type="file" id="opFilled" multiple accept=".docx,.zip"></label>
+ <p id="opFilledStatus" class="status"></p>
+ <div id="opFilledTiles" class="tiles" hidden></div>
+ <details id="opFilledIssuesBox" hidden><summary id="opFilledIssuesSum">Замечания</summary><ul id="opFilledIssues" class="opissues"></ul></details>
+ <label class="check" style="margin-top:12px"><input type="checkbox" id="opFilledMerge" checked>Записать в реестр описей номера доверенностей, актов, листы и даты передачи из этих описей</label>
+ <button type="button" id="opFilledBuild" disabled>Сформировать реестр передачи</button>
+</div>
 <section id="opPreview" hidden>
  <div class="panel">
   <h2>Предпросмотр</h2>
@@ -137,7 +147,7 @@ details.panel summary{font-weight:750;cursor:pointer}</style>
 </section>
 
 </main>
-<script src="jszip.min.js?v=202611111815"></script><script src="xml-js.min.js?v=202611111815"></script><script src="engine.js?v=202611111815"></script><script src="xlsx.full.min.js?v=202611111815"></script><script src="gibdd-model.js?v=202611111815"></script><script src="gibdd-engine.js?v=202611111815"></script>
+<script src="jszip.min.js?v=202611111918"></script><script src="xml-js.min.js?v=202611111918"></script><script src="engine.js?v=202611111918"></script><script src="xlsx.full.min.js?v=202611111918"></script><script src="gibdd-model.js?v=202611111918"></script><script src="gibdd-engine.js?v=202611111918"></script>
 <script>
 const el=id=>document.getElementById(id);
 const cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -181,10 +191,10 @@ el('save').onclick=()=>{
 };
 </script>
 
-<script src="meeting.js?v=202611111815"></script><script src="meeting-ui.js?v=202611111815"></script>
+<script src="meeting.js?v=202611111918"></script><script src="meeting-ui.js?v=202611111918"></script>
 
-<script src="opisi-blank.js?v=202611111815"></script><script src="opisi-engine.js?v=202611111815"></script><script src="gibdd-ui.js?v=202611111815"></script>
-<script src="opisi-ui.js?v=202611111815"></script><script src="batch.js?v=202611111815"></script>
+<script src="opisi-blank.js?v=202611111918"></script><script src="opisi-engine.js?v=202611111918"></script><script src="gibdd-ui.js?v=202611111918"></script>
+<script src="opisi-ui.js?v=202611111918"></script><script src="batch.js?v=202611111918"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
