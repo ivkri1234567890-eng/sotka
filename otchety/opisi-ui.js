@@ -272,7 +272,8 @@ $('opFilledBuild').onclick = async () => {
     const doc = await O.registerDocx(it, s, window.OpisiBlank);
     const name = 'Реестр передачи — описи ' + nums[0] + (nums.length > 1 ? '-' + nums[nums.length - 1] : '') + '.docx';
     saveFile(name, doc, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    let msg = 'Реестр сформирован: ' + it.length + ' описей.';
+    const pl = n => n % 10 === 1 && n % 100 !== 11 ? 'опись' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'описи' : 'описей';
+    let msg = 'Реестр сформирован: ' + it.length + ' ' + pl(it.length) + '.';
     if ($('opFilledMerge').checked && reg) {
       const m = O.mergeFilled(it, reg);
       await saveReg(); renderReg();
