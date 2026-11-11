@@ -2,7 +2,7 @@
 (() => {
 const O = window.OpisiEngine;
 const $ = id => document.getElementById(id);
-const DEF = { gave: 'Рязанова В.В.', took: 'Клюшникова О.В.', org: 'АО «ГК «СТТ»', unit: 'ДПГА', sender: 'Васина О.В.', phone: '+79877563898', where: '', to: 'Клюшниковой О.В.', receiver: '' };
+const DEF = { gave: '', took: '', org: 'АО «ГК «СТТ»', unit: 'ДПГА', sender: '', phone: '', where: '', to: '', receiver: '' };   // имена и телефоны вводятся в настройках и хранятся только в браузере
 const KEYS = Object.keys(DEF);
 let reg = null, sales = null, groups = [], issues = [], items = [], showAll = false;
 
@@ -33,6 +33,7 @@ function loadSettings() {
   try { saved = JSON.parse(localStorage.getItem('dpga-opisi-settings') || '{}'); } catch (e) {}
   for (const k of KEYS) $('op_' + k).value = saved[k] ?? DEF[k];
   const d = new Date(); $('op_date').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  if (!$('op_gave').value || !$('op_took').value) $('opSettings').open = true;
   for (const k of KEYS) $('op_' + k).addEventListener('change', () => { try { localStorage.setItem('dpga-opisi-settings', JSON.stringify(Object.fromEntries(KEYS.map(k => [k, $('op_' + k).value])))); } catch (e) {} });
 }
 
@@ -197,7 +198,7 @@ $('opBuild').onclick = async () => {
   const chosen = items.filter(i => i.include && i.no);
   if (!chosen.length) return;
   const s = settings();
-  if (!s.gave || !s.took) { $('opBuildStatus').textContent = 'Укажите в настройках, кто передаёт и кто принимает документы.'; return; }
+  if (!s.gave || !s.took) { $('opBuildStatus').textContent = 'Заполните в настройках внизу страницы, кто передаёт и кто принимает документы (поля «Передала» и «Приняла»).'; $('opSettings').open = true; return; }
   $('opBuild').disabled = true; $('opBuildStatus').textContent = 'Формирую…';
   const snapshot = JSON.stringify(reg);
   try {

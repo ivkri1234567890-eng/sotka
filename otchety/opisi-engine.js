@@ -378,7 +378,7 @@ async function registerDocx(entries, s, templateB64) {
   // шапка
   const hr = rowsOf(T[0].xml);
   let hx = T[0].xml;
-  const titleRow = hr.find(r => /исходящую/.test(r));
+  const titleRow = hr.find(r => /корреспонденц/.test(r)) || hr[1];
   if (titleRow) hx = hx.replace(titleRow, replaceCells(titleRow, ['на исходящую корреспонденцию ' + s.org]));
   const sendRow = hr.find(r => /Отправитель/.test(r));
   if (sendRow) hx = hx.replace(sendRow, replaceCells(sendRow, [undefined, s.unit, 'Дата:', s.date]));

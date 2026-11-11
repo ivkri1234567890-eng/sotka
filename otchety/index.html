@@ -92,9 +92,9 @@ details.panel summary{font-weight:750;cursor:pointer}</style>
  <button type="button" id="opAgain" class="secondary">Скачать архив ещё раз</button>
  <button type="button" id="opNext">Загрузить следующий отчёт</button>
 </section>
-<details class="panel opset">
+<details class="panel opset" id="opSettings">
  <summary>Настройки описей и реестра передачи</summary>
- <p class="tip">Сохраняются в этом браузере.</p>
+ <p class="tip">Заполните один раз — сохраняются только в этом браузере. Ф.И.О. попадают в подписи описей и реестра передачи.</p>
  <label>Передала<input type="text" id="op_gave"></label>
  <label>Приняла<input type="text" id="op_took"></label>
  <label>Организация в реестре<input type="text" id="op_org" list="opOrgs"><datalist id="opOrgs"><option value="АО «ГК «СТТ»"><option value="АО «Платформа А»"></datalist></label>
@@ -137,7 +137,7 @@ details.panel summary{font-weight:750;cursor:pointer}</style>
 </section>
 
 </main>
-<script src="jszip.min.js?v=202611111813"></script><script src="xml-js.min.js?v=202611111813"></script><script src="engine.js?v=202611111813"></script><script src="xlsx.full.min.js?v=202611111813"></script><script src="gibdd-model.js?v=202611111813"></script><script src="gibdd-engine.js?v=202611111813"></script>
+<script src="jszip.min.js?v=202611111815"></script><script src="xml-js.min.js?v=202611111815"></script><script src="engine.js?v=202611111815"></script><script src="xlsx.full.min.js?v=202611111815"></script><script src="gibdd-model.js?v=202611111815"></script><script src="gibdd-engine.js?v=202611111815"></script>
 <script>
 const el=id=>document.getElementById(id);
 const cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -181,10 +181,10 @@ el('save').onclick=()=>{
 };
 </script>
 
-<script src="meeting.js?v=202611111813"></script><script src="meeting-ui.js?v=202611111813"></script>
+<script src="meeting.js?v=202611111815"></script><script src="meeting-ui.js?v=202611111815"></script>
 
-<script src="opisi-blank.js?v=202611111813"></script><script src="opisi-engine.js?v=202611111813"></script><script src="gibdd-ui.js?v=202611111813"></script>
-<script src="opisi-ui.js?v=202611111813"></script><script src="batch.js?v=202611111813"></script>
+<script src="opisi-blank.js?v=202611111815"></script><script src="opisi-engine.js?v=202611111815"></script><script src="gibdd-ui.js?v=202611111815"></script>
+<script src="opisi-ui.js?v=202611111815"></script><script src="batch.js?v=202611111815"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
