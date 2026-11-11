@@ -6,9 +6,15 @@
 .slots{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}.slots li{border:1px dashed var(--line);border-radius:10px;padding:9px 11px}.slots li.ok{border-style:solid;border-color:#2e8b57}.slots b{display:block}.slots small{display:block;overflow-wrap:anywhere}
 button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;border-radius:9px}
 [hidden]{display:none!important}
-.gate{min-height:100vh;display:grid;place-items:center;padding:24px 18px}.gate form{width:min(360px,100%)}.gate input{width:100%;margin-top:8px;padding:12px;font-size:20px;letter-spacing:.3em;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}.err{color:#c0392b}</style>
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px 18px}.gate form{width:min(360px,100%)}.gate input{width:100%;margin-top:8px;padding:12px;font-size:20px;letter-spacing:.3em;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}.err{color:#c0392b}
+.oprow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.oprow>div{min-width:0}.oprow b,.oprow small{display:block;overflow-wrap:anywhere}
+.opscroll{overflow-x:auto;margin-top:10px}.opscroll table{min-width:620px}.opscroll td,.opscroll th{text-align:left;vertical-align:top;white-space:pre-line}.opscroll td small{display:block;color:var(--muted)}
+.opdate{width:110px;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}.opdate.bad{border-color:#c0392b}
+.opissues{max-height:260px;overflow:auto;margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.4}.opdirs{display:grid;gap:6px;margin-top:8px}
+.opset input[type=text],.opset input[type=date],.opset input[type=tel]{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}
+details.panel summary{font-weight:750;cursor:pointer}</style>
 <div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h2 style="margin-top:8px">Центр отчётов ДПГА</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
-<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
+<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
 <form id="form">
  <div class="panel period"><label>Месяц<select id="month"></select></label><label>Год<input id="year" type="number" min="2000" max="2100" required></label></div>
  <div class="panel">
@@ -49,6 +55,58 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
 <p id="gibddStatus" class="status" role="status" aria-live="polite"></p>
 <section class="panel" id="gibddResult" hidden><h2 id="gibddTitle">Итог</h2><div id="gibddTiles" class="tiles"></div><p id="gibddNotes" class="status"></p><table><thead><tr><th>ТП</th><th>Машин</th><th>В CRM</th><th>Знали</th><th></th></tr></thead><tbody id="gibddPeople"></tbody></table><button id="gibddZip">Скачать все файлы (ZIP)</button></section>
 </section>
+<section id="opisiView" hidden>
+<p class="intro">Описи передачи документов по проданным автомобилям: одна опись на счёт-фактуру, сквозная нумерация по реестру. Загрузите отчёт «Анализ реализации а/м», проверьте список и сформируйте комплект.</p>
+<div class="panel">
+ <h2>Реестр описей</h2>
+ <p id="opRegInfo" class="status"></p>
+ <label>Загрузить реестр (Excel из прошлого комплекта или JSON)<input type="file" id="opRegFile" accept=".xlsx,.json"></label>
+ <button type="button" id="opRegDownload" class="secondary">Скачать реестр Excel</button>
+ <p id="opRegStatus" class="status"></p>
+ <label style="margin-top:14px">Найти опись: номер, счёт-фактура, VIN, покупатель<input type="text" id="opFind" autocomplete="off" style="width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px"></label>
+ <div id="opFound"></div>
+</div>
+<div class="panel">
+ <h2>Отчёт о продажах</h2>
+ <label>Excel «Анализ реализации а/м» (.xlsx, .xls)<input type="file" id="opImport" multiple accept=".xlsx,.xls,.csv" disabled><small id="opImportHint">Сначала загрузите реестр описей.</small></label>
+ <p id="opImportStatus" class="status"></p>
+</div>
+<section id="opPreview" hidden>
+ <div class="panel">
+  <h2>Предпросмотр</h2>
+  <div id="opTiles" class="tiles"></div>
+  <p id="opRange" class="status"></p>
+  <label>Начать новые номера с<input type="number" id="op_start" min="1"><small id="opStartErr" class="err"></small></label>
+  <details><summary>Направления</summary><div id="opDirs" class="opdirs"></div></details>
+  <label class="check" style="margin-top:12px"><input type="checkbox" id="opShowAll">Показывать и те, что уже в реестре</label>
+  <div class="opscroll"><table><thead><tr><th></th><th>№</th><th>Счёт-фактура</th><th>Покупатель / получатель</th><th>VIN</th><th>Состояние</th></tr></thead><tbody id="opRows"></tbody></table></div>
+  <p id="opMore" class="tip"></p>
+ </div>
+ <details class="panel"><summary id="opIssuesSum">Проверки</summary><ul id="opIssues" class="opissues"></ul></details>
+ <button type="button" id="opBuild" disabled>Сформировать описи</button>
+ <p id="opBuildStatus" class="status" role="status" aria-live="polite"></p>
+</section>
+<section id="opResult" class="panel" hidden>
+ <h2>Готово</h2>
+ <p id="opResultText" class="status"></p>
+ <button type="button" id="opAgain" class="secondary">Скачать архив ещё раз</button>
+ <button type="button" id="opNext">Загрузить следующий отчёт</button>
+</section>
+<details class="panel opset">
+ <summary>Настройки описей и реестра передачи</summary>
+ <p class="tip">Сохраняются в этом браузере.</p>
+ <label>Передала<input type="text" id="op_gave"></label>
+ <label>Приняла<input type="text" id="op_took"></label>
+ <label>Организация в реестре<input type="text" id="op_org" list="opOrgs"><datalist id="opOrgs"><option value="АО «ГК «СТТ»"><option value="АО «Платформа А»"></datalist></label>
+ <label>Структурное подразделение<input type="text" id="op_unit"></label>
+ <label>Ф.И.О. отправителя (Сдал)<input type="text" id="op_sender"></label>
+ <label>Телефон<input type="tel" id="op_phone"></label>
+ <label>Дата реестра<input type="date" id="op_date"></label>
+ <label>Куда<input type="text" id="op_where"></label>
+ <label>Кому<input type="text" id="op_to"></label>
+ <label>Принял (расшифровка подписи)<input type="text" id="op_receiver"></label>
+</details>
+</section>
 <section id="batchView" hidden>
 <p class="intro">Загрузите исходники за закрытый месяц. Готовые отчёты скачаются одним ZIP. Обработка выполняется в браузере.</p>
 <form id="batchForm">
@@ -79,7 +137,7 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
 </section>
 
 </main>
-<script src="jszip.min.js?v=202611091824"></script><script src="xml-js.min.js?v=202611091824"></script><script src="engine.js?v=202611091824"></script><script src="xlsx.full.min.js?v=202611091824"></script><script src="gibdd-model.js?v=202611091824"></script><script src="gibdd-engine.js?v=202611091824"></script>
+<script src="jszip.min.js?v=202611111813"></script><script src="xml-js.min.js?v=202611111813"></script><script src="engine.js?v=202611111813"></script><script src="xlsx.full.min.js?v=202611111813"></script><script src="gibdd-model.js?v=202611111813"></script><script src="gibdd-engine.js?v=202611111813"></script>
 <script>
 const el=id=>document.getElementById(id);
 const cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -123,10 +181,10 @@ el('save').onclick=()=>{
 };
 </script>
 
-<script src="meeting.js?v=202611091824"></script><script src="meeting-ui.js?v=202611091824"></script>
+<script src="meeting.js?v=202611111813"></script><script src="meeting-ui.js?v=202611111813"></script>
 
-<script src="gibdd-ui.js?v=202611091824"></script>
-<script src="batch.js?v=202611091824"></script>
+<script src="opisi-blank.js?v=202611111813"></script><script src="opisi-engine.js?v=202611111813"></script><script src="gibdd-ui.js?v=202611111813"></script>
+<script src="opisi-ui.js?v=202611111813"></script><script src="batch.js?v=202611111813"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
