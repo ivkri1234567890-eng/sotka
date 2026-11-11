@@ -1,0 +1,112 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>Помощник</title>
+<style>
+:root{color-scheme:light dark;--bg:#eef2f8;--panel:#fff;--ink:#142338;--muted:#52657b;--line:#d3dce9;--blue:#1552ca;--ok:#1d7a46;--okbg:#e3f3e9;--bad:#b42318;--badbg:#fde8e6;--warn:#9a5b00;--warnbg:#fff3dc;--ins:#d8f1df;--del:#fbe0dd;--mv:#e3ecfb}
+@media(prefers-color-scheme:dark){:root{--bg:#101827;--panel:#182438;--ink:#e7edf8;--muted:#afbdd0;--line:#32425b;--blue:#5b8bf0;--ok:#5fcf8e;--okbg:#15301f;--bad:#ff8a7d;--badbg:#3a1714;--warn:#f0b357;--warnbg:#33270f;--ins:#173a24;--del:#40191a;--mv:#1b2b4a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:auto;padding:25px max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:30px;margin:6px 0}h2{font-size:19px;margin:0 0 10px}p{line-height:1.45}.brand{color:var(--blue);font-size:13px;font-weight:800;letter-spacing:.13em}
+.intro,.tip,small{color:var(--muted)}.panel{padding:18px;background:var(--panel);border-radius:18px;margin-top:16px;border:1px solid var(--line)}
+label{display:block;font-weight:650;margin:0 0 14px}input,select,button,textarea{font:inherit}
+input[type=file],select,textarea,.gate input{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}
+textarea{min-height:180px;resize:vertical;font-size:14px;line-height:1.4}
+button{width:100%;border:0;border-radius:13px;padding:14px;font-weight:750;background:var(--blue);color:#fff;margin-top:12px;min-height:48px;cursor:pointer}button:disabled{opacity:.45;cursor:default}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.secondary{background:var(--panel);color:var(--blue);border:1px solid var(--line)}button.mini{width:auto;margin:0;padding:6px 11px;min-height:36px;font-size:14px;border-radius:9px;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.modes{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.modes button{flex:1 1 160px;margin:0;padding:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}.modes button[aria-pressed=true]{background:var(--blue);color:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 200px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:10px 0}.tile{background:var(--bg);padding:9px;border-radius:10px;font-size:14px;color:var(--muted)}.tile b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.status{white-space:pre-wrap;overflow-wrap:anywhere}
+ul.vers{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}.ver{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 11px}.ver>div:first-child{min-width:0}.ver b,.ver small{display:block;overflow-wrap:anywhere}.verbtns{display:flex;gap:6px;flex:none}
+.doc{font:15px/1.55 Georgia,"Times New Roman",serif;margin-top:12px}.blk{margin:0 0 10px;padding:6px 10px;border-left:3px solid transparent;border-radius:4px}
+.blk-add{background:var(--ins);border-color:var(--ok)}.blk-del{background:var(--del);border-color:var(--bad);text-decoration:line-through}.blk-chg{border-color:var(--warn)}.blk-mvin{background:var(--mv);border-color:var(--blue)}.blk-mvout{background:var(--mv);border-color:var(--blue);text-decoration:line-through;opacity:.75}
+.blk.cur{box-shadow:0 0 0 2px var(--blue)}ins{background:var(--ins);text-decoration:underline;text-decoration-color:var(--ok)}del{background:var(--del);text-decoration-color:var(--bad)}
+.tag{display:inline-block;font:600 11px/1.6 -apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:8px;text-decoration:none}
+.gap{color:var(--muted);text-align:center;margin:0 0 10px}.navbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.navbar span{flex:1;color:var(--muted);font-size:14px}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:600}
+td small{display:block;margin-top:3px}.links a{margin-right:12px;color:var(--blue)}
+.reftext{margin-top:4px}.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:650;white-space:nowrap}.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.muted{background:var(--bg);color:var(--muted)}
+ul.plain{padding-left:18px;margin:0;line-height:1.5}ul.plain li.bad{color:var(--bad)}
+.level{padding:10px 12px;border-radius:10px;margin:0 0 10px}.lv-0{background:var(--okbg)}.lv-1{background:var(--warnbg)}.lv-2{background:var(--badbg)}
+ul.ai{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.ai li{padding:8px 10px;border:1px solid var(--line);border-radius:10px}ul.ai li small{display:block;margin-top:2px}ul.ai li.warn1{border-color:var(--warn)}ul.ai li.warn2{border-color:var(--bad)}
+.quote{font-size:14px;border-left:3px solid var(--line);padding-left:10px;margin:8px 0}details summary{cursor:pointer;font-weight:650;margin-top:10px}
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px 18px}.gate form{width:min(360px,100%)}.gate input{font-size:20px;letter-spacing:.3em;text-align:center}.err{color:var(--bad)}
+[hidden]{display:none!important}
+</style>
+<body>
+<div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ПОМОЩНИК</div><h2 style="margin-top:8px">Вход</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
+<main id="app" hidden>
+<div class="brand">ПОМОЩНИК</div>
+<h1>Документы и тексты</h1>
+<p class="intro">Файлы обрабатываются в браузере и никуда не отправляются. При проверке источников наружу уходят только строки списка литературы — в открытые научные базы Crossref и OpenAlex.</p>
+<nav class="modes" aria-label="Инструмент"><button id="diffTab" aria-pressed="true">Сравнение версий</button><button id="sciTab" aria-pressed="false">Научный текст</button></nav>
+
+<section id="diffView">
+ <div class="panel">
+  <h2>Версии документа</h2>
+  <label>Файлы: .docx, .pdf, .odt, .rtf, .txt<input type="file" id="verFiles" multiple accept=".docx,.pdf,.odt,.rtf,.txt,.md,.html,.htm"></label>
+  <p id="verHint" class="tip"></p>
+  <ul id="verList" class="vers"></ul>
+  <label style="margin-top:14px">Как сравнивать<select id="diffMode"><option value="chain">Каждую версию с предыдущей</option><option value="base">Все версии с первой</option></select></label>
+  <label class="tip" style="font-weight:500"><input type="checkbox" id="loose"> Не учитывать знаки препинания и регистр</label>
+  <div class="row"><button type="button" id="diffRun" disabled>Сравнить</button><button type="button" id="diffClear" class="secondary">Очистить</button></div>
+  <p id="diffStatus" class="status err"></p>
+ </div>
+ <section id="diffOut" class="panel" hidden>
+  <h2>Изменения</h2>
+  <div id="pairSummary" class="scroll" hidden><table><thead><tr><th>Версии</th><th>Изменено</th><th>Добавлено</th><th>Удалено</th><th>Перемещено</th><th>Правок</th></tr></thead><tbody id="pairTable"></tbody></table></div>
+  <label style="margin-top:12px">Пара версий<select id="pairSel"></select></label>
+  <div id="diffTiles" class="tiles"></div>
+  <label class="tip" style="font-weight:500"><input type="checkbox" id="onlyChanges" checked> Показывать только изменения с соседними абзацами</label>
+  <div class="navbar"><button type="button" class="mini" id="navPrev">← Пред.</button><button type="button" class="mini" id="navNext">След. →</button><span id="navInfo"></span></div>
+  <div id="diffDoc" class="doc"></div>
+  <button type="button" id="diffWord">Скачать Word с исправлениями</button>
+  <p class="tip">В Word правки видны в режиме рецензирования: их можно принимать и отклонять по одной.</p>
+ </section>
+</section>
+
+<section id="sciView" hidden>
+ <div class="panel">
+  <h2>Статья или диссертация</h2>
+  <label>Файл: .docx, .pdf, .odt, .rtf, .txt<input type="file" id="sciFile" accept=".docx,.pdf,.odt,.rtf,.txt,.md"></label>
+  <label>…или вставьте текст вместе со списком литературы<textarea id="sciText" placeholder="Текст статьи…&#10;&#10;Список литературы&#10;1. Автор А.А. Название // Журнал. 2024. № 1. С. 1–10. DOI: …"></textarea></label>
+  <button type="button" id="sciRun">Проверить</button>
+  <p id="sciStatus" class="status tip"></p>
+ </div>
+ <section id="sciOut" hidden>
+  <div class="panel"><h2>Ссылки в тексте и список литературы</h2><ul id="citList" class="plain"></ul></div>
+  <div class="panel">
+   <h2>Источники</h2>
+   <div id="refTiles" class="tiles"></div>
+   <p id="refProgress" class="status tip"></p>
+   <button type="button" id="refStop" class="secondary" hidden>Остановить проверку</button>
+   <label style="margin-top:10px">Показать<select id="refFilter"><option value="all">Все источники</option><option value="problems">Только требующие внимания</option></select></label>
+   <div class="scroll"><table><thead><tr><th>№</th><th>Источник и результат проверки</th></tr></thead><tbody id="refRows"></tbody></table></div>
+  </div>
+  <div class="panel">
+   <h2>Признаки ИИ-стиля</h2>
+   <p class="tip">Это не «процент ИИ». Надёжно определить, кто написал текст, не может ни одна программа. Ниже — признаки, которые чаще встречаются в сгенерированных текстах, но бывают и у людей. Используйте их как повод перечитать текст, а не как доказательство.</p>
+   <div id="aiBox"></div>
+  </div>
+  <button type="button" id="sciReport">Скачать отчёт (Word)</button>
+ </section>
+</section>
+</main>
+<script src="jszip.min.js?v=202611111844"></script><script src="pdf.min.js?v=202611111844"></script><script src="text.js?v=202611111844"></script><script src="diff.js?v=202611111844"></script><script src="refs.js?v=202611111844"></script><script src="ui.js?v=202611111844"></script>
+<script>
+(()=>{
+ const app=document.getElementById('app'),gate=document.getElementById('gate');
+ const open=()=>{gate.hidden=true;app.hidden=false;};
+ const want='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699';
+ try{if(sessionStorage.getItem('pom-auth')===want)open();}catch(e){}
+ if(!app.hidden)return;
+ document.getElementById('pw').focus();
+ document.getElementById('gateForm').onsubmit=async e=>{
+  e.preventDefault();
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(document.getElementById('pw').value.trim()));
+  const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hex===want){try{sessionStorage.setItem('pom-auth',want);}catch(e){}open();}
+  else{document.getElementById('pwErr').hidden=false;document.getElementById('pw').select();}
+ };
+})();
+</script>
+</body></html>
