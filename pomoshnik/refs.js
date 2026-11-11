@@ -89,6 +89,8 @@ function fromCrossref(it) {
   return {
     title: strip((it.title || [])[0] || ''), doi: it.DOI || '', year: ((it.issued || it['published-print'] || it['published-online'] || {})['date-parts'] || [[null]])[0][0],
     authors: (it.author || []).map(a => a.family || a.name || ''), journal: strip((it['container-title'] || [])[0] || ''), source: 'Crossref',
+    people: (it.author || []).map(a => ({ family: a.family || a.name || '', given: a.given || '' })),
+    volume: it.volume || '', issue: it.issue || '', page: it.page || '', type: it.type || '', publisher: it.publisher || '',
   };
 }
 function fromOpenAlex(w) {
@@ -127,7 +129,7 @@ async function checkEntry(entry, { signal, openAlex = true } = {}) {
   }
   const q = entry.text.replace(/https?:\/\/\S+/g, '').slice(0, 300);
   let best = null, bestS = null, limited = false;
-  const cr = await getJson('https://api.crossref.org/works?rows=5&select=DOI,title,author,issued,container-title&query.bibliographic=' + encodeURIComponent(q), signal);
+  const cr = await getJson('https://api.crossref.org/works?rows=5&select=DOI,title,author,issued,container-title,volume,issue,page,type,publisher&query.bibliographic=' + encodeURIComponent(q), signal);
   for (const it of ((cr.message || {}).items || [])) { const c = fromCrossref(it), s = score(entry, c); if (!bestS || s.val > bestS.val) { best = c; bestS = s; } }
   if ((!bestS || bestS.cov < 0.75) && openAlex) {
     const oa = await getJson('https://api.openalex.org/works?per-page=5&select=id,doi,title,display_name,publication_year,authorships,primary_location&search=' + encodeURIComponent(q.slice(0, 200)), signal).catch(() => ({}));

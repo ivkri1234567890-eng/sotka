@@ -29,6 +29,8 @@ ul.plain{padding-left:18px;margin:0;line-height:1.5}ul.plain li.bad{color:var(--
 .level{padding:10px 12px;border-radius:10px;margin:0 0 10px}.lv-0{background:var(--okbg)}.lv-1{background:var(--warnbg)}.lv-2{background:var(--badbg)}
 ul.ai{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.ai li{padding:8px 10px;border:1px solid var(--line);border-radius:10px}ul.ai li small{display:block;margin-top:2px}ul.ai li.warn1{border-color:var(--warn)}ul.ai li.warn2{border-color:var(--bad)}
 .quote{font-size:14px;border-left:3px solid var(--line);padding-left:10px;margin:8px 0}details summary{cursor:pointer;font-weight:650;margin-top:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 12px}.grid2 label{margin:0}.grid2 input,.grid2 select,.opt input[type=text],.opt input[type=number]{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}
+.checks{display:grid;gap:6px;margin-top:12px}.checks label{font-weight:450;margin:0;display:flex;gap:8px;align-items:flex-start}.found{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.45}.found small{display:block}
 .gate{min-height:100vh;display:grid;place-items:center;padding:24px 18px}.gate form{width:min(360px,100%)}.gate input{font-size:20px;letter-spacing:.3em;text-align:center}.err{color:var(--bad)}
 [hidden]{display:none!important}
 </style>
@@ -38,7 +40,7 @@ ul.ai{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.ai li{padding:8
 <div class="brand">ПОМОЩНИК</div>
 <h1>Документы и тексты</h1>
 <p class="intro">Файлы обрабатываются в браузере и никуда не отправляются. При проверке источников наружу уходят только строки списка литературы — в открытые научные базы Crossref и OpenAlex.</p>
-<nav class="modes" aria-label="Инструмент"><button id="diffTab" aria-pressed="true">Сравнение версий</button><button id="sciTab" aria-pressed="false">Научный текст</button></nav>
+<nav class="modes" aria-label="Инструмент"><button id="diffTab" aria-pressed="true">Сравнение версий</button><button id="sciTab" aria-pressed="false">Научный текст</button><button id="fmtTab" aria-pressed="false">Оформление по стандарту</button></nav>
 
 <section id="diffView">
  <div class="panel">
@@ -90,8 +92,58 @@ ul.ai{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.ai li{padding:8
   <button type="button" id="sciReport">Скачать отчёт (Word)</button>
  </section>
 </section>
+
+<section id="fmtView" hidden>
+ <div class="panel">
+  <h2>Стандарт</h2>
+  <label>Оформить по<select id="fmtPreset"></select></label>
+  <p id="fmtNote" class="tip"></p>
+  <details><summary>Загрузить требования журнала, вуза или стандарта</summary>
+   <p class="tip">Приложение найдёт в тексте шрифт, кегль, интервал, поля, отступ, выравнивание, нумерацию страниц и стиль списка литературы и подставит их ниже. Проверьте найденное.</p>
+   <label>Файл с требованиями<input type="file" id="fmtReqFile" accept=".docx,.pdf,.odt,.rtf,.txt,.md"></label>
+   <label>…или вставьте текст требований<textarea id="fmtReqText" style="min-height:110px"></textarea></label>
+   <button type="button" id="fmtReqRun" class="secondary">Прочитать требования</button>
+   <ul id="fmtFound" class="found"></ul>
+  </details>
+ </div>
+ <details class="panel opt" id="fmtParams">
+  <summary>Параметры оформления</summary>
+  <div class="grid2" style="margin-top:12px">
+   <label>Шрифт<input type="text" id="f_font"></label>
+   <label>Кегль, пт<input type="number" id="f_size" min="8" max="20" step="0.5"></label>
+   <label>Межстрочный интервал<select id="f_spacing"><option value="1">одинарный</option><option value="1.15">1,15</option><option value="1.5">полуторный</option><option value="2">двойной</option></select></label>
+   <label>Абзацный отступ, см<input type="number" id="f_indent" min="0" max="3" step="0.01"></label>
+   <label>Поле левое, мм<input type="number" id="f_left" min="0" max="60" step="0.1"></label>
+   <label>Поле правое, мм<input type="number" id="f_right" min="0" max="60" step="0.1"></label>
+   <label>Поле верхнее, мм<input type="number" id="f_top" min="0" max="60" step="0.1"></label>
+   <label>Поле нижнее, мм<input type="number" id="f_bottom" min="0" max="60" step="0.1"></label>
+   <label>Выравнивание<select id="f_align"><option value="both">по ширине</option><option value="left">по левому краю</option></select></label>
+   <label>Номер страницы<select id="f_pageNum"><option value="bottom-center">внизу по центру</option><option value="bottom-right">внизу справа</option><option value="top-center">вверху по центру</option><option value="top-right">вверху справа</option><option value="none">не ставить</option></select></label>
+   <label>Список литературы<select id="f_refStyle"><option value="gost100">ГОСТ Р 7.0.100-2018</option><option value="gost5">ГОСТ Р 7.0.5-2008 (кратко)</option><option value="apa">APA 7</option><option value="vancouver">Vancouver</option><option value="keep">не менять</option></select></label>
+   <label>Подписи рисунков и таблиц<select id="f_captions"><option value="gost">«Рисунок 1 — …» (ГОСТ)</option><option value="apa">«Рисунок 1. …» / «Figure 1. …»</option><option value="keep">не менять</option></select></label>
+   <label>Кегль в таблицах, пт<input type="number" id="f_tableSize" min="8" max="16" step="0.5"></label>
+  </div>
+  <div class="checks">
+   <label><input type="checkbox" id="f_noFirstNum"> Без номера на титульном листе</label>
+   <label><input type="checkbox" id="f_upperStructural"> «ВВЕДЕНИЕ», «ЗАКЛЮЧЕНИЕ» и т. п. прописными</label>
+   <label><input type="checkbox" id="f_newPage"> Главы и структурные элементы с новой страницы</label>
+   <label><input type="checkbox" id="f_sectionIndent"> Заголовки разделов с абзацного отступа</label>
+   <label><input type="checkbox" id="f_hanging"> Список литературы с выступом (как в APA)</label>
+   <label><input type="checkbox" id="f_dropEmpty"> Убрать лишние пустые строки</label>
+  </div>
+ </details>
+ <div class="panel">
+  <h2>Работа</h2>
+  <label>Файл статьи или работы (.docx лучше всего; также .pdf, .odt, .rtf, .txt)<input type="file" id="fmtFile" accept=".docx,.pdf,.odt,.rtf,.txt,.md"></label>
+  <p class="tip">Word оформляется на месте: таблицы, рисунки, формулы и сноски остаются. Из PDF и текста берётся только текст — таблицы и рисунки придётся вставить заново.</p>
+  <button type="button" id="fmtRun" disabled>Оформить</button>
+  <p id="fmtStatus" class="status tip" role="status" aria-live="polite"></p>
+  <ul id="fmtReport" class="plain"></ul>
+  <button type="button" id="fmtDownload" hidden>Скачать оформленный файл</button>
+ </div>
+</section>
 </main>
-<script src="jszip.min.js?v=202611111844"></script><script src="pdf.min.js?v=202611111844"></script><script src="text.js?v=202611111844"></script><script src="diff.js?v=202611111844"></script><script src="refs.js?v=202611111844"></script><script src="ui.js?v=202611111844"></script>
+<script src="jszip.min.js?v=202611111857"></script><script src="pdf.min.js?v=202611111857"></script><script src="text.js?v=202611111857"></script><script src="diff.js?v=202611111857"></script><script src="refs.js?v=202611111857"></script><script src="format.js?v=202611111857"></script><script src="ui.js?v=202611111857"></script>
 <script>
 (()=>{
  const app=document.getElementById('app'),gate=document.getElementById('gate');

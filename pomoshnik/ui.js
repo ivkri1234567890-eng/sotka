@@ -12,7 +12,7 @@ const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = document.querySelector('script[src^="pdf.min.js"]').src.replace('pdf.min.js', 'pdf.worker.min.js');
 
 /* ---------- вкладки ---------- */
-const tabs = ['diff', 'sci'];
+const tabs = ['diff', 'sci', 'fmt'];
 function show(t) {
   for (const x of tabs) { $(x + 'Tab').setAttribute('aria-pressed', x === t); $(x + 'View').hidden = x !== t; }
   try { localStorage.setItem('pom-tab', t); } catch (e) {}
@@ -213,4 +213,82 @@ $('sciReport').onclick = async () => {
   else { blocks.push({ p: 'Уровень признаков: ' + sci.ai.level + '. Это не доказательство авторства: признаки встречаются и в текстах людей.' }, { widths: [3200, 2600, 3800], table: [['Признак', 'Значение', 'Что это значит']].concat(sci.ai.items.map(i => [i.name, i.value, i.hint])) }); }
   saveFile('Проверка_научного_текста.docx', await PomDiff.simpleDocx(blocks), DOCX);
 };
+
+/* ================= Оформление по стандарту ================= */
+const F = window.PomFormat, P = F.PRESETS;
+const FIELDS = ['font', 'size', 'spacing', 'indent', 'left', 'right', 'top', 'bottom', 'align', 'pageNum', 'refStyle', 'captions', 'tableSize'];
+const CHECKS = ['noFirstNum', 'upperStructural', 'newPage', 'sectionIndent', 'hanging', 'dropEmpty'];
+let fmtFile = null, fmtOut = null, custom = null;
+for (const [k, v] of Object.entries(P)) $('fmtPreset').add(new Option(v.name, k));
+$('fmtPreset').add(new Option('Свои параметры (по загруженным требованиям)', 'custom'));
+function fill(s) {
+  for (const k of FIELDS) { const e = $('f_' + k); if (e && s[k] !== undefined) e.value = String(s[k]); }
+  for (const k of CHECKS) $('f_' + k).checked = !!s[k];
+}
+function current() {
+  const s = { ...F.BASE };
+  for (const k of FIELDS) { const e = $('f_' + k), v = e.value; s[k] = e.type === 'number' || k === 'spacing' ? parseFloat(String(v).replace(',', '.')) : v; }
+  for (const k of CHECKS) s[k] = $('f_' + k).checked;
+  s.structuralCenter = true;
+  return s;
+}
+$('fmtPreset').onchange = () => {
+  const k = $('fmtPreset').value;
+  if (k === 'custom') { fill(custom || current()); $('fmtNote').textContent = 'Параметры из загруженных требований — проверьте их в разделе «Параметры оформления».'; $('fmtParams').open = true; }
+  else { fill(P[k]); $('fmtNote').textContent = P[k].note; }
+  try { localStorage.setItem('pom-fmt', k); } catch (e) {}
+};
+try { const k = localStorage.getItem('pom-fmt'); if (k && P[k]) $('fmtPreset').value = k; } catch (e) {}
+$('fmtPreset').onchange();
+const LABEL = { font: 'Шрифт', size: 'Кегль', spacing: 'Интервал', left: 'Поле левое, мм', right: 'Поле правое, мм', top: 'Поле верхнее, мм', bottom: 'Поле нижнее, мм', indent: 'Абзацный отступ, см', align: 'Выравнивание', pageNum: 'Номер страницы', refStyle: 'Список литературы' };
+const SHOW = { both: 'по ширине', left: 'по левому краю', 'bottom-center': 'внизу по центру', 'bottom-right': 'внизу справа', 'top-center': 'вверху по центру', 'top-right': 'вверху справа', gost100: 'ГОСТ Р 7.0.100-2018', gost5: 'ГОСТ Р 7.0.5-2008', apa: 'APA', vancouver: 'Vancouver' };
+$('fmtReqFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { $('fmtReqText').value = (await PomText.extract(new Uint8Array(await f.arrayBuffer()), f.name)).join('\n'); readReq(); }
+  catch (err) { $('fmtFound').replaceChildren(el('li', 'bad', err.message || String(err))); }
+};
+$('fmtReqRun').onclick = readReq;
+function readReq() {
+  const txt = $('fmtReqText').value.trim(); const ul = $('fmtFound'); ul.replaceChildren();
+  if (!txt) { ul.append(el('li', 'bad', 'Вставьте текст требований или загрузите файл.')); return; }
+  const { found, why } = F.parseRequirements(txt);
+  const keys = Object.keys(found);
+  if (!keys.length) { ul.append(el('li', 'bad', 'Не нашёл в тексте параметров оформления. Задайте их вручную в разделе «Параметры оформления».')); return; }
+  custom = { ...current(), ...found };
+  if (found.refStyle === 'apa') Object.assign(custom, { hanging: true, captions: 'apa' });
+  for (const k of keys) { const li = el('li'); li.append(el('b', '', (LABEL[k] || k) + ': ' + (SHOW[found[k]] || String(found[k]).replace('.', ','))), el('small', '', '«…' + why[k] + '…»')); ul.append(li); }
+  const miss = ['font', 'size', 'spacing', 'left', 'indent', 'pageNum'].filter(k => !(k in found));
+  if (miss.length) ul.append(el('li', 'bad', 'Не найдено: ' + miss.map(k => LABEL[k].toLowerCase()).join(', ') + ' — оставлены значения выбранного стандарта.'));
+  $('fmtPreset').value = 'custom'; $('fmtPreset').onchange();
+}
+$('fmtFile').onchange = e => { fmtFile = e.target.files[0] || null; e.target.value = ''; $('fmtRun').disabled = !fmtFile; $('fmtDownload').hidden = true; $('fmtReport').replaceChildren(); $('fmtStatus').textContent = fmtFile ? 'Файл: ' + fmtFile.name : ''; };
+$('fmtRun').onclick = async () => {
+  if (!fmtFile) return;
+  const s = current(); $('fmtRun').disabled = true; $('fmtDownload').hidden = true; $('fmtReport').replaceChildren();
+  $('fmtStatus').textContent = 'Оформляю…';
+  try {
+    let bytes = new Uint8Array(await fmtFile.arrayBuffer());
+    const isDocx = bytes[0] === 0x50 && bytes[1] === 0x4B && (await JSZip.loadAsync(bytes)).file('word/document.xml');
+    if (!isDocx) bytes = await F.textToDocx(await PomText.extract(bytes, fmtFile.name));
+    const lookup = async text => { const e = PomRefs.parseEntry(text, 1); if (e.kind !== 'публикация') return null; const r = await PomRefs.checkEntry(e, { openAlex: false }); return r.status === 'найден' && r.match && r.match.people ? r.match : null; };
+    const { bytes: out, report: r } = await F.formatDocx(bytes, s, { refLookup: s.refStyle === 'keep' ? null : lookup, onProgress: (i, n) => { $('fmtStatus').textContent = 'Список литературы: ищу данные источников в Crossref — ' + i + ' из ' + n; } });
+    fmtOut = { name: fmtFile.name.replace(/\.[^.]+$/, '') + ' — оформлено.docx', bytes: out };
+    const ul = $('fmtReport'); const add = (t, bad) => ul.append(el('li', bad ? 'bad' : '', t));
+    add('Страница: A4, поля ' + [s.left, s.right, s.top, s.bottom].map(v => String(v).replace('.', ',')).join(' / ') + ' мм; ' + s.font + ' ' + s.size + ' пт, интервал ' + String(s.spacing).replace('.', ',') + ', абзац ' + String(s.indent).replace('.', ',') + ' см.');
+    add('Абзацев текста: ' + r.body + '; заголовков разделов: ' + r.headings + '; структурных элементов («Введение», «Заключение»…): ' + r.struct + '.');
+    if (r.figs || r.tabs) add('Подписей рисунков: ' + r.figs + ', таблиц: ' + r.tabs + (s.captions !== 'keep' ? ' — приведены к единому виду.' : '.'));
+    if (r.tables) add('Абзацев в таблицах: ' + r.tables + ' (кегль ' + s.tableSize + ', одинарный интервал).');
+    if (r.emptyRemoved) add('Убрано лишних пустых строк: ' + r.emptyRemoved + '.');
+    if (r.refsAll) {
+      add(s.refStyle === 'keep' ? 'Список литературы: ' + r.refsAll + ' записей, оформление не менялось.' : 'Список литературы: переоформлено ' + r.refsDone + ' из ' + r.refsAll + ' по ' + (SHOW[s.refStyle] || s.refStyle) + ' (по данным Crossref).');
+      if (r.refsLeft.length) add('Не найдены в Crossref, оставлены как были — оформите вручную: ' + r.refsLeft.map(x => '«' + x + '…»').join('; '), true);
+    } else add('Список литературы не найден (нужен заголовок «Список литературы», «Литература» или «References»).', true);
+    if (!isDocx) add('Исходник не в формате Word: собран новый документ только из текста.', true);
+    for (const n of r.notes) add(n);
+    $('fmtStatus').textContent = 'Готово. Откройте файл и проверьте титульный лист и заголовки — их распознавание автоматическое.';
+    $('fmtDownload').hidden = false;
+  } catch (err) { $('fmtStatus').textContent = 'Не удалось оформить: ' + (err.message || err); }
+  finally { $('fmtRun').disabled = !fmtFile; }
+};
+$('fmtDownload').onclick = () => { if (fmtOut) saveFile(fmtOut.name, fmtOut.bytes, DOCX); };
 })();
