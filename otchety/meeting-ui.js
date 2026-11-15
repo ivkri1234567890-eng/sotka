@@ -1,6 +1,6 @@
-for(const mode of ['batch','rating','meeting','gibdd','opisi']){
+for(const mode of ['batch','rating','meeting','gibdd','opisi','obrazec']){
  el(mode+'Mode').onclick=()=>{
-  for(const other of ['batch','rating','meeting','gibdd','opisi']){
+  for(const other of ['batch','rating','meeting','gibdd','opisi','obrazec']){
    el(other+'View').hidden=other!==mode;
    el(other+'Mode').setAttribute('aria-pressed',String(other===mode));
   }

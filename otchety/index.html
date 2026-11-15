@@ -12,9 +12,22 @@ button.mini{width:auto;margin:0;padding:6px 10px;min-height:34px;font-size:14px;
 .opdate{width:110px;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}.opdate.bad{border-color:#c0392b}
 .opissues{max-height:260px;overflow:auto;margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.4}.opdirs{display:grid;gap:6px;margin-top:8px}
 .opset input[type=text],.opset input[type=date],.opset input[type=tel]{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}
-details.panel summary{font-weight:750;cursor:pointer}</style>
+details.panel summary{font-weight:750;cursor:pointer}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--muted)}.drop.over{border-color:var(--blue);background:var(--bg)}
+.files{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}.files li{border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}.files b,.files small{display:block;overflow-wrap:anywhere}.files select{width:auto;min-height:36px;margin:0;padding:5px}
+.role-sample{border-left:5px solid #c77d00!important}.role-new,.role-both{border-left:5px solid #2e8b57!important}.role-old{border-left:5px solid #7a8aa3!important}
+.banner{background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 11px;font-size:14px}.chip button{all:unset;cursor:pointer;padding:0 6px;font-weight:700;color:var(--muted)}
+.rcol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}.rcol select{margin:0;min-height:38px;padding:5px;font-size:14px}.rcol b{overflow-wrap:anywhere;font-size:15px}
+.ok{color:#2e8b57}.warn{color:#b9770e}
+.sendbar{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:9;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:min(640px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 12px;box-shadow:0 6px 24px #0003}.sendbar span{font-weight:650;overflow-wrap:anywhere;flex:1 1 160px}.sendbar small{flex-basis:100%}
+textarea{width:100%;min-height:120px;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:14px/1.4 ui-monospace,Menlo,monospace}
+.flist{display:grid;gap:6px;margin-top:8px}.flist .oprow button{flex:none}
+.preview{overflow:auto;max-height:360px;margin-top:10px;border:1px solid var(--line);border-radius:10px}.preview table{font-size:13px;min-width:100%}.preview td,.preview th{white-space:nowrap;text-align:left;padding:5px 8px}.preview tr.sub td{font-weight:700;background:var(--bg)}
+.ideas{margin:6px 0 0;padding-left:18px;line-height:1.45;color:var(--muted);font-size:15px}
+</style>
 <div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h2 style="margin-top:8px">Центр отчётов ДПГА</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
-<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button><button id="skladMode" aria-pressed="false" type="button" onclick="location.href='sklad.html'">Склад ТС</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
+<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button><button id="obrazecMode" aria-pressed="false">По образцу</button><button id="skladMode" aria-pressed="false" type="button" onclick="location.href='sklad.html'">Склад ТС</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
 <form id="form">
  <div class="panel period"><label>Месяц<select id="month"></select></label><label>Год<input id="year" type="number" min="2000" max="2100" required></label></div>
  <div class="panel">
@@ -117,6 +130,80 @@ details.panel summary{font-weight:750;cursor:pointer}</style>
  <label>Принял (расшифровка подписи)<input type="text" id="op_receiver"></label>
 </details>
 </section>
+<section id="obrazecView" hidden>
+<p class="intro">Загрузите готовый отчёт за прошлый период и исходники к нему — программа сама поймёт, как он собран (колонки, группировки, фильтры, период, итоги), и сделает такой же по новым данным. Считает на устройстве, работает и без интернета.</p>
+<div class="panel" id="obSavedBox" hidden>
+ <h2>Мои отчёты</h2>
+ <div id="obSaved" class="flist"></div>
+</div>
+<div class="panel">
+ <h2>Файлы</h2>
+ <div class="drop" id="obDrop">Перетащите сюда образец и исходники — или выберите<input type="file" id="obFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip"><small>Можно всё сразу. Программа сама определит, где образец, а где исходники прошлого и нового периода. Если исходник один на несколько месяцев — тоже подходит.</small></div>
+ <div id="obMatch" class="banner" hidden></div>
+ <ul id="obList" class="files"></ul>
+ <p id="obStatus" class="status" role="status" aria-live="polite"></p>
+ <button type="button" id="obLearn" disabled>Понять образец</button>
+ <label class="check" style="margin-top:12px"><input type="file" id="obImport" accept=".json" hidden><button type="button" class="secondary mini" id="obImportBtn">Загрузить отчёт от коллеги (.json)</button></label>
+</div>
+<section id="obRecipe" hidden>
+ <div class="panel">
+  <h2>Как я понял образец</h2>
+  <label>Название отчёта<input type="text" id="obName" style="width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px"></label>
+  <div id="obSheets"></div>
+ </div>
+ <div class="panel">
+  <h2>Новый отчёт</h2>
+  <div class="period"><label>Месяц<select id="obMonth"></select></label><label>Год<input id="obYear" type="number" min="2000" max="2100"></label></div>
+  <p id="obPeriodHint" class="tip"></p>
+  <label class="check" id="obSplitBox" hidden><input type="checkbox" id="obSplit"><span id="obSplitText"></span></label>
+  <label class="check"><input type="checkbox" id="obCompare" checked>Добавить лист «Изменения»: что изменилось к прошлому периоду, кто пропал, кто появился</label>
+  <label class="check"><input type="checkbox" id="obAuto">Сразу отправлять готовый отчёт получателям из настроек отправки</label>
+  <button type="button" id="obRun">Сформировать отчёт</button>
+  <p id="obRunStatus" class="status" role="status" aria-live="polite"></p>
+ </div>
+</section>
+<section id="obResult" class="panel" hidden>
+ <h2>Готово</h2>
+ <div id="obTiles" class="tiles"></div>
+ <details id="obIssuesBox" hidden><summary id="obIssuesSum">Проверки</summary><ul id="obIssues" class="opissues"></ul></details>
+ <div id="obFilesOut" class="flist"></div>
+ <div class="preview" id="obPreview"></div>
+ <button type="button" id="obSave">Скачать</button>
+ <label style="margin-top:14px">Сообщение получателям<textarea id="obMsg"></textarea></label>
+ <div class="tiles" style="grid-template-columns:1fr 1fr"><button type="button" id="obTg" class="secondary" style="margin:0">Отправить в Telegram</button><button type="button" id="obMail" class="secondary" style="margin:0">Отправить на почту</button></div>
+ <p id="obSendStatus" class="status" role="status" aria-live="polite"></p>
+</section>
+<details class="panel opset" id="obSendSet">
+ <summary>Отправка в Telegram и на почту</summary>
+ <p class="tip">Настройки сохраняются только в этом браузере. Если интернета нет, отчёт встанет в очередь и уйдёт, когда связь появится.</p>
+ <h2 style="margin-top:12px">Telegram</h2>
+ <p class="tip">1. В Telegram откройте @BotFather → /newbot → получите токен. 2. Маркетолог (и вы) пишет вашему боту любое сообщение, например /start. 3. Нажмите «Найти получателей».</p>
+ <label>Токен бота<input type="text" id="sdToken" autocomplete="off" placeholder="123456:ABC…"></label>
+ <button type="button" class="secondary" id="sdFind">Найти получателей</button>
+ <div id="sdTo" class="flist"></div>
+ <label style="margin-top:10px">Добавить вручную (chat id)<input type="text" id="sdManual" placeholder="например 123456789"></label>
+ <h2 style="margin-top:16px">Почта</h2>
+ <label>Адреса через запятую<input type="text" id="sdEmails" placeholder="name@mail.ru"></label>
+ <p class="tip">Без настройки кнопка «На почту» откроет «Поделиться» (на телефоне — выбор почты или мессенджера) или письмо с уже скачанным файлом. Чтобы письма уходили сами, с вложением, — подключите свой бесплатный Google-скрипт:</p>
+ <details><summary>Как подключить автоматическую отправку писем</summary><textarea id="sdGas" readonly></textarea><button type="button" class="secondary mini" id="sdGasCopy">Скопировать код</button></details>
+ <label style="margin-top:10px">Адрес веб-приложения Google-скрипта<input type="text" id="sdGasUrl" placeholder="https://script.google.com/macros/s/…/exec"></label>
+ <label>Ключ из скрипта<input type="text" id="sdGasKey" autocomplete="off"></label>
+ <button type="button" class="secondary" id="sdTest">Отправить проверочное сообщение</button>
+ <p id="sdStatus" class="status"></p>
+ <p id="sdQueue" class="tip"></p>
+</details>
+<details class="panel"><summary>Что умеет «По образцу»</summary><ul class="ideas">
+ <li>Сам узнаёт, какой файл — готовый отчёт, а какие — исходники прошлого и нового периода.</li>
+ <li>Повторяет колонки, группировку, суммы и количества, перекрёстные таблицы, фильтры (например «только новые», «без пустых»), справочники из другого файла, сортировку, промежуточные и общие итоги.</li>
+ <li>Сохраняет оформление образца: шрифты, заливку, ширину колонок, формулы, автофильтр, диаграммы и сводные (обновятся при открытии).</li>
+ <li>Сдвигает период: «за август» → «за октябрь», даты в шапке, «январь–август» → «январь–сентябрь».</li>
+ <li>Если образец сделан на одного менеджера — предложит сделать такой же файл каждому.</li>
+ <li>Добавляет лист «Изменения»: кто появился, кто пропал, где резкие скачки.</li>
+ <li>Проверки: пустые значения, новые значения, которых не было в фильтре, справочник без нужных строк.</li>
+ <li>Запоминает отчёт: в следующий раз достаточно загрузить новые исходники. Отчёт можно передать коллеге файлом .json.</li>
+ <li>Отправляет готовое в Telegram и на почту, без интернета — ставит в очередь. Кнопка отправки появляется и у других отчётов центра после скачивания.</li>
+</ul></details>
+</section>
 <section id="batchView" hidden>
 <p class="intro">Загрузите исходники за закрытый месяц. Готовые отчёты скачаются одним ZIP. Обработка выполняется в браузере.</p>
 <form id="batchForm">
@@ -191,10 +278,11 @@ el('save').onclick=()=>{
 };
 </script>
 
-<script src="meeting.js?v=202611111918"></script><script src="meeting-ui.js?v=202611111918"></script>
+<script src="meeting.js?v=202611111918"></script><script src="meeting-ui.js?v=202611151200"></script>
 
 <script src="opisi-blank.js?v=202611111918"></script><script src="opisi-engine.js?v=202611111918"></script><script src="gibdd-ui.js?v=202611111918"></script>
 <script src="opisi-ui.js?v=202611111919"></script><script src="batch.js?v=202611111918"></script>
+<script src="send.js?v=202611151200"></script><script src="obrazec-read.js?v=202611151200"></script><script src="obrazec-learn.js?v=202611151200"></script><script src="obrazec-write.js?v=202611151200"></script><script src="obrazec-core.js?v=202611151200"></script><script src="obrazec-ui.js?v=202611151200"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
@@ -212,4 +300,5 @@ el('save').onclick=()=>{
 })();
 </script>
 
+<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{});</script>
 </html>
