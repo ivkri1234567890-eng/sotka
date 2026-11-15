@@ -71,6 +71,7 @@ async function sendMail(s,job){
 /** Без настроенного скрипта: «Поделиться» (телефон, Windows, Mac) или письмо + скачивание. */
 async function shareMail(job){
  const files=await zipIfMany(job.files,job.zipName);
+ if(window.AndroidBridge){const f=files[0];window.AndroidBridge.share(f.name,f.type||'application/octet-stream',b64(f.bytes),job.text||'');return 'shared';}
  const ff=files.map(f=>new File([f.bytes],f.name,{type:f.type||'application/octet-stream'}));
  if(navigator.canShare&&navigator.canShare({files:ff})){
   try{await navigator.share({files:ff,title:job.subject||'Отчёт',text:job.text||''});return 'shared';}

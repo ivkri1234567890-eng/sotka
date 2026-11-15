@@ -15,7 +15,9 @@ function classify(items,saved){
  // подходит ли сохранённый отчёт
  let report=null;
  for(const rep of saved||[]){
-  const sigs=[];for(const rc of rep.sheets){sigs.push(rc.main);for(const l of rc.lookups)sigs.push(l.table);}
+  const sigs=[];if(rep.kind==='doc')sigs.push(rep.main);else for(const rc of rep.sheets||[]){sigs.push(rc.main);for(const l of rc.lookups)sigs.push(l.table);}
+  if(!sigs.length&&rep.main)sigs.push(rep.main);
+  if(!sigs.length)continue;
   let ok=0;const used=new Set();
   for(const sig of sigs){const hs=new Set(sig.headers.map(normH));let best=null;
    items.forEach((it,i)=>it.tables.forEach(t=>{const s=jacc(hs,headerSet(t));if(s>=0.6&&(!best||s>best.s))best={i,s};}));

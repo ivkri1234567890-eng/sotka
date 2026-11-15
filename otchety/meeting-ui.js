@@ -42,10 +42,7 @@ async function runMeeting(demo){
 }
 el('meetingSave').onclick=()=>{
  if(!meetingOutput)return;
- const url=URL.createObjectURL(new Blob([meetingOutput.bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'}));
- const a=document.createElement('a');
- a.href=url;a.download=meetingName;document.body.append(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),30000);
+ saveFile(meetingName,meetingOutput.bytes,'application/vnd.openxmlformats-officedocument.presentationml.presentation');
 };
 async function renderMeetingTable(grid,index){
  const shares=index===2?[2.9,...Array(12).fill(1)]:[2.4,1.5,1,0.85,0.9,1];

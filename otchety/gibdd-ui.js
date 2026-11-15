@@ -11,12 +11,19 @@ const gibddFmt = n => Number(n).toLocaleString('ru-RU');
 const gibddPeriod = p => p ? cap(months[p.month-1])+' '+p.year : '';
 
 function saveFile(name, bytes, type){
+ if(!(bytes instanceof Uint8Array))bytes=new Uint8Array(bytes);
  const bridge=window.webkit?.messageHandlers?.saveReport;
- if(bridge){
+ const android=window.AndroidBridge;
+ if(bridge||android){
   let b='';for(let i=0;i<bytes.length;i+=32768)b+=String.fromCharCode(...bytes.subarray(i,i+32768));
+  if(android){android.save(name,type||'application/octet-stream',btoa(b));return;}
   bridge.postMessage({name,base64:btoa(b)});
   return;
  }
+ if(window.outFolderReady&&window.saveToFolder&&!saveFile.noFolder){window.saveToFolder(name,bytes).then(ok=>{if(!ok)download(name,bytes,type);});return;}
+ download(name,bytes,type);
+}
+function download(name,bytes,type){
  const url=URL.createObjectURL(new Blob([bytes],{type}));
  const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(url),30000);
