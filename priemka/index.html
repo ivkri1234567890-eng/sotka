@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f4e46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Приёмка">
+<title>Приёмка квартиры</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+/* Field tool for apartment acceptance: calm green-grey palette, large touch targets, printable act. */
+:root{--bg:#f3f4f1;--surface:#fff;--sunk:#eceee9;--ink:#1b1f1d;--muted:#66706b;--line:#dde1db;--acc:#1f4e46;--acc-ink:#fff;--ok:#2e7d4f;--ok-bg:#e3f2e8;--bad:#c2410c;--bad-bg:#fdeee4;--warn:#8a6d00;--warn-bg:#fdf6d8;--font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"Roboto Mono",Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121514;--surface:#1b201e;--sunk:#232927;--ink:#e8ece9;--muted:#9aa49f;--line:#303834;--acc:#6fb5a6;--acc-ink:#0b1715;--ok:#6cc792;--ok-bg:#16301f;--bad:#ff8a5c;--bad-bg:#3a1f12;--warn:#e8c75a;--warn-bg:#352d10}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--font);-webkit-tap-highlight-color:transparent}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:820px;margin:0 auto;padding:0 16px 96px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:8px;padding:10px 16px;max-width:820px;margin:0 auto;border-bottom:1px solid var(--line)}
+header.top h1{font-size:18px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+h2{font-size:18px;margin:18px 0 8px}h3{font-size:15px;margin:0 0 6px}
+.muted{color:var(--muted)}.small{font-size:13px}.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.btn{appearance:none;border:1px solid transparent;background:var(--acc);color:var(--acc-ink);font:600 15px var(--font);padding:10px 14px;border-radius:11px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn.sec{background:var(--surface);color:var(--ink);border-color:var(--line)}.btn.ghost{background:transparent;color:var(--acc);border-color:transparent}.btn.bad{background:transparent;color:var(--bad);border-color:var(--line)}
+.btn.sm{min-height:34px;padding:5px 10px;font-size:14px}.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:420px){.grid3{grid-template-columns:1fr 1fr}}
+label.f{display:block;font-size:13px;color:var(--muted)}label.f input,label.f select,label.f textarea{margin-top:3px}
+input,select,textarea{font:16px var(--font);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:42px;width:100%;min-width:0}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:0}
+.rfin{display:flex;gap:6px}.rfin input{flex:1}.rfin .btn{flex:0 0 auto}
+.list .it{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;margin:8px 0;font:15px var(--font);cursor:pointer}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.badge.bad{background:var(--bad-bg);color:var(--bad)}.badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:7px 12px;font:14px var(--font);cursor:pointer;min-height:36px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}.tabs .chip{flex:0 0 auto}
+.check{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}
+.check.def{border-color:var(--bad);background:linear-gradient(var(--bad-bg),var(--bad-bg)) left/4px 100% no-repeat,var(--surface)}
+.check.ok{background:linear-gradient(var(--ok),var(--ok)) left/4px 100% no-repeat,var(--surface)}
+.check .t{font-weight:600}.check .norm{font-size:13px;color:var(--muted);margin:3px 0 8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;background:var(--surface);color:var(--ink);font:600 14px var(--font);padding:8px 12px;min-height:40px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}.seg button.on.ok{background:var(--ok);color:#fff}.seg button.on.def{background:var(--bad);color:#fff}.seg button.on.na{background:var(--muted);color:#fff}
+.verdict{font-size:14px;margin-top:6px}.verdict.bad{color:var(--bad)}.verdict.ok{color:var(--ok)}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.thumbs img{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
+.addph{width:74px;height:74px;border:1px dashed var(--muted);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:26px;cursor:pointer;background:transparent}
+.sec-title{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:16px 0 4px}
+.warnbox{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
+.rf{position:sticky;bottom:0;z-index:6;max-width:820px;margin:0 auto;background:var(--surface);border-top:1px solid var(--line);padding:8px 16px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center}
+.rf .v{font:700 20px var(--mono)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:40;max-width:calc(100% - 32px);font-size:14px}
+.modal{position:fixed;inset:0;z-index:30;background:#000;display:flex;flex-direction:column}
+.modal .bar{display:flex;gap:6px;flex-wrap:wrap;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:#111}
+.modal .bar .chip{background:#222;color:#fff;border-color:#444}.modal .bar .chip.on{background:#fff;color:#111}
+.modal .stage{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+.modal canvas{max-width:100%;max-height:100%;touch-action:none}
+.sig{width:100%;height:120px;border:1px dashed var(--muted);border-radius:10px;background:#fff;touch-action:none;display:block}
+.login{max-width:380px;margin:12vh auto 0;text-align:center}
+.login .logo{width:72px;height:72px;border-radius:18px;margin:0 auto 12px;display:block}
+table.t{width:100%;border-collapse:collapse;font-size:14px}table.t td,table.t th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}table.t th{font-size:12px;color:var(--muted)}
+/* printable act */
+.act{background:#fff;color:#111;font:12.5px/1.4 "Times New Roman",Times,serif;padding:18px;border-radius:6px;border:1px solid var(--line)}
+.act h1{font-size:18px;text-align:center;margin:0 0 4px}.act .sub{text-align:center;margin-bottom:12px}
+.act table{width:100%;border-collapse:collapse;margin:8px 0}.act td,.act th{border:1px solid #444;padding:4px 5px;vertical-align:top;text-align:left}.act th{background:#eee;font-weight:700}
+.act .ph{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.act .ph figure{margin:0;break-inside:avoid}.act .ph img{width:100%;height:150px;object-fit:cover;border:1px solid #999}.act .ph figcaption{font-size:11px}
+.act .signs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.act .signs div{border-top:1px solid #333;padding-top:4px;min-height:70px}.act .signs img{height:56px;display:block}
+.act .fix{color:#16723c;font-weight:700}.act .nofix{color:#b4320b;font-weight:700}
+@media print{body{background:#fff;padding:0}header.top,.rf,.noprint,#toast{display:none!important}main{max-width:none;padding:0}.act{border:0;padding:0;border-radius:0}.act .ph img{height:130px}@page{size:A4;margin:14mm 12mm}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" hidden></div>
+<input type="file" id="photoIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="photoGal" accept="image/*" multiple hidden>
+<input type="file" id="backupIn" accept="application/json,.json" hidden>
+<script>
+"use strict";
+/* ============ basics ============ */
+const BUNDLED_NORMS={"version":"2026.11.1","date":"2026-11-15","note":"Справочник норм «Приёмки квартиры». Пункты со статусом verified сверены с текстом документа; со статусом check — значение типовое, требуется сверка с действующей редакцией.","changes":["Первая редакция справочника."],"docs":{"sp71":{"title":"СП 71.13330.2017 «Изоляционные и отделочные покрытия» (актуализированная редакция СНиП 3.04.01-87)","url":"https://base.garant.ru/71729838/","remark":"Значения сверены с исходной редакцией 2017 г.; изменения № 1 и № 2 проверяются при ежемесячном обновлении."},"sp70":{"title":"СП 70.13330.2012 «Несущие и ограждающие конструкции» (актуализированная редакция СНиП 3.03.01-87)","url":"https://base.garant.ru/70353868/","remark":""},"gost30674":{"title":"ГОСТ 30674-99 «Блоки оконные из поливинилхлоридных профилей» (заменён ГОСТ 30674-2023 с 01.08.2024; монтаж — ГОСТ 30971-2012, ГОСТ 34378-2018)","url":"https://meganorm.ru/mega_doc/norm/gost_gosudarstvennyj-standart/0/gost_30674-2023_mezhgosudarstvennyy_standart_bloki_okonnye_i.html","remark":"Ссылки на пункты требуют перевода на действующие стандарты."},"gost31173":{"title":"ГОСТ 31173-2016 «Блоки дверные стальные»","url":"","remark":""},"gost30971":{"title":"ГОСТ 30971-2012 «Швы монтажные узлов примыкания оконных блоков к стеновым проёмам»","url":"","remark":""},"sp30":{"title":"СП 30.13330.2020 «Внутренний водопровод и канализация зданий»","url":"","remark":""},"gost31311":{"title":"ГОСТ 31311-2005 «Приборы отопительные»","url":"","remark":""},"ddu":{"title":"Договор участия в долевом строительстве / проектная документация","url":"","remark":"Требования по договору и проекту."}},"norms":{"plaster-vert-simple":{"doc":"sp71","clause":"табл. 7.4 (простая штукатурка)","text":"Отклонение от вертикали — не более 3 мм на 1 м, но не более 10 мм на всю высоту помещения","limit":{"t":"perM","perM":3,"max":10},"status":"verified"},"plaster-vert-improved":{"doc":"sp71","clause":"табл. 7.4 (улучшенная штукатурка)","text":"Отклонение от вертикали — не более 2 мм на 1 м, но не более 10 мм на всю высоту помещения","limit":{"t":"perM","perM":2,"max":10},"status":"verified"},"plaster-vert-high":{"doc":"sp71","clause":"табл. 7.4 (высококачественная штукатурка)","text":"Отклонение от вертикали — не более 0,5 мм на 1 м, но не более 5 мм на всю высоту помещения","limit":{"t":"perM","perM":0.5,"max":5},"status":"verified"},"plaster-hor-simple":{"doc":"sp71","clause":"табл. 7.4 (простая штукатурка)","text":"Отклонение по горизонтали — не более 3 мм на 1 м","limit":{"t":"perM","perM":3,"max":null},"status":"verified"},"plaster-hor-improved":{"doc":"sp71","clause":"табл. 7.4 (улучшенная штукатурка)","text":"Отклонение по горизонтали — не более 3 мм на 1 м","limit":{"t":"perM","perM":3,"max":null},"status":"verified"},"plaster-hor-high":{"doc":"sp71","clause":"табл. 7.4 (высококачественная штукатурка)","text":"Отклонение по горизонтали — не более 1 мм на 1 м","limit":{"t":"perM","perM":1,"max":null},"status":"verified"},"plaster-flat-simple":{"doc":"sp71","clause":"табл. 7.4 (простая штукатурка)","text":"Неровности поверхности плавного очертания — не более 4 мм на 1 м, но не более 10 мм на весь элемент","limit":{"t":"perM","perM":4,"max":10},"status":"verified"},"plaster-flat-improved":{"doc":"sp71","clause":"табл. 7.4 (улучшенная штукатурка)","text":"Неровности поверхности плавного очертания — не более 2 шт. глубиной (высотой) до 3 мм","limit":{"t":"max","max":3},"status":"verified"},"plaster-flat-high":{"doc":"sp71","clause":"табл. 7.4 (высококачественная штукатурка)","text":"Неровности поверхности плавного очертания — не более 2 шт. глубиной (высотой) до 1 мм","limit":{"t":"max","max":1},"status":"verified"},"plaster-slope-simple":{"doc":"sp71","clause":"табл. 7.4 (простая штукатурка)","text":"Отклонение откосов, пилястр, столбов — не более 4 мм на 1 м, но не более 10 мм на весь элемент; ширина откоса — не более 5 мм","limit":{"t":"perM","perM":4,"max":10},"status":"verified"},"plaster-slope-improved":{"doc":"sp71","clause":"табл. 7.4 (улучшенная штукатурка)","text":"Отклонение откосов, пилястр, столбов — не более 4 мм на 1 м, но не более 10 мм на весь элемент; ширина откоса — не более 3 мм","limit":{"t":"perM","perM":4,"max":10},"status":"verified"},"plaster-slope-high":{"doc":"sp71","clause":"табл. 7.4 (высококачественная штукатурка)","text":"Отклонение откосов, пилястр, столбов — не более 2 мм на 1 м, но не более 5 мм на весь элемент; ширина откоса — не более 2 мм","limit":{"t":"perM","perM":2,"max":5},"status":"verified"},"wallpaper":{"doc":"sp71","clause":"п. 7.6.15","text":"Не допускаются пузыри, замятины, пятна, доклейки и отслоения обоев","limit":null,"status":"verified"},"wallpaper-joints":{"doc":"sp71","clause":"пп. 7.6.9–7.6.11","text":"Полосы клеят встык; во внутренних и внешних углах — перекрытие 10–20 мм","limit":null,"status":"verified"},"tile-wall-vert":{"doc":"sp71","clause":"табл. 7.6 (внутренняя облицовка керамикой)","text":"Отклонение облицованной поверхности от вертикали — не более 1,5 мм на 1 м (не более 4 мм на этаж)","limit":{"t":"perM","perM":1.5,"max":4},"status":"verified"},"tile-wall-joints":{"doc":"sp71","clause":"табл. 7.6, п. 7.4.13","text":"Отклонение расположения швов от вертикали и горизонтали — не более 1,5 мм на 1 м; швы ровные, одинаковой ширины","limit":{"t":"perM","perM":1.5,"max":null},"status":"verified"},"tile-wall-flat":{"doc":"sp71","clause":"табл. 7.6 (внутренняя облицовка керамикой)","text":"Неровности плоскости облицовки при контроле двухметровой рейкой — не более 2 мм","limit":{"t":"max","max":2},"status":"check"},"ceiling-panels":{"doc":"sp71","clause":"табл. 7.8","text":"Подвесные потолки и облицовка плитами: уступы — не более 2 мм, отклонение плоскости — не более 1,5 мм на 1 м, отклонение стыка от вертикали — не более 1 мм на 1 м","limit":{"t":"perM","perM":1.5,"max":null},"status":"verified"},"screed-flat-thin":{"doc":"sp71","clause":"табл. 8.5","text":"Просвет между двухметровой рейкой и стяжкой под линолеум, ПВХ-плитку, паркет, ламинат, крупноформатную плитку (более 1 м²) — не более 2 мм","limit":{"t":"max","max":2},"status":"verified"},"screed-flat-tile":{"doc":"sp71","clause":"табл. 8.5","text":"Просвет между двухметровой рейкой и стяжкой под покрытия других типов (в т. ч. плитку) — не более 4 мм","limit":{"t":"max","max":4},"status":"verified"},"screed-horiz":{"doc":"sp71","clause":"табл. 8.5","text":"Отклонение плоскости стяжки от горизонтали или заданного уклона — 0,2 % соответствующего размера помещения, но не более 20 мм","limit":{"t":"pct","pct":0.2,"max":20},"status":"verified"},"floor-flat-wood":{"doc":"sp71","clause":"табл. 8.15","text":"Отклонение покрытия (паркет, доска, линолеум, ПВХ) от плоскости при проверке двухметровой рейкой — не более 2 мм","limit":{"t":"max","max":2},"status":"verified"},"floor-flat-tile":{"doc":"sp71","clause":"табл. 8.15","text":"Отклонение покрытия из керамических и каменных плит от плоскости при проверке двухметровой рейкой — не более 4 мм","limit":{"t":"max","max":4},"status":"verified"},"floor-step-tile":{"doc":"sp71","clause":"табл. 8.15","text":"Уступы между смежными керамическими, каменными плитами — не более 1 мм","limit":{"t":"max","max":1},"status":"verified"},"floor-step-wood":{"doc":"sp71","clause":"табл. 8.15","text":"Уступы между смежными изделиями дощатых, паркетных покрытий, линолеума, ПВХ — не допускаются","limit":{"t":"max","max":0},"status":"verified"},"floor-gap-parquet":{"doc":"sp71","clause":"табл. 8.15","text":"Зазоры между паркетными досками и щитами — не более 0,5 мм; между планками штучного паркета — не более 0,2 мм","limit":{"t":"max","max":0.5},"status":"verified"},"floor-gap-plinth":{"doc":"sp71","clause":"табл. 8.15","text":"Зазоры и щели между плинтусами и покрытием пола или стенами, между кромками линолеума и плиток — не допускаются","limit":{"t":"max","max":0},"status":"verified"},"floor-defects":{"doc":"sp71","clause":"табл. 8.15","text":"Поверхность покрытия не должна иметь выбоин, трещин, волн, вздутий","limit":null,"status":"verified"},"floor-sound":{"doc":"sp71","clause":"табл. 8.15","text":"При простукивании монолитных покрытий и плитки не должно быть изменения характера звучания (пустоты)","limit":null,"status":"verified"},"masonry-vert":{"doc":"sp70","clause":"п. 9.18.5","text":"Отклонение поверхности стены (кладки) от вертикали — не более 10 мм на этаж","limit":{"t":"max","max":10},"status":"check"},"slab-horiz":{"doc":"sp70","clause":"п. 5.18.3, табл. 5.12","text":"Отклонение плоскости плиты перекрытия от горизонтали — не более 20 мм на весь выверяемый участок","limit":{"t":"max","max":20},"status":"check"},"cracks":{"doc":"sp70","clause":"","text":"Трещины в стенах, на примыканиях перегородок и колонн не допускаются без оценки причин","limit":null,"status":"check"},"window-vert":{"doc":"gost30674","clause":"прил. Г, п. Г.6 (ред. 1999)","text":"Отклонение смонтированного оконного блока от вертикали и горизонтали — не более 1,5 мм на 1 м, но не более 3 мм на высоту изделия","limit":{"t":"perM","perM":1.5,"max":3},"status":"check"},"window-profile":{"doc":"gost30674","clause":"п. 5.2.8 (ред. 1999)","text":"Искривление (отклонение от прямолинейности) профилей рамы и створок — не более 1 мм на 1 м","limit":{"t":"perM","perM":1,"max":null},"status":"check"},"window-film":{"doc":"gost30674","clause":"прил. Г, Г.11 (ред. 1999)","text":"Защитная плёнка с профилей удаляется после монтажа и отделки; воздействие солнца на плёнку — не более 10 дней","limit":null,"status":"check"},"window-seal":{"doc":"gost30674","clause":"п. 5.6.17 (ред. 1999)","text":"Уплотнители установлены непрерывно, без замятий и разрывов; стыки в углах сварены или склеены","limit":null,"status":"check"},"window-surface":{"doc":"gost30674","clause":"п. 5.3.5 (ред. 1999)","text":"На профилях и стёклах не допускаются трещины, сколы, царапины, видимые дефекты","limit":null,"status":"check"},"window-drain":{"doc":"gost30674","clause":"п. 5.9.6 (ред. 1999)","text":"Дренажные отверстия закрыты козырьками; накладки на петли установлены","limit":null,"status":"check"},"window-seam":{"doc":"gost30971","clause":"п. 5.2","text":"Монтажный шов заполнен по всему периметру плотно и герметично, с пароизоляцией изнутри и защитой снаружи; ширина шва 20–60 мм","limit":{"t":"range","min":20,"max":60},"status":"check"},"door-vert":{"doc":"gost31173","clause":"прил. Г","text":"Отклонение смонтированного дверного блока от вертикали — не более 1,5 мм на 1 м, но не более 3 мм на высоту изделия","limit":{"t":"perM","perM":1.5,"max":3},"status":"check"},"door-surface":{"doc":"gost31173","clause":"п. 5.6.6","text":"Трещины, заусенцы, царапины и повреждения покрытия полотна и коробки не допускаются (дефекты, видимые с 1,5 м при освещённости 300 лк)","limit":null,"status":"check"},"door-seam":{"doc":"gost31173","clause":"прил. Е","text":"Монтажный шов дверного блока заполнен по всему периметру плотно и герметично","limit":null,"status":"check"},"riser-vert":{"doc":"sp30","clause":"п. 18.3","text":"Канализационные стояки прямолинейны, вертикальны и закреплены","limit":null,"status":"check"},"pipe-sleeve":{"doc":"sp30","clause":"п. 11.5","text":"Зазор между трубой и гильзой при проходе через перекрытие — 5–10 мм, заполнен негорючим гидрофобным материалом","limit":{"t":"range","min":5,"max":10},"status":"check"},"plumbing-leak":{"doc":"sp30","clause":"","text":"Протечки в соединениях трубопроводов, на кранах и приборах учёта не допускаются","limit":null,"status":"check"},"radiator":{"doc":"gost31311","clause":"","text":"Отопительный прибор без повреждений покрытия и следов коррозии, закреплён, подключение без протечек","limit":null,"status":"check"},"area-contract":{"doc":"ddu","clause":"","text":"Фактическая площадь соответствует договору с учётом допустимого по договору отклонения","limit":null,"status":"verified"},"height-project":{"doc":"ddu","clause":"","text":"Высота помещения соответствует проекту","limit":null,"status":"verified"},"project":{"doc":"ddu","clause":"","text":"Выполнено в соответствии с договором и проектной документацией","limit":null,"status":"verified"}}};
+const NORMS_URL='https://ivkri1234567890-eng.github.io/sotka/priemka/norms.json';
+const PASS_HASH='414c7b6692684f74a7458e35e730b694810fc07fdd2e07590a542353b971cfa9',PASS_SALT='priemka-v1|';
+const NATIVE=window.Native||null,BLE2=window.Ble2||null;
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const num=v=>{if(v==null||v==='')return null;const n=Number(String(v).replace(',','.').replace(/\s/g,''));return Number.isFinite(n)?n:null};
+const fmt=(n,d=2)=>n==null||!Number.isFinite(+n)?'—':(+n).toLocaleString('ru-RU',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtN=n=>n==null?'—':(+n).toLocaleString('ru-RU',{maximumFractionDigits:2});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today=()=>new Date().toLocaleDateString('ru-RU');
+function toast(t,ms=2600){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>e.hidden=true,ms)}
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Память браузера переполнена — сохраните резервную копию');return false}}};
+async function sha256(s){if(crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}return sha256js(s)}
+function sha256js(ascii){/* fallback for non-secure contexts (file:// on old WebViews) */const r=(v,a)=>(v>>>a)|(v<<(32-a)),mp=Math.pow,maxWord=mp(2,32);let res='',words=[],bytes=unescape(encodeURIComponent(ascii)),bl=bytes.length*8,hash=[],k=[],pc=0,ic={};
+ for(let c=2;pc<64;c++){if(!ic[c]){for(let i=0;i<313;i+=c)ic[i]=c;hash[pc]=(mp(c,.5)*maxWord)|0;k[pc++]=(mp(c,1/3)*maxWord)|0}}
+ bytes+='\x80';while(bytes.length%64-56)bytes+='\x00';for(let i=0;i<bytes.length;i++){const j=bytes.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=((bl/maxWord)|0);words[words.length]=bl;
+ hash=hash.slice(0,8);for(let j=0;j<words.length;){const w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];const t1=hash[7]+(r(e,6)^r(e,11)^r(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(r(w15,7)^r(w15,18)^(w15>>>3))+w[i-7]+(r(w2,17)^r(w2,19)^(w2>>>10)))|0);const t2=(r(a,2)^r(a,13)^r(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}for(let i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0}
+ for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;res+=(b<16?'0':'')+b.toString(16)}return res}
+
+/* ============ storage ============ */
+const DB=LS.get('pr:db',null)||{v:1,list:[],settings:{name:'',company:'',phone:'',overrides:{}}};
+if(!DB.settings.overrides)DB.settings.overrides={};
+const save=()=>LS.set('pr:db',DB);
+let NORMS=LS.get('pr:norms',null)||BUNDLED_NORMS;
+if(BUNDLED_NORMS&&NORMS&&cmpVer(BUNDLED_NORMS.version,NORMS.version)>0)NORMS=BUNDLED_NORMS;
+function cmpVer(a,b){const A=String(a||'0').split('.').map(Number),B=String(b||'0').split('.').map(Number);for(let i=0;i<Math.max(A.length,B.length);i++){const d=(A[i]||0)-(B[i]||0);if(d)return d}return 0}
+const PH={db:null,async open(){if(this.db)return this.db;return this.db=await new Promise((res,rej)=>{const r=indexedDB.open('priemka',1);r.onupgradeneeded=()=>r.result.createObjectStore('ph',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+ async put(o){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('ph','readwrite');t.objectStore('ph').put(o);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
+ async get(id){const db=await this.open();return new Promise(res=>{const r=db.transaction('ph').objectStore('ph').get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})},
+ async del(id){try{const db=await this.open();db.transaction('ph','readwrite').objectStore('ph').delete(id)}catch(e){}}};
+const phCache=new Map();
+async function phURL(id){if(phCache.has(id))return phCache.get(id);const r=await PH.get(id);const u=r?r.data:'';phCache.set(id,u);return u}
+async function fillThumbs(root=document){for(const img of root.querySelectorAll('img[data-ph]')){const u=await phURL(img.dataset.ph);if(u)img.src=u}}
+
+/* ============ checklist ============ */
+const ROOM_TYPES={living:'Жилая комната',kitchen:'Кухня',hall:'Коридор / прихожая',bath:'Санузел / ванная',balcony:'Балкон / лоджия'};
+const FINISH={bare:'Без отделки',whitebox:'Предчистовая (white box)',finish:'Чистовая отделка'};
+const QUAL={simple:'Простая',improved:'Улучшенная',high:'Высококачественная'};
+const COVER={laminate:'Ламинат / паркетная доска',linoleum:'Линолеум / ПВХ',parquet:'Паркет штучный',tile:'Плитка / керамогранит'};
+const hasWin=t=>t==='living'||t==='kitchen'||t==='balcony';
+const wood=c=>c!=='tile';
+/* m: dev — отклонение мм на базе м; mm — величина мм; pct — отклонение мм на размер помещения; range — мм в интервале; area/height — расчёт */
+function checklist(o,room){const F=o.finish,q=o.quality||'improved',L=[],add=(sec,id,t,norm,m)=>L.push({sec,id,t,norm,m});
+ if(!room){
+  add('Квартира','area','Площадь квартиры: фактическая и по договору','area-contract','area');
+  add('Входная дверь','d-vert','Отклонение дверного блока от вертикали','door-vert','dev');
+  add('Входная дверь','d-surf','Повреждения полотна, коробки, наличников','door-surface');
+  add('Входная дверь','d-seam','Монтажный шов вокруг коробки','door-seam');
+  add('Входная дверь','d-lock','Замки, ключи, ход полотна без заеданий, уплотнитель','project');
+  add('Инженерия','el-panel','Электрощит: автоматы и УЗО установлены и подписаны, нет повреждений','project');
+  add('Инженерия','meters','Счётчики электричества, воды, тепла: опломбированы, показания записаны','project');
+  add('Инженерия','intercom','Домофон, звонок, слаботочка (интернет, ТВ)','project');
+  return L}
+ const T=room.type,cov=room.cover||o.cover||'laminate';
+ if(F==='bare'){add('Стены','w-vert','Отклонение стен от вертикали','masonry-vert','mm');add('Стены','w-crack','Трещины в стенах и на примыканиях перегородок','cracks')}
+ else if(!(T==='bath'&&F==='finish')){add('Стены','w-vert','Отклонение стен от вертикали','plaster-vert-'+q,'dev');add('Стены','w-flat','Неровности поверхности стен (двухметровая рейка)','plaster-flat-'+q,q==='simple'?'dev':'mm');add('Стены','w-hor','Отклонение стен по горизонтали','plaster-hor-'+q,'dev');add('Стены','w-crack','Трещины, отслоения, раковины','cracks');
+  if(F==='finish'&&T!=='balcony'){add('Стены','w-paper','Обои: пузыри, замятины, пятна, отслоения','wallpaper');add('Стены','w-paper2','Обои: стыки встык, нахлёст в углах','wallpaper-joints')}}
+ if(T==='bath'&&F==='finish'){add('Плитка на стенах','t-vert','Отклонение облицовки от вертикали','tile-wall-vert','dev');add('Плитка на стенах','t-flat','Неровности плоскости облицовки (двухметровая рейка)','tile-wall-flat','mm');add('Плитка на стенах','t-joint','Отклонение швов от вертикали и горизонтали','tile-wall-joints','dev')}
+ if(hasWin(T)&&F!=='bare')add('Стены','w-slope','Откосы окон и балконной двери','plaster-slope-'+q,'dev');
+ if(F==='bare')add('Пол','f-slab','Отклонение плиты перекрытия от горизонтали','slab-horiz','mm');
+ else if(F==='whitebox'){add('Пол','f-screed','Просвет под двухметровой рейкой (стяжка)',cov==='tile'?'screed-flat-tile':'screed-flat-thin','mm');add('Пол','f-hor','Отклонение стяжки от горизонтали','screed-horiz','pct');add('Пол','f-sound','Простукивание стяжки: пустоты, отслоение','floor-sound')}
+ else{add('Пол','f-flat','Ровность покрытия (двухметровая рейка)',wood(cov)?'floor-flat-wood':'floor-flat-tile','mm');add('Пол','f-step','Уступы между элементами покрытия',wood(cov)?'floor-step-wood':'floor-step-tile','mm');
+  if(cov==='parquet'||cov==='laminate')add('Пол','f-gap','Зазоры между досками / планками','floor-gap-parquet','mm');add('Пол','f-plinth','Щели между плинтусом и полом / стеной','floor-gap-plinth','mm');add('Пол','f-def','Выбоины, трещины, волны, вздутия покрытия','floor-defects');if(cov==='tile')add('Пол','f-sound','Простукивание плитки: пустоты','floor-sound')}
+ add('Потолок','c-def',F==='finish'?'Потолок: пятна, провисания, зазоры у стен, повреждения':'Потолок: трещины, раковины, следы протечек',F==='finish'?'project':'cracks');
+ add('Потолок','c-h','Высота помещения','height-project','height');
+ if(hasWin(T)){add('Окна','o-vert','Отклонение оконного блока от вертикали и горизонтали','window-vert','dev');add('Окна','o-prof','Искривление профилей рамы и створок','window-profile','dev');add('Окна','o-surf','Сколы, трещины, царапины профилей и стеклопакетов','window-surface');add('Окна','o-seal','Уплотнители: целые, без замятий и разрывов','window-seal');add('Окна','o-film','Защитная плёнка снята','window-film');add('Окна','o-drain','Дренажные отверстия, накладки на петли','window-drain');add('Окна','o-seam','Монтажный шов: ширина, заполнение, пароизоляция','window-seam','range');add('Окна','o-work','Открывание, фурнитура, режимы проветривания','project');add('Окна','o-sill','Подоконник: крепление, уклон, повреждения','project')}
+ if(T==='balcony'){add('Балкон','b-rail','Ограждение: крепление, коррозия, окраска','project');add('Балкон','b-ins','Утепление и отделка по проекту','project')}
+ if(F==='bare')add('Электрика','e-raw','Выводы проводов изолированы, группы подписаны','project');else add('Электрика','e-sock','Розетки и выключатели: работают, закреплены, есть заземление','project');
+ if(T!=='bath'&&T!=='balcony')add('Отопление','h-rad','Радиатор: повреждения, коррозия, крепление, протечки','radiator');
+ if(T==='kitchen'||T==='bath')add('Вентиляция','v-air','Вентиляция: тяга есть (лист бумаги / анемометр)','project');
+ if(T==='bath'){add('Сантехника','s-riser','Канализационный стояк: вертикальность, крепление','riser-vert');add('Сантехника','s-sleeve','Гильзы на проходе через перекрытие: зазор и заполнение','pipe-sleeve','range');add('Сантехника','s-leak','Протечки на соединениях, кранах, счётчиках','plumbing-leak');if(F==='finish')add('Сантехника','s-dev','Сантехприборы: установлены, без сколов, работают','project')}
+ if(F==='finish'&&T!=='balcony')add('Двери','i-door','Межкомнатная дверь: зазоры, ход, повреждения','project');
+ return L}
+
+/* ============ norms ============ */
+function normOf(o,key){const N=(o&&o.norms)||NORMS;return N&&N.norms[key]?{...N.norms[key],key,doc:N.docs[N.norms[key].doc]||{title:N.norms[key].doc}}:null}
+function normRef(n){if(!n)return'';const d=n.doc||{};return(n.custom?'По договору / ТЗ: ':'')+(d.title?d.title.split(' «')[0]:'')+(n.clause?', '+n.clause:'')}
+function limitText(n){const l=n&&n.limit;if(!l)return'визуально';if(l.t==='perM')return'≤ '+fmtN(l.perM)+' мм на 1 м'+(l.max!=null?', не более '+fmtN(l.max)+' мм':'');if(l.t==='max')return l.max===0?'не допускается':'≤ '+fmtN(l.max)+' мм';if(l.t==='pct')return fmtN(l.pct)+' % размера помещения, не более '+fmtN(l.max)+' мм';if(l.t==='range')return fmtN(l.min)+'–'+fmtN(l.max)+' мм';return''}
+function snapshotNorms(){const N=JSON.parse(JSON.stringify(NORMS));for(const[k,ov]of Object.entries(DB.settings.overrides||{})){if(N.norms[k])N.norms[k]={...N.norms[k],limit:ov.limit,text:ov.text||N.norms[k].text,custom:true,reason:ov.reason||''}}return N}
+/* evaluate a measurement → {allowed, bad, text} */
+function evaluate(n,m,v,room){if(!n||!n.limit||!v)return null;const l=n.limit;
+ if(m==='dev'&&l.t==='perM'){const d=num(v.d),b=num(v.b)??1;if(d==null)return null;let a=l.perM*b;if(l.max!=null)a=Math.min(a,l.max);return{allowed:a,bad:d>a+1e-9,text:'Отклонение '+fmtN(d)+' мм на '+fmtN(b)+' м (допуск '+fmtN(a)+' мм)'}}
+ if((m==='mm'||m==='dev')&&l.t==='max'){const d=num(v.d);if(d==null)return null;return{allowed:l.max,bad:d>l.max+1e-9,text:'Замер '+fmtN(d)+' мм (допуск '+(l.max===0?'0':fmtN(l.max))+' мм)'}}
+ if(m==='mm'&&l.t==='perM'){const d=num(v.d),b=num(v.b)??1;if(d==null)return null;let a=l.perM*b;if(l.max!=null)a=Math.min(a,l.max);return{allowed:a,bad:d>a+1e-9,text:'Отклонение '+fmtN(d)+' мм на '+fmtN(b)+' м (допуск '+fmtN(a)+' мм)'}}
+ if(m==='pct'&&l.t==='pct'){const d=num(v.d),sz=num(v.b)??(room?Math.max(num(room.a)||0,num(room.b)||0):null);if(d==null||!sz)return null;const a=Math.min(l.pct/100*sz*1000,l.max);return{allowed:a,bad:d>a+1e-9,text:'Перепад '+fmtN(d)+' мм на '+fmtN(sz)+' м (допуск '+fmtN(Math.round(a*10)/10)+' мм)'}}
+ if(m==='range'&&l.t==='range'){const d=num(v.d);if(d==null)return null;return{allowed:null,bad:d<l.min||d>l.max,text:'Замер '+fmtN(d)+' мм (норма '+fmtN(l.min)+'–'+fmtN(l.max)+' мм)'}}
+ return null}
+async function updateNorms(manual){try{const r=await fetch(NORMS_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const N=await r.json();if(!N||!N.norms||!N.version)throw Error('неверный файл');
+  if(!NORMS||cmpVer(N.version,NORMS.version)>0){const old=NORMS;NORMS=N;LS.set('pr:norms',N);S.normsDiff=diffNorms(old,N);toast('Справочник норм обновлён до версии '+N.version,4000);render()}else if(manual)toast('Нормы актуальны: версия '+NORMS.version)}catch(e){if(manual)toast('Не удалось проверить обновления: '+e.message)}}
+function diffNorms(a,b){const out=[];if(!a)return out;for(const[k,n]of Object.entries(b.norms)){const o=a.norms[k];if(!o)out.push('Новый пункт: '+n.text);else if(JSON.stringify(o.limit)!==JSON.stringify(n.limit)||o.text!==n.text||o.clause!==n.clause)out.push('Изменено: '+n.text+' (было: '+o.text+')')}for(const k of Object.keys(a.norms))if(!b.norms[k])out.push('Исключено: '+a.norms[k].text);return out}
+
+/* ============ state & helpers ============ */
+const S={view:LS.get('pr:auth',false)?'home':'login',id:null,room:'flat',edit:null};
+const cur=()=>DB.list.find(x=>x.id===S.id);
+function itemsOf(o,rid){const k=rid||'flat';o.items[k]=o.items[k]||{};return o.items[k]}
+function roomById(o,rid){return rid==='flat'?null:o.rooms.find(r=>r.id===rid)}
+function roomArea(r){const m=num(r.area);if(m)return m;const a=num(r.a),b=num(r.b);return a&&b?Math.round(a*b*100)/100:null}
+function totalArea(o){let s=0;for(const r of o.rooms){const a=roomArea(r);if(a)s+=r.type==='balcony'?a*(num(o.balK)??0.3):a}return Math.round(s*100)/100}
+function defects(o){const out=[];const scan=(rid,room)=>{for(const c of checklist(o,room)){const it=(o.items[rid]||{})[c.id];if(it&&it.st==='def')out.push({rid,room,c,it})}};scan('flat',null);o.rooms.forEach(r=>scan(r.id,r));return out}
+function stats(o){let tot=0,done=0,def=0;const scan=(rid,room)=>{for(const c of checklist(o,room)){tot++;const it=(o.items[rid]||{})[c.id];if(it&&it.st){done++;if(it.st==='def')def++}}};scan('flat',null);o.rooms.forEach(r=>scan(r.id,r));return{tot,done,def}}
+function newInspection(parent){const o={id:uid(),created:Date.now(),date:today(),addr:'',complex:'',flat:'',developer:'',client:'',contractNo:'',contractArea:'',finish:'whitebox',quality:'improved',cover:'laminate',balK:'0.3',rooms:[],items:{},norms:snapshotNorms(),sign:{},conclusion:''};
+ if(parent){Object.assign(o,{parent:parent.id,addr:parent.addr,complex:parent.complex,flat:parent.flat,developer:parent.developer,client:parent.client,contractNo:parent.contractNo,contractArea:parent.contractArea,finish:parent.finish,quality:parent.quality,cover:parent.cover,balK:parent.balK,norms:JSON.parse(JSON.stringify(parent.norms)),rooms:JSON.parse(JSON.stringify(parent.rooms))});
+  for(const d of defects(parent)){const its=itemsOf(o,d.rid);its[d.c.id]={st:'def',revisit:'pending',prev:{v:d.it.v,note:d.it.note,photos:d.it.photos||[]},photos:[],note:''}}}
+ DB.list.unshift(o);save();return o}
+
+/* ============ rangefinder ============ */
+const BLE={state:'off',name:'',devices:[],proto:'',buf:'',bufT:null,last:null,lastT:0};
+let rfTarget=null;
+document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input[data-rf]'))rfTarget=e.target});
+function rfValue(m){const t=Date.now();if(BLE.last===m&&t-BLE.lastT<500)return;BLE.last=m;BLE.lastT=t;const el=rfTarget&&document.body.contains(rfTarget)?rfTarget:document.querySelector('input[data-rf]');const v=$('#rfv');if(v)v.textContent=fmt(m,3)+' м';
+ if(!el){toast('Замер '+fmt(m,3)+' м — нажмите на поле, куда его записать');return}
+ const unit=el.dataset.rf;el.value=unit==='mm'?String(Math.round(m*1000)):String(m).replace('.',',');el.dispatchEvent(new Event('change',{bubbles:true}));toast('Записано: '+(unit==='mm'?Math.round(m*1000)+' мм':fmt(m,3)+' м'))}
+function parseText(s){s=String(s).replace(/,/g,'.');const m=[...s.matchAll(/(\d+(?:\.\d+)?)\s*(mm|мм|cm|см|m|м)?/gi)];if(!m.length)return null;const x=m[m.length-1];let v=Number(x[1]);const u=(x[2]||'').toLowerCase();if(u==='mm'||u==='мм')v/=1000;else if(u==='cm'||u==='см')v/=100;else if(!u&&!x[1].includes('.')&&v>=50)v/=1000;return v>0.01&&v<300?Math.round(v*1000)/1000:null}
+function rfFrame(b,meta){const proto=meta.proto||BLE.proto,chr=String(meta.chr||'').toLowerCase();
+ if(b.length>=11&&b[0]===0xC0&&b[1]===0x55&&b[2]===0x10){const v=new DataView(new Uint8Array(b).buffer).getFloat32(7,true);if(v>0.02&&v<300)rfValue(Math.round(v*1000)/1000);return}
+ if(proto==='leica'&&chr.startsWith('3ab10101')&&b.length>=4){const v=new DataView(new Uint8Array(b).buffer).getFloat32(0,true);if(v>0.01&&v<300)rfValue(Math.round(v*1000)/1000);return}
+ if(b.length&&b.every(x=>x===9||x===10||x===13||x>=32&&x<127)){BLE.buf+=String.fromCharCode(...b);clearTimeout(BLE.bufT);const fl=()=>{const v=parseText(BLE.buf);BLE.buf='';if(v)rfValue(v)};if(/[\r\n]/.test(BLE.buf))fl();else BLE.bufT=setTimeout(fl,200)}}
+window.glmEvent=e=>{if(e.type==='device'){const i=BLE.devices.findIndex(d=>d.addr===e.addr);if(i>=0)BLE.devices[i]={...BLE.devices[i],...e};else BLE.devices.push(e);rfBar()}
+ else if(e.type==='status'){BLE.state=e.state;BLE.name=e.name||BLE.name;if(e.proto!==undefined)BLE.proto=e.proto;if(e.text)toast(e.text);rfBar()}
+ else if(e.type==='info')toast(e.text);else if(e.type==='frame')rfFrame((e.hex.match(/../g)||[]).map(h=>parseInt(h,16)),e)};
+function rfBar(){const el=$('#rfbar');if(!el)return;el.outerHTML=rfBarHTML();}
+function rfBarHTML(){if(!NATIVE)return`<div class="rf noprint" id="rfbar"><span class="small muted grow">Дальномер: в приложении для Android — по Bluetooth. Здесь вводите размеры вручную.</span></div>`;
+ const s=BLE.state,devs=BLE.devices.slice().sort((a,b)=>(b.proto?1:0)-(a.proto?1:0)||(b.rssi||-999)-(a.rssi||-999));
+ return`<div class="rf noprint" id="rfbar"><div class="grow"><div class="small muted">${s==='on'?'Дальномер: '+esc(BLE.name):s==='connecting'?'Поиск дальномера…':'Дальномер не подключён'}</div><div class="v" id="rfv">${BLE.last?fmt(BLE.last,3)+' м':'—'}</div>
+ ${s!=='on'&&devs.length?`<div class="chips" style="margin-top:4px">${devs.slice(0,6).map(d=>`<button class="chip" data-a="rfpick" data-addr="${esc(d.addr)}" data-kind="${esc(d.kind)}" data-name="${esc(d.name||'')}">${d.proto?'★ ':''}${esc(d.name||d.addr)}</button>`).join('')}</div>`:''}</div>
+ ${s==='on'?`<button class="btn sm" data-a="rfmeasure">Замер</button><button class="btn sec sm" data-a="rfoff">Откл.</button>`:`<button class="btn sm" data-a="rfon">Подключить</button>`}</div>`}
+
+/* ============ views ============ */
+function render(){const v=S.view;let h='';
+ if(v==='login')h=vLogin();else if(v==='home')h=vHome();else if(v==='obj')h=vObj();else if(v==='room')h=vRoom();else if(v==='act')h=vAct();else if(v==='settings')h=vSettings();else if(v==='norms')h=vNorms();
+ app.innerHTML=h;fillThumbs(app);if(v==='act')mountSigs();window.scrollTo&&v!==S.lastView&&window.scrollTo(0,0);S.lastView=v}
+function topBar(title,back,extra=''){return`<header class="top">${back?`<button class="btn ghost sm" data-a="${back}" aria-label="Назад">‹ Назад</button>`:''}<h1>${esc(title)}</h1>${extra}</header>`}
+function vLogin(){return`<main><div class="login"><img class="logo" src="icon-192.png" alt=""><h2 style="margin-top:0">Приёмка квартиры</h2><p class="muted">Введите пароль для первого входа. Дальше приложение откроется сразу.</p>
+ <form id="loginF" class="card" style="text-align:left"><label class="f">Пароль<input id="pass" type="password" inputmode="numeric" autocomplete="current-password" autofocus></label><p style="margin:12px 0 0"><button class="btn" style="width:100%">Войти</button></p></form></div></main>`}
+function vHome(){const L=DB.list;return topBar('Приёмка квартиры','',`<button class="btn ghost sm" data-a="settings">⚙</button>`)+`<main>
+ ${S.normsDiff&&S.normsDiff.length?`<div class="warnbox"><b>Справочник норм обновлён (версия ${esc(NORMS.version)}).</b> ${S.normsDiff.slice(0,4).map(esc).join('; ')}${S.normsDiff.length>4?' …':''}<br>Старые акты не изменились. <button class="btn sec sm" data-a="normsDiffOk">Понятно</button></div>`:''}
+ ${/iPhone|iPad|iPod/.test(navigator.userAgent)&&!navigator.standalone&&!LS.get('pr:a2hs',false)?`<div class="warnbox">Чтобы открывать как приложение: в Safari нажмите «Поделиться» → «На экран «Домой»». <button class="btn sec sm" data-a="a2hs">Понятно</button></div>`:''}
+ <p><button class="btn" data-a="newobj" style="width:100%">+ Новая приёмка</button></p>
+ <div class="list">${L.length?L.map(o=>{const s=stats(o);return`<button class="it" data-a="open" data-id="${o.id}"><span class="grow"><b>${esc(o.addr||'Без адреса')}${o.flat?', кв. '+esc(o.flat):''}</b><br><span class="small muted">${esc(o.date)}${o.parent?' · повторный осмотр':''} · ${FINISH[o.finish]}</span></span><span class="badge ${s.def?'bad':s.done?'ok':''}">${s.def?s.def+' деф.':s.done+'/'+s.tot}</span></button>`}).join(''):'<p class="muted">Пока нет ни одной приёмки. Нажмите «Новая приёмка».</p>'}</div></main>`}
+function vObj(){const o=cur();if(!o){S.view='home';return vHome()}const s=stats(o),ta=totalArea(o),ca=num(o.contractArea);
+ return topBar(o.addr||'Новая приёмка','home',`<button class="btn sm" data-a="act">Акт</button>`)+`<main>
+ ${o.parent?`<div class="warnbox">Повторный осмотр: отметьте по каждому недостатку «Устранено» или «Не устранено». Нормы — как в первом акте (версия ${esc(o.norms.version)}).</div>`:''}
+ <div class="card"><h3>Объект</h3><div class="grid2"><label class="f">Адрес<input data-o="addr" value="${esc(o.addr)}"></label><label class="f">Квартира №<input data-o="flat" value="${esc(o.flat)}"></label>
+ <label class="f">Жилой комплекс<input data-o="complex" value="${esc(o.complex)}"></label><label class="f">Дата осмотра<input data-o="date" value="${esc(o.date)}"></label>
+ <label class="f">Застройщик<input data-o="developer" value="${esc(o.developer)}"></label><label class="f">Участник ДДУ (заказчик)<input data-o="client" value="${esc(o.client)}"></label>
+ <label class="f">Договор №<input data-o="contractNo" value="${esc(o.contractNo)}"></label><label class="f">Площадь по договору, м²<input data-o="contractArea" inputmode="decimal" value="${esc(o.contractArea)}"></label></div>
+ <div class="sec-title">Отделка</div><div class="chips">${Object.entries(FINISH).map(([k,n])=>`<button class="chip ${o.finish===k?'on':''}" data-a="setO" data-k="finish" data-v="${k}">${n}</button>`).join('')}</div>
+ ${o.finish!=='bare'?`<div class="sec-title">Категория штукатурки по договору</div><div class="chips">${Object.entries(QUAL).map(([k,n])=>`<button class="chip ${o.quality===k?'on':''}" data-a="setO" data-k="quality" data-v="${k}">${n}</button>`).join('')}</div>
+ <div class="sec-title">Покрытие пола (по умолчанию)</div><div class="chips">${Object.entries(COVER).map(([k,n])=>`<button class="chip ${o.cover===k?'on':''}" data-a="setO" data-k="cover" data-v="${k}">${n}</button>`).join('')}</div>`:''}</div>
+ <div class="card"><div class="row"><h3 class="grow" style="margin:0">Помещения</h3><span class="small muted">Σ ${fmt(ta,2)} м²${ca?' · по договору '+fmt(ca,2)+' м²':''}</span></div>
+ ${ca&&ta?`<p class="small ${Math.abs(ta-ca)>0.01*ca?'verdict bad':'muted'}" style="margin:6px 0">Разница с договором: ${ta-ca>0?'+':''}${fmt(ta-ca,2)} м² (${fmt((ta-ca)/ca*100,1)} %). Балконы учтены с коэффициентом ${esc(o.balK)}.</p>`:''}
+ <div class="list"><button class="it" data-a="room" data-id="flat"><span class="grow"><b>Общее по квартире</b><br><span class="small muted">Площадь, входная дверь, щиток, счётчики</span></span>${roomBadge(o,'flat',null)}</button>
+ ${o.rooms.map(r=>`<button class="it" data-a="room" data-id="${r.id}"><span class="grow"><b>${esc(r.name)}</b><br><span class="small muted">${ROOM_TYPES[r.type]}${roomArea(r)?' · '+fmt(roomArea(r),2)+' м²':''}</span></span>${roomBadge(o,r.id,r)}</button>`).join('')}</div>
+ <div class="sec-title">Добавить помещение</div><div class="chips">${Object.entries(ROOM_TYPES).map(([k,n])=>`<button class="chip" data-a="addroom" data-t="${k}">+ ${n}</button>`).join('')}</div></div>
+ <div class="card"><div class="row"><span class="grow">Проверено ${s.done} из ${s.tot} · недостатков: <b>${s.def}</b></span><button class="btn" data-a="act">Сформировать акт</button></div></div>
+ <div class="row noprint" style="margin-top:14px">${!o.parent?`<button class="btn sec" data-a="revisit">Повторный осмотр</button>`:''}<button class="btn bad" data-a="delobj">Удалить приёмку</button></div></main>`+rfBarHTML()}
+function roomBadge(o,rid,room){const L=checklist(o,room),its=o.items[rid]||{};let d=0,done=0;for(const c of L){const it=its[c.id];if(it&&it.st){done++;if(it.st==='def')d++}}return`<span class="badge ${d?'bad':done===L.length?'ok':''}">${d?d+' деф.':done+'/'+L.length}</span>`}
+function vRoom(){const o=cur();if(!o){S.view='home';return vHome()}const rid=S.room,room=roomById(o,rid);if(rid!=='flat'&&!room){S.view='obj';return vObj()}
+ const L=checklist(o,room),its=itemsOf(o,rid);let sec='',h='';
+ if(room){h+=`<div class="card"><div class="grid2"><label class="f">Название<input data-r="name" value="${esc(room.name)}"></label><label class="f">Тип<select data-r="type">${Object.entries(ROOM_TYPES).map(([k,n])=>`<option value="${k}" ${room.type===k?'selected':''}>${n}</option>`).join('')}</select></label></div>
+  <div class="grid3" style="margin-top:8px"><label class="f">Длина, м<span class="rfin"><input data-r="a" data-rf="m" inputmode="decimal" value="${esc(room.a||'')}"></span></label><label class="f">Ширина, м<input data-r="b" data-rf="m" inputmode="decimal" value="${esc(room.b||'')}"></label><label class="f">Высота, м<input data-r="h" data-rf="m" inputmode="decimal" value="${esc(room.h||'')}"></label></div>
+  <div class="grid2" style="margin-top:8px"><label class="f">Площадь, м² (если не прямоугольник)<input data-r="area" inputmode="decimal" value="${esc(room.area||'')}" placeholder="${roomArea(room)?fmt(roomArea(room),2):''}"></label><label class="f">Высота по проекту, м<input data-r="hp" inputmode="decimal" value="${esc(room.hp||'')}"></label></div>
+  ${o.finish!=='bare'?`<label class="f" style="margin-top:8px">Покрытие пола<select data-r="cover"><option value="">Как по квартире (${COVER[o.cover]})</option>${Object.entries(COVER).map(([k,n])=>`<option value="${k}" ${room.cover===k?'selected':''}>${n}</option>`).join('')}</select></label>`:''}</div>`}
+ const done=L.filter(c=>its[c.id]&&its[c.id].st).length;
+ h+=`<div class="row" style="margin:8px 0"><span class="grow small muted">Проверено ${done} из ${L.length}</span><button class="btn sec sm" data-a="allok">Остальное — в норме</button></div>`;
+ for(const c of L){if(c.sec!==sec){sec=c.sec;h+=`<div class="sec-title">${esc(sec)}</div>`}h+=checkHTML(o,rid,room,c,its[c.id]||{})}
+ const idx=rid==='flat'?-1:o.rooms.findIndex(r=>r.id===rid),next=o.rooms[idx+1];
+ h+=`<div class="row" style="margin-top:14px">${room?`<button class="btn bad" data-a="delroom">Удалить помещение</button>`:''}<span class="grow"></span>${next?`<button class="btn" data-a="room" data-id="${next.id}">Далее: ${esc(next.name)} ›</button>`:`<button class="btn" data-a="back">К объекту</button>`}</div>`;
+ return topBar(room?room.name:'Общее по квартире','back')+`<main>${h}</main>`+rfBarHTML()}
+function checkHTML(o,rid,room,c,it){const n=normOf(o,c.norm),st=it.st||'',v=it.v||{},ev=c.m?evaluate(n,c.m,v,room):null,key=rid+'|'+c.id;
+ let meas='';
+ if(c.m==='dev'||(c.m==='mm'&&n&&n.limit&&n.limit.t==='perM'))meas=`<div class="grid2"><label class="f">Отклонение, мм<input data-m="${key}" data-k="d" data-rf="mm" inputmode="decimal" value="${esc(v.d??'')}"></label><label class="f">На длине, м<input data-m="${key}" data-k="b" data-rf="m" inputmode="decimal" value="${esc(v.b??'')}" placeholder="1"></label></div>`;
+ else if(c.m==='mm'||c.m==='range')meas=`<label class="f">${c.m==='range'?'Ширина / зазор':'Просвет / величина'}, мм<input data-m="${key}" data-k="d" data-rf="mm" inputmode="decimal" value="${esc(v.d??'')}"></label>`;
+ else if(c.m==='pct')meas=`<div class="grid2"><label class="f">Перепад, мм<input data-m="${key}" data-k="d" data-rf="mm" inputmode="decimal" value="${esc(v.d??'')}"></label><label class="f">Размер помещения, м<input data-m="${key}" data-k="b" data-rf="m" inputmode="decimal" value="${esc(v.b??'')}" placeholder="${room?esc(Math.max(num(room.a)||0,num(room.b)||0)||''):''}"></label></div>`;
+ else if(c.m==='area'){const ta=totalArea(o),ca=num(o.contractArea);meas=`<div class="small">По обмерам: <b>${fmt(ta,2)} м²</b>${ca?' · по договору '+fmt(ca,2)+' м² · разница '+(ta-ca>0?'+':'')+fmt(ta-ca,2)+' м²':' · укажите площадь по договору в карточке объекта'}</div>`}
+ else if(c.m==='height'&&room){const hh=num(room.h),hp=num(room.hp);meas=`<div class="small">Факт: <b>${hh?fmt(hh,3)+' м':'не измерена'}</b>${hp?' · по проекту '+fmt(hp,2)+' м'+(hh?' · разница '+fmtN(Math.round((hh-hp)*1000))+' мм':''):''}</div>`}
+ const rv=it.revisit;
+ return`<div class="check ${st==='def'?'def':st==='ok'?'ok':''}" data-key="${key}"><div class="t">${esc(c.t)}</div><div class="norm">${n?esc(n.text)+(n.status==='check'?' · <span class="badge warn">норма уточняется</span>':'')+(n.custom?' · <span class="badge">по договору</span>':'')+'<br>'+esc(normRef(n)):''}</div>
+ ${rv?`<div class="warnbox" style="margin:4px 0 8px">Было в первом акте: ${esc(it.prev&&it.prev.note||'недостаток')}${it.prev&&it.prev.v&&it.prev.v.d!=null?' · замер '+esc(it.prev.v.d)+' мм':''}</div>
+  <div class="seg" role="group"><button class="${rv==='fixed'?'on ok':''}" data-a="rv" data-key="${key}" data-v="fixed">Устранено</button><button class="${rv==='notfixed'?'on def':''}" data-a="rv" data-key="${key}" data-v="notfixed">Не устранено</button></div>`:''}
+ ${meas?`<div style="margin:6px 0">${meas}</div>`:''}<div class="verdict ${ev?(ev.bad?'bad':'ok'):''}" id="ev-${esc(key)}">${ev?(ev.bad?'✗ ':'✓ ')+esc(ev.text):''}</div>
+ ${rv?'':`<div class="row" style="margin-top:6px"><div class="seg" role="group"><button class="${st==='ok'?'on ok':''}" data-a="st" data-key="${key}" data-v="ok">Норма</button><button class="${st==='def'?'on def':''}" data-a="st" data-key="${key}" data-v="def">Дефект</button><button class="${st==='na'?'on na':''}" data-a="st" data-key="${key}" data-v="na">Нет</button></div></div>`}
+ ${st==='def'||rv?`<label class="f" style="margin-top:8px">Описание, где именно<textarea data-note="${key}" placeholder="например: левая стена у окна, 1,2 м от угла">${esc(it.note||'')}</textarea></label>
+  <div class="thumbs">${(it.photos||[]).map((p,i)=>`<img data-ph="${p}" data-a="photo" data-key="${key}" data-i="${i}" alt="Фото ${i+1}">`).join('')}<button class="addph" data-a="addphoto" data-key="${key}" aria-label="Добавить фото">📷</button><button class="addph" data-a="addgal" data-key="${key}" aria-label="Фото из галереи" style="font-size:18px">🖼</button></div>`:''}</div>`}
+function vSettings(){const s=DB.settings,ov=Object.entries(s.overrides||{});return topBar('Настройки','home')+`<main>
+ <div class="card"><h3>Специалист (в акте)</h3><div class="grid2"><label class="f">ФИО<input data-s="name" value="${esc(s.name)}"></label><label class="f">Организация<input data-s="company" value="${esc(s.company)}"></label><label class="f">Телефон<input data-s="phone" value="${esc(s.phone)}"></label><label class="f">Город<input data-s="city" value="${esc(s.city||'')}"></label></div></div>
+ <div class="card"><h3>Справочник норм</h3><p class="small">Версия <b>${esc(NORMS?NORMS.version:'—')}</b> от ${esc(NORMS?NORMS.date:'')}. Приложение проверяет обновления само при запуске с интернетом.</p><div class="row"><button class="btn sec" data-a="checknorms">Проверить обновления</button><button class="btn sec" data-a="norms">Открыть справочник</button></div>
+ ${ov.length?`<p class="small" style="margin-top:10px">Свои допуски (по договору): ${ov.map(([k,v])=>esc((NORMS.norms[k]||{}).text||k)+' → '+esc(limitText({limit:v.limit}))).join('; ')}</p>`:''}</div>
+ <div class="card"><h3>Резервная копия</h3><p class="small muted">Все приёмки с фотографиями в одном файле — для переноса на другой телефон.</p><div class="row"><button class="btn sec" data-a="backup">Сохранить копию</button><button class="btn sec" data-a="restore">Восстановить из файла</button></div></div>
+ <div class="card"><h3>Дальномер</h3><p class="small muted">${NATIVE?'Bosch GLM / PLR с Bluetooth, Leica DISTO и другие BLE-дальномеры, а также режим клавиатуры. Нажмите «Подключить» внизу экрана, затем выберите прибор.':'Bluetooth-дальномер работает в приложении для Android. В браузере размеры вводятся вручную или с дальномера в режиме клавиатуры.'}</p></div>
+ <p class="small muted">Приёмка квартиры · версия 1.0</p></main>`}
+function vNorms(){const N=NORMS;if(!N)return topBar('Справочник норм','settings')+'<main><p>Справочник не загружен.</p></main>';const byDoc={};for(const[k,n]of Object.entries(N.norms))(byDoc[n.doc]=byDoc[n.doc]||[]).push([k,n]);const ov=DB.settings.overrides;
+ return topBar('Справочник норм','settings')+`<main><p class="small muted">${esc(N.note)}</p>${Object.entries(byDoc).map(([d,L])=>`<div class="card"><h3>${esc((N.docs[d]||{}).title||d)}</h3>${N.docs[d]&&N.docs[d].remark?`<p class="small muted">${esc(N.docs[d].remark)}</p>`:''}
+ ${L.map(([k,n])=>`<div style="border-top:1px solid var(--line);padding:8px 0"><div class="small"><b>${esc(n.clause||'')}</b> ${n.status==='check'?'<span class="badge warn">уточняется</span>':'<span class="badge ok">сверено</span>'}</div><div>${esc(n.text)}</div>
+  ${n.limit&&n.limit.t!=='range'?`<div class="row small" style="margin-top:4px"><span class="muted grow">Допуск: ${esc(limitText(n))}${ov[k]?' · <b>свой: '+esc(limitText({limit:ov[k].limit}))+'</b>':''}</span><button class="btn ghost sm" data-a="override" data-k="${k}">${ov[k]?'Изменить':'Свой допуск'}</button>${ov[k]?`<button class="btn ghost sm" data-a="unoverride" data-k="${k}">Сбросить</button>`:''}</div>`:''}</div>`).join('')}</div>`).join('')}</main>`}
+function vAct(){const o=cur();if(!o){S.view='home';return vHome()}const D=defects(o),s=DB.settings,ta=totalArea(o),ca=num(o.contractArea);let phN=0;const phs=[];
+ const rows=D.map((d,i)=>{const n=normOf(o,d.c.norm),ev=d.c.m?evaluate(n,d.c.m,d.it.v,d.room):null,ph=(d.it.photos||[]).map(p=>{phs.push({p,cap:(d.room?d.room.name:'Квартира')+': '+d.c.t});return ++phN});
+  const rv=d.it.revisit;return`<tr><td>${i+1}</td><td>${esc(d.room?d.room.name:'Квартира в целом')}</td><td>${esc(d.c.t)}${d.it.note?'<br><i>'+esc(d.it.note)+'</i>':''}${rv?'<br>'+(rv==='fixed'?'<span class="fix">Устранено</span>':rv==='notfixed'?'<span class="nofix">Не устранено</span>':'<span class="nofix">Не проверено</span>'):''}</td><td>${ev?esc(ev.text):d.it.v&&d.it.v.d!=null?esc(d.it.v.d)+' мм':'визуально'}</td><td>${n?esc(n.text)+'<br><small>'+esc(normRef(n))+'</small>':''}</td><td>${ph.length?'фото '+ph.join(', '):'—'}</td></tr>`}).join('');
+ const fixed=D.filter(d=>d.it.revisit==='fixed').length;
+ return topBar('Акт осмотра','back',`<button class="btn sm" data-a="print">PDF</button>`)+`<main><div class="row noprint" style="margin:10px 0"><button class="btn" data-a="print">Сохранить / распечатать PDF</button><button class="btn sec" data-a="sharetxt">Отправить текстом</button></div>
+ <div class="act"><h1>АКТ ${o.parent?'ПОВТОРНОГО ':''}ОСМОТРА КВАРТИРЫ</h1><div class="sub">${o.parent?'с проверкой устранения недостатков, выявленных при первичном осмотре':'с перечнем выявленных недостатков (дефектная ведомость)'}</div>
+ <table><tr><td style="width:38%">Дата осмотра</td><td>${esc(o.date)}</td></tr><tr><td>Адрес, ЖК, квартира</td><td>${esc(o.addr)}${o.complex?', ЖК «'+esc(o.complex)+'»':''}${o.flat?', кв. '+esc(o.flat):''}</td></tr>
+ <tr><td>Застройщик</td><td>${esc(o.developer)}</td></tr><tr><td>Участник долевого строительства</td><td>${esc(o.client)}</td></tr>${o.contractNo?`<tr><td>Договор</td><td>${esc(o.contractNo)}</td></tr>`:''}
+ <tr><td>Вид отделки</td><td>${FINISH[o.finish]}${o.finish!=='bare'?', штукатурка: '+QUAL[o.quality].toLowerCase():''}</td></tr>
+ <tr><td>Площадь по обмерам / по договору</td><td>${fmt(ta,2)} м²${ca?' / '+fmt(ca,2)+' м² (разница '+(ta-ca>0?'+':'')+fmt(ta-ca,2)+' м²)':''}</td></tr>
+ <tr><td>Осмотр провёл</td><td>${esc(s.name||'')}${s.company?', '+esc(s.company):''}${s.phone?', тел. '+esc(s.phone):''}</td></tr></table>
+ ${o.rooms.length?`<b>Обмеры помещений</b><table><tr><th>Помещение</th><th>Длина, м</th><th>Ширина, м</th><th>Высота, м</th><th>Площадь, м²</th></tr>${o.rooms.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.a||'—')}</td><td>${esc(r.b||'—')}</td><td>${esc(r.h||'—')}</td><td>${fmt(roomArea(r),2)}</td></tr>`).join('')}</table>`:''}
+ <b>Перечень недостатков</b>${D.length?`<table><tr><th>№</th><th>Помещение</th><th>Недостаток</th><th>Замер</th><th>Требование</th><th>Фото</th></tr>${rows}</table>`:'<p>Недостатков не выявлено.</p>'}
+ ${o.parent?`<p>Итого: устранено ${fixed} из ${D.length}; не устранено ${D.length-fixed}.</p>`:''}
+ <p><b>Заключение.</b> <span class="noprint small muted">(можно изменить)</span></p><textarea class="noprint" data-o="conclusion" placeholder="${esc(conclusionDefault(o,D))}">${esc(o.conclusion||'')}</textarea><p class="printonly">${esc(o.conclusion||conclusionDefault(o,D))}</p>
+ ${phs.length?`<b>Фотофиксация</b><div class="ph">${phs.map((x,i)=>`<figure><img data-ph="${x.p}" alt=""><figcaption>Фото ${i+1}. ${esc(x.cap)}</figcaption></figure>`).join('')}</div>`:''}
+ <div class="signs">${[['dev','Представитель застройщика'],['client','Участник долевого строительства'],['spec','Специалист']].map(([k,n])=>`<div><small>${n}</small><img class="printonly sigimg" data-sigimg="${k}" src="${o.sign[k]||''}" alt=""><canvas class="sig noprint" data-sig="${k}" width="600" height="160"></canvas><div class="row noprint"><button class="btn ghost sm" data-a="sigclr" data-k="${k}">Очистить подпись</button></div></div>`).join('')}</div>
+ <p style="margin-top:14px;font-size:11px;color:#555">Требования приведены по справочнику норм «Приёмки квартиры», версия ${esc(o.norms.version)} от ${esc(new Date(o.norms.date).toLocaleDateString('ru-RU'))}. Акт составлен по результатам визуально-измерительного осмотра и не является заключением судебной экспертизы.</p></div></main>`}
+function conclusionDefault(o,D){if(o.parent){const nf=D.filter(d=>d.it.revisit!=='fixed').length;return nf?'Не устранено недостатков: '+nf+'. Требуется их устранение застройщиком в разумный срок.':'Все недостатки, выявленные при первичном осмотре, устранены.'}return D.length?'При осмотре выявлено недостатков: '+D.length+'. Участник долевого строительства требует их безвозмездного устранения застройщиком в разумный срок.':'Недостатков при осмотре не выявлено.'}
+
+/* ============ signatures ============ */
+function mountSigs(){const o=cur();document.querySelectorAll('canvas[data-sig]').forEach(cv=>{const k=cv.dataset.sig,g=cv.getContext('2d');g.lineWidth=3;g.lineCap='round';g.strokeStyle='#123';let dn=false,last=null,dirty=false;
+ const p=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+ if(o.sign[k]){const im=new Image();im.onload=()=>g.drawImage(im,0,0,cv.width,cv.height);im.src=o.sign[k]}
+ cv.onpointerdown=e=>{dn=true;last=p(e);cv.setPointerCapture(e.pointerId)};cv.onpointermove=e=>{if(!dn)return;const q=p(e);g.beginPath();g.moveTo(...last);g.lineTo(...q);g.stroke();last=q;dirty=true};
+ cv.onpointerup=cv.onpointercancel=()=>{dn=false;if(dirty){o.sign[k]=cv.toDataURL('image/png');save();const im=document.querySelector('img[data-sigimg="'+k+'"]');if(im)im.src=o.sign[k]}}})}
+
+/* ============ photos & markup ============ */
+let photoKey=null;
+async function addPhotoFiles(files){const o=cur();if(!o||!photoKey)return;const[rid,cid]=photoKey.split('|'),it=itemsOf(o,rid)[cid];if(!it)return;it.photos=it.photos||[];
+ for(const f of files){const data=await downscale(f,1600);const id=uid();await PH.put({id,data});phCache.set(id,data);it.photos.push(id)}save();render();
+ if(files.length===1)openMarkup(photoKey,it.photos.length-1)}
+function downscale(file,max){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82))};im.onerror=()=>rej(Error('не изображение'));im.src=fr.result};fr.onerror=()=>rej(fr.error);fr.readAsDataURL(file)})}
+async function openMarkup(key,i){const o=cur(),[rid,cid]=key.split('|'),it=itemsOf(o,rid)[cid],id=it.photos[i],src=await phURL(id);if(!src)return;
+ const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="bar"><button class="chip on" data-t="arrow">Стрелка</button><button class="chip" data-t="ring">Круг</button><button class="chip" data-t="dim">Размер</button><button class="chip" data-t="text">Текст</button><button class="chip" data-t="undo">↶</button><span style="flex:1"></span><button class="chip" data-t="del">Удалить фото</button><button class="chip" data-t="cancel">Отмена</button><button class="chip on" data-t="save">Готово</button></div><div class="stage"><canvas></canvas></div>`;
+ document.body.appendChild(m);const cv=m.querySelector('canvas'),g=cv.getContext('2d'),im=new Image(),shapes=[];let tool='arrow',drag=null;
+ im.onload=()=>{cv.width=im.width;cv.height=im.height;draw()};im.src=src;
+ const lw=()=>Math.max(4,cv.width/220);
+ function arrow(a,b){const ang=Math.atan2(b[1]-a[1],b[0]-a[0]),hl=lw()*5;g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.beginPath();g.moveTo(...b);g.lineTo(b[0]-hl*Math.cos(ang-.45),b[1]-hl*Math.sin(ang-.45));g.lineTo(b[0]-hl*Math.cos(ang+.45),b[1]-hl*Math.sin(ang+.45));g.closePath();g.fill()}
+ function label(t,x,y){const fs=lw()*6;g.font='bold '+fs+'px system-ui,sans-serif';const w=g.measureText(t).width;g.fillStyle='rgba(255,255,255,.9)';g.fillRect(x-6,y-fs,w+12,fs*1.3);g.fillStyle='#e11d1d';g.fillText(t,x,y)}
+ function draw(){g.drawImage(im,0,0);g.strokeStyle=g.fillStyle='#e11d1d';g.lineWidth=lw();g.lineCap='round';
+  for(const s of shapes.concat(drag?[drag]:[])){g.strokeStyle=g.fillStyle='#e11d1d';if(s.t==='arrow')arrow(s.a,s.b);else if(s.t==='ring'){g.beginPath();g.ellipse((s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2,Math.abs(s.b[0]-s.a[0])/2+1,Math.abs(s.b[1]-s.a[1])/2+1,0,0,7);g.stroke()}
+   else if(s.t==='dim'){arrow(s.a,s.b);arrow(s.b,s.a);if(s.txt)label(s.txt,(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2-lw()*2)}else if(s.t==='text')label(s.txt,s.a[0],s.a[1])}}
+ const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+ cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);const p=pt(e);if(tool==='text'){const t=prompt('Текст на фото','');if(t){shapes.push({t:'text',a:p,txt:t});draw()}return}drag={t:tool,a:p,b:p}};
+ cv.onpointermove=e=>{if(!drag)return;drag.b=pt(e);draw()};
+ cv.onpointerup=()=>{if(!drag)return;const d=drag;drag=null;if(Math.hypot(d.b[0]-d.a[0],d.b[1]-d.a[1])<8){draw();return}if(d.t==='dim'){d.txt=prompt('Размер (например «12 мм»)','')||''}shapes.push(d);draw()};
+ m.querySelector('.bar').onclick=async e=>{const b=e.target.closest('[data-t]');if(!b)return;const t=b.dataset.t;
+  if(['arrow','ring','dim','text'].includes(t)){tool=t;m.querySelectorAll('.bar [data-t]').forEach(x=>x.classList.toggle('on',x.dataset.t===t||x.dataset.t==='save'))}
+  else if(t==='undo'){shapes.pop();draw()}else if(t==='cancel')m.remove();
+  else if(t==='del'){if(!confirm('Удалить это фото?'))return;it.photos.splice(i,1);PH.del(id);save();m.remove();render()}
+  else if(t==='save'){if(shapes.length){draw();const data=cv.toDataURL('image/jpeg',.85),nid=uid();await PH.put({id:nid,data,orig:id});phCache.set(nid,data);it.photos[i]=nid;save()}m.remove();render()}}}
+
+/* ============ export ============ */
+async function doPrint(){const o=cur();const title=('Акт '+(o.addr||'')+(o.flat?' кв '+o.flat:'')+' '+o.date).replace(/[\\/:*?"<>|]/g,'-');
+ await fillThumbs(app);if(NATIVE&&NATIVE.printPage){NATIVE.printPage(title);return}const t=document.title;document.title=title;window.print();setTimeout(()=>document.title=t,1500)}
+function actText(o){const D=defects(o);let s='Акт осмотра квартиры '+o.date+'\n'+(o.addr||'')+(o.flat?', кв. '+o.flat:'')+'\n\nНедостатки ('+D.length+'):\n';D.forEach((d,i)=>{const n=normOf(o,d.c.norm),ev=d.c.m?evaluate(n,d.c.m,d.it.v,d.room):null;s+=(i+1)+'. '+(d.room?d.room.name:'Квартира')+': '+d.c.t+(d.it.note?' — '+d.it.note:'')+(ev?' ('+ev.text+')':'')+(n?' — '+normRef(n):'')+(d.it.revisit?(d.it.revisit==='fixed'?' — УСТРАНЕНО':' — НЕ УСТРАНЕНО'):'')+'\n'});return s}
+async function shareText(name,text,mime='text/plain'){if(NATIVE&&NATIVE.shareText){NATIVE.shareText(name,text,mime);return}
+ if(navigator.share&&mime==='text/plain'){try{await navigator.share({title:name,text});return}catch(e){if(e.name==='AbortError')return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+async function backup(){const ids=new Set();DB.list.forEach(o=>Object.values(o.items).forEach(r=>Object.values(r).forEach(it=>(it.photos||[]).concat(it.prev&&it.prev.photos||[]).forEach(p=>ids.add(p)))));const photos={};for(const id of ids){const u=await phURL(id);if(u)photos[id]=u}
+ await shareText('priemka-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'priemka',v:1,db:DB,photos}),'application/json')}
+async function restore(file){try{const d=JSON.parse(await file.text());if(d.app!=='priemka'||!d.db||!Array.isArray(d.db.list))throw Error('это не копия «Приёмки квартиры»');const have=new Set(DB.list.map(o=>o.id));let n=0;
+ for(const o of d.db.list)if(!have.has(o.id)){DB.list.push(o);n++}for(const[id,data]of Object.entries(d.photos||{})){await PH.put({id,data});phCache.set(id,data)}save();toast('Добавлено приёмок: '+n);render()}catch(e){toast('Не удалось восстановить: '+e.message,4000)}}
+
+/* ============ events ============ */
+document.addEventListener('submit',async e=>{if(e.target.id!=='loginF')return;e.preventDefault();const p=$('#pass').value.trim();if((await sha256(PASS_SALT+p))===PASS_HASH){LS.set('pr:auth',true);S.view='home';render();updateNorms(false)}else{toast('Неверный пароль');$('#pass').value=''}});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,o=cur();
+ if(a==='newobj'){const n=newInspection();S.id=n.id;S.view='obj';render()}
+ else if(a==='open'){S.id=b.dataset.id;S.view='obj';render()}
+ else if(a==='home'){S.view='home';render()}else if(a==='settings'){S.view='settings';render()}else if(a==='norms'){S.view='norms';render()}
+ else if(a==='back'){S.view=S.view==='room'||S.view==='act'?'obj':'home';render()}
+ else if(a==='setO'){o[b.dataset.k]=b.dataset.v;save();render()}
+ else if(a==='addroom'){const t=b.dataset.t,n=o.rooms.filter(r=>r.type===t).length;const r={id:uid(),type:t,name:ROOM_TYPES[t].split(' /')[0]+(n?' '+(n+1):''),a:'',b:'',h:'',area:'',hp:''};o.rooms.push(r);save();S.room=r.id;S.view='room';render()}
+ else if(a==='room'){S.room=b.dataset.id;S.view='room';render()}
+ else if(a==='delroom'){if(!confirm('Удалить помещение и его замечания?'))return;o.rooms=o.rooms.filter(r=>r.id!==S.room);delete o.items[S.room];save();S.view='obj';render()}
+ else if(a==='delobj'){if(!confirm('Удалить приёмку целиком? Это нельзя отменить.'))return;DB.list=DB.list.filter(x=>x.id!==o.id);save();S.view='home';render()}
+ else if(a==='st'){const[rid,cid]=b.dataset.key.split('|'),its=itemsOf(o,rid),it=its[cid]=its[cid]||{};it.st=it.st===b.dataset.v?'':b.dataset.v;save();render()}
+ else if(a==='rv'){const[rid,cid]=b.dataset.key.split('|'),it=itemsOf(o,rid)[cid];it.revisit=b.dataset.v;save();render()}
+ else if(a==='allok'){const room=roomById(o,S.room),its=itemsOf(o,S.room);let n=0;for(const c of checklist(o,room)){const it=its[c.id]=its[c.id]||{};if(!it.st){it.st='ok';n++}}save();render();toast('Отмечено «норма»: '+n)}
+ else if(a==='addphoto'||a==='addgal'){photoKey=b.dataset.key;const inp=$(a==='addphoto'?'#photoIn':'#photoGal');inp.value='';inp.click()}
+ else if(a==='photo')openMarkup(b.dataset.key,+b.dataset.i);
+ else if(a==='act'){S.view='act';render()}else if(a==='print')doPrint();
+ else if(a==='sharetxt')shareText('Акт осмотра.txt',actText(o));
+ else if(a==='sigclr'){delete o.sign[b.dataset.k];save();render()}
+ else if(a==='revisit'){if(!defects(o).length){toast('В этой приёмке нет недостатков');return}const n=newInspection(o);n.date=today();save();S.id=n.id;S.view='obj';render();toast('Создан повторный осмотр: '+defects(n).length+' недостатков к проверке')}
+ else if(a==='a2hs'){LS.set('pr:a2hs',true);render()}
+ else if(a==='checknorms')updateNorms(true);else if(a==='normsDiffOk'){S.normsDiff=null;render()}
+ else if(a==='override'){const k=b.dataset.k,n=NORMS.norms[k],l=n.limit;const cur0=DB.settings.overrides[k];const lim=JSON.parse(JSON.stringify((cur0||{}).limit||l));
+  if(l.t==='perM'){const v=num(prompt('Свой допуск, мм на 1 м (по договору):',String(lim.perM).replace('.',',')));if(v==null)return;lim.perM=v;const mx=prompt('Не более, мм (пусто — без ограничения):',lim.max==null?'':String(lim.max).replace('.',','));lim.max=num(mx)}
+  else if(l.t==='max'||l.t==='pct'){const v=num(prompt(l.t==='pct'?'Не более, мм:':'Свой допуск, мм (по договору):',String(lim.max).replace('.',',')));if(v==null)return;lim.max=v}
+  const reason=prompt('Основание (например «п. 4.2 договора»):',(cur0||{}).reason||'')||'';DB.settings.overrides[k]={limit:lim,reason};save();render();toast('Свой допуск применится к новым приёмкам')}
+ else if(a==='unoverride'){delete DB.settings.overrides[b.dataset.k];save();render()}
+ else if(a==='backup')backup();else if(a==='restore'){$('#backupIn').value='';$('#backupIn').click()}
+ else if(a==='rfon'){if(NATIVE){BLE.devices=[];BLE.state='connecting';rfBar();NATIVE.bleConnect()}}
+ else if(a==='rfmeasure'){NATIVE&&NATIVE.bleMeasure()}else if(a==='rfoff'){BLE2&&BLE2.disconnect();BLE.state='off';rfBar()}
+ else if(a==='rfpick'){if(BLE2){BLE.state='connecting';BLE.name=b.dataset.name;rfBar();BLE2.connect(b.dataset.addr,b.dataset.kind,b.dataset.name)}}});
+document.addEventListener('change',e=>{const t=e.target,o=cur();
+ if(t.id==='photoIn'||t.id==='photoGal'){if(t.files.length)addPhotoFiles([...t.files]).catch(err=>toast('Фото не добавлено: '+err.message));return}
+ if(t.id==='backupIn'){if(t.files[0])restore(t.files[0]);return}
+ if(t.dataset.o!=null){o[t.dataset.o]=t.value.trim();save();if(t.dataset.o!=='conclusion')render();return}
+ if(t.dataset.s!=null){DB.settings[t.dataset.s]=t.value.trim();save();return}
+ if(t.dataset.r!=null){const r=roomById(o,S.room),k=t.dataset.r;let v=t.value.trim();if(['a','b','h','area','hp'].includes(k)&&v!==''){const n=num(v);if(n==null||n<=0||n>(k==='area'?1000:50)){toast('Введите размер в метрах, например 3,45');render();return}v=String(n)}r[k]=v;save();render();return}
+ if(t.dataset.note!=null){const[rid,cid]=t.dataset.note.split('|');itemsOf(o,rid)[cid].note=t.value.trim();save();return}
+ if(t.dataset.m!=null){const[rid,cid]=t.dataset.m.split('|'),its=itemsOf(o,rid),it=its[cid]=its[cid]||{};it.v=it.v||{};const v=t.value.trim();if(v===''){delete it.v[t.dataset.k]}else{const n=num(v);if(n==null||n<0||n>(t.dataset.k==='b'?100:1000)){toast(t.dataset.k==='b'?'Длина в метрах, например 2':'Величина в миллиметрах, например 4');t.value='';return}it.v[t.dataset.k]=n}
+  const room=roomById(o,rid),c=checklist(o,room).find(x=>x.id===cid),ev=evaluate(normOf(o,c.norm),c.m,it.v,room);if(ev&&!it.revisit){const was=it.st;it.st=ev.bad?'def':'ok';save();if(was!==it.st){render();return}}save();
+  const el=document.getElementById('ev-'+t.dataset.m);if(el){el.className='verdict '+(ev?(ev.bad?'bad':'ok'):'');el.textContent=ev?(ev.bad?'✗ ':'✓ ')+ev.text:''}}});
+window.appBack=()=>{if(document.querySelector('.modal')){document.querySelector('.modal').remove();return true}if(S.view==='room'||S.view==='act'){S.view='obj';render();return true}if(S.view==='obj'||S.view==='settings'){S.view='home';render();return true}if(S.view==='norms'){S.view='settings';render();return true}return false};
+const pst=document.createElement('style');pst.textContent='.printonly{display:none}@media print{.printonly{display:block}.sigimg[src=""]{display:none}}';document.head.appendChild(pst);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();if(S.view!=='login')updateNorms(false);
+window.__pr={DB,S,checklist,evaluate,normOf,defects,stats,totalArea,newInspection,render,cmpVer,diffNorms,get NORMS(){return NORMS},rfValue};
+</script>
+</body>
+</html>
