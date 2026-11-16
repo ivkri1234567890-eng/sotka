@@ -169,6 +169,11 @@ function patchSheet(xml,sheetName,list,fgrid,replace){
   if(replace&&/t="inlineStr"/.test(attrs))inner=inner.replace(/(<t\b[^>]*>)([\s\S]*?)(<\/t>)/g,(m,a,t,b)=>a+esc(replace(unesc(t)))+b);
   return inner?'<c'+attrs+'>'+inner+'</c>':'<c'+attrs+'/>';
  }
+ // дополнительные ячейки шапки (например, новая колонка «Источник»)
+ for(const b of B)for(const e of b.rc.extraHead||[]){
+  const row=byR.get(e.r);const sc=row&&row.cells.find(x=>x.col===e.styleCol);
+  put(e.r<b.d0?e.r:e.r+b.delta,e.c,cellXml(colS(e.c)+e.r,sc?styleOf(sc.attrs):null,e.text,null));
+ }
  // итог: ячейки под суммы, которых не было в образце
  for(const b of B){
   if(!b.rc.total||!b.res.totalRow||!b.rc.totalRow)continue;
@@ -185,7 +190,7 @@ function patchSheet(xml,sheetName,list,fgrid,replace){
    const r=b.d0+k;const tpl=x.kind==='sub'?b.tplS:b.tplD;const st=x.kind==='sub'?b.sS:b.sD;
    if(x.kind==='data')dataNo++;
    for(const c of colsSorted){
-    const ref=colS(c)+r;const role=roleOf.get(c);const s=st.get(c)!=null?st.get(c):b.sD.get(c);
+    const ref=colS(c)+r;const role=roleOf.get(c);const sf=rc.styleFrom&&rc.styleFrom[c];const s=st.get(c)!=null?st.get(c):b.sD.get(c)!=null?b.sD.get(c):sf!=null?(st.get(sf)!=null?st.get(sf):b.sD.get(sf)):null;
     let xmlc;
     if(x.empty)xmlc=cellXml(ref,s,c===colsSorted[0]?'Нет данных за период':null,null);
     else if(x.kind==='sub'){
@@ -215,6 +220,7 @@ function patchSheet(xml,sheetName,list,fgrid,replace){
  });
  x=x.replace(/(<(?:conditionalFormatting|dataValidation|selection)\b[^>]*?\bsqref=")([^"]+)(")/g,(m,a,sq,b)=>a+(adjustSqref(sq,geos,false)||sq)+b);
  x=x.replace(/(<autoFilter\b[^>]*?\bref=")([^"]+)(")/,(m,a,sq,b)=>a+adjustSqref(sq,geos,false)+b);
+ x=x.replace(/(<autoFilter\b[^>]*?\bref=")([A-Z]+)(\d+):([A-Z]+)(\d+)(")/,(m,a,c1,r1,c2,r2,b)=>{let mc=colN(c2);for(const bb of B)for(const e of bb.rc.extraHead||[])if(+r1===e.r&&e.c===mc+1)mc=e.c;return a+c1+r1+':'+colS(mc)+r2+b;});
  x=x.replace(/<hyperlinks>([\s\S]*?)<\/hyperlinks>/,(m,inner)=>{const keep=[];inner.replace(/<hyperlink\b[^>]*\/>/g,h=>{const ref=/ref="([^"]+)"/.exec(h);const a=ref&&adjustSqref(ref[1],geos,true);if(a)keep.push(h.replace(ref[0],'ref="'+a+'"'));});return keep.length?'<hyperlinks>'+keep.join('')+'</hyperlinks>':'';});
  x=x.replace(/<rowBreaks\b[\s\S]*?<\/rowBreaks>/,'');
  x=x.replace(/(<cfRule\b[\s\S]*?<formula>)([\s\S]*?)(<\/formula>)/g,(m,a,f,b)=>a+esc(adjustFormula(unesc(f),sheetName,sheetName,geos,null))+b);
@@ -399,6 +405,7 @@ async function build(template,templateKind,plan,opt){
   for(const {rc,res} of plan)await putSheet(zip,rc.sheet.slice(0,31),S=>plainRows(rc,res,S));
  }
  if(opt.compare)await putSheet(zip,'Изменения',S=>compareRows(opt.compare.cmp,S,opt.compare.labels||{}));
+ for(const x of opt.extraSheets||[])await putSheet(zip,x.name,x.build);
  return await zip.generateAsync({type:'uint8array',compression:'DEFLATE'});
 }
 

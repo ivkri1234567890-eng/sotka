@@ -24,7 +24,9 @@ details.panel summary{font-weight:750;cursor:pointer}
 textarea{width:100%;min-height:120px;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:14px/1.4 ui-monospace,Menlo,monospace}
 .flist{display:grid;gap:6px;margin-top:8px}.flist .oprow button{flex:none}
 .preview{overflow:auto;max-height:360px;margin-top:10px;border:1px solid var(--line);border-radius:10px}.preview table{font-size:13px;min-width:100%}.preview td,.preview th{white-space:nowrap;text-align:left;padding:5px 8px}.preview tr.sub td{font-weight:700;background:var(--bg)}
-.txt{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}#odDate{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}.dl{display:block;text-align:center;border-radius:13px;padding:14px;font-weight:750;background:var(--blue);color:#fff;text-decoration:none;margin-top:8px}.ideas{margin:6px 0 0;padding-left:18px;line-height:1.45;color:var(--muted);font-size:15px}
+.txt{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}#odDate{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}.dl{display:block;text-align:center;border-radius:13px;padding:14px;font-weight:750;background:var(--blue);color:#fff;text-decoration:none;margin-top:8px}.seg{display:flex;gap:6px;margin:0 0 12px}.seg button{flex:1;margin:0;min-height:44px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}.seg button[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}#mgView{display:none}#obrazecView.mg-mode>#mgView{display:block}#obrazecView.mg-mode>:not(.mgkeep){display:none!important}
+body.has-sendbar main{padding-bottom:150px}html:has(body.has-sendbar){scroll-padding-bottom:150px}
+.ideas{margin:6px 0 0;padding-left:18px;line-height:1.45;color:var(--muted);font-size:15px}
 </style>
 <div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h2 style="margin-top:8px">Центр отчётов ДПГА</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
 <main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button><button id="obrazecMode" aria-pressed="false">По образцу</button><button id="skladMode" aria-pressed="false" type="button" onclick="location.href='sklad.html'">Склад ТС</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
@@ -131,6 +133,29 @@ textarea{width:100%;min-height:120px;margin-top:6px;padding:9px;border-radius:10
 </details>
 </section>
 <section id="obrazecView" hidden>
+<div class="seg mgkeep" role="group" aria-label="Режим"><button type="button" id="segObrazec" aria-pressed="true">Отчёт по образцу</button><button type="button" id="segMerge" aria-pressed="false">Объединить файлы</button></div>
+<section id="mgView" class="mgkeep">
+<p class="intro">Загрузите несколько файлов, заполненных по одной форме: отчёты филиалов, менеджеров, подразделений. Программа сведёт их в один файл в оформлении первого и приложит лист «Сверка» с итогами каждого файла.</p>
+<div class="panel">
+ <h2>Файлы одной формы</h2>
+ <div class="drop" id="mgDrop">Перетащите сюда файлы — или выберите<input type="file" id="mgFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip"><small>Можно архивом ZIP. Первый файл задаёт оформление — его можно сменить.</small></div>
+ <ul id="mgList" class="files"></ul>
+ <p id="mgStatus" class="status" role="status" aria-live="polite"></p>
+ <div id="mgOptions" hidden>
+  <div id="mgGroups"></div>
+  <label class="check" id="mgSrcBox"><input type="checkbox" id="mgSrc" checked>Добавить колонку «Источник» с названием файла</label>
+  <label class="check" id="mgPerBox"><input type="checkbox" id="mgPer">Итог по каждому файлу</label>
+  <label class="check"><input type="checkbox" id="mgCheck" checked>Лист «Сверка»: строки и суммы каждого файла</label>
+  <p id="mgNotes" class="status warn"></p>
+ </div>
+ <button type="button" id="mgRun" disabled>Объединить</button>
+</div>
+<section id="mgResult" class="panel" hidden>
+ <h2>Готово</h2>
+ <p id="mgSum" class="status"></p>
+ <button type="button" id="mgSave">Скачать</button>
+</section>
+</section>
 <p class="intro">Загрузите готовый отчёт за прошлый период и исходники к нему — программа сама поймёт, как он собран (колонки, группировки, фильтры, период, итоги), и сделает такой же по новым данным. Считает на устройстве, работает и без интернета.</p>
 <div class="panel" id="obSavedBox" hidden>
  <h2>Мои отчёты</h2>
@@ -240,6 +265,7 @@ textarea{width:100%;min-height:120px;margin-top:6px;padding:9px;border-radius:10
  <li>Добавляет лист «Изменения»: кто появился, кто пропал, где резкие скачки.</li>
  <li>Проверки: пустые значения, новые значения, которых не было в фильтре, справочник без нужных строк.</li>
  <li>Запоминает отчёт: в следующий раз достаточно загрузить новые исходники. Отчёт можно передать коллеге файлом .json.</li>
+ <li>Объединение файлов одной формы: отчёты филиалов складываются по строкам, списки менеджеров ставятся друг под другом; итоги пересчитываются, лист «Сверка» показывает строки и суммы каждого файла.</li>
  <li>Справка Word за период: загрузите прошлую справку или служебную записку и исходники — программа пересчитает таблицы и числа в тексте («продано 12 автомобилей на сумму …», «с начала года …»), согласует слова с числами и сдвинет месяцы и даты.</li>
  <li>Документы Word по образцу: загрузите заполненный акт, письмо или договор и таблицу — программа найдёт, что откуда взято (ФИО и инициалы, суммы, суммы прописью, даты, таблица-список с итогом), и сделает такие же документы для нужных строк, плюс общий файл для печати и реестр.</li>
  <li>Отправляет готовое в Telegram и на почту, без интернета — ставит в очередь. Кнопка отправки появляется и у других отчётов центра после скачивания.</li>
@@ -316,7 +342,7 @@ el('save').onclick=()=>{
 
 <script src="opisi-blank.js?v=202611152100"></script><script src="opisi-engine.js?v=202611152100"></script><script src="gibdd-ui.js?v=202611152100"></script>
 <script src="opisi-ui.js?v=202611152100"></script><script src="batch.js?v=202611152100"></script>
-<script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script>
+<script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-merge.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');

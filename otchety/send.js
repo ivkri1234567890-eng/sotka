@@ -131,6 +131,7 @@ const GAS='// Google Apps Script: отправка отчётов из цент�
 function bar(files,text){
  let b=document.getElementById('sendBar');
  if(!b){b=document.createElement('div');b.id='sendBar';b.className='sendbar';document.body.append(b);}
+ document.body.classList.add('has-sendbar');
  const s=get();
  b.replaceChildren();
  const t=document.createElement('span');t.textContent=files.length===1?files[0].name:'Файлов: '+files.length;
@@ -139,7 +140,7 @@ function bar(files,text){
  const go=async ch=>{st.textContent='Отправляю…';const r=await send({files,text:text||files.map(f=>f.name).join('\n'),subject:files[0].name.replace(/\.[^.]+$/,''),channels:[ch]});st.textContent=r.done.length?'✓ '+r.done.join('; '):r.queued?'Нет интернета — отправлю, когда появится':'✕ '+r.errs.map(e=>e.text).join('; ');};
  if(tgOn(s))b.append(t,mk('В Telegram',()=>go('tg')));else b.append(t);
  b.append(mk('На почту',()=>mailOn(s)?go('mail'):shareMail({files,subject:files[0].name})));
- b.append(mk('✕',()=>b.remove()),st);
+ b.append(mk('✕',()=>{b.remove();document.body.classList.remove('has-sendbar');}),st);
 }
 if(typeof window.saveFile==='function'){
  const orig=window.saveFile;
