@@ -20,5 +20,7 @@
 	<key>NSBluetoothAlwaysUsageDescription</key><string>Bluetooth нужен, чтобы получать замеры с лазерного дальномера.</string>
 	<key>UIFileSharingEnabled</key><true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key><true/>
+	<key>NSCameraUsageDescription</key><string>Камера нужна, чтобы сфотографировать стены помещения для 3D-плана.</string>
+	<key>NSPhotoLibraryUsageDescription</key><string>Доступ к фото нужен, чтобы прикрепить снимки помещения.</string>
 </dict>
 </plist>
