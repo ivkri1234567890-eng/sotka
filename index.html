@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Сотка: химия и биология</title>
+<title>Сотка: химия, биология, русский, математика</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="description" content="Бесплатный тренажёр ЕГЭ по химии и биологии">
+<meta name="description" content="Тренажёр ЕГЭ по химии, биологии, русскому языку и профильной математике">
 <meta name="apple-mobile-web-app-title" content="Сотка">
 <meta name="theme-color" content="#f3f6f4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,6 +38,17 @@ html{scroll-padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(84px + env(safe-area-inset-bottom,0px))}
 body.bio{--acc:var(--bio);--acc-soft:var(--bio-soft)}
+body.rus{--acc:#b0306a;--acc-soft:#f8e6ee}
+body.math{--acc:#6a45c2;--acc-soft:#eee8fb}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body.rus{--acc:#ff8fbf;--acc-soft:#3a1a2a}:root:not([data-theme="light"]) body.math{--acc:#b39cff;--acc-soft:#2a2147}}
+:root[data-theme="dark"] body.rus{--acc:#ff8fbf;--acc-soft:#3a1a2a}
+:root[data-theme="dark"] body.math{--acc:#b39cff;--acc-soft:#2a2147}
+header.top{flex-wrap:wrap}
+header.top .seg{flex:1 1 100%;display:grid;grid-template-columns:repeat(4,1fr)}
+header.top .seg button{padding:8px 2px;font-size:13px}
+#lock{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:24px}
+#lock form{width:100%;max-width:360px;display:grid;gap:12px;text-align:center}
+#lock input{text-align:center;letter-spacing:.3em}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 .wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;display:flex;align-items:center;gap:12px;justify-content:space-between}
@@ -130,11 +141,14 @@ nav.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:720px;wi
   <div class="seg" role="group" aria-label="Предмет">
     <button id="sub-chem" aria-pressed="true">Химия</button>
     <button id="sub-bio" aria-pressed="false">Биология</button>
+    <button id="sub-rus" aria-pressed="false">Русский</button>
+    <button id="sub-math" aria-pressed="false">Матем.</button>
   </div>
 </header>
 
 <main class="wrap" id="app"></main>
 <div class="toast" id="toast" hidden></div>
+<div id="lock"><form id="lockf"><div class="brand" style="font-size:28px">Сотка<b>.</b></div><p class="muted" style="margin:0">Введите пароль</p><input class="num" id="pw" type="password" inputmode="numeric" autocomplete="current-password" aria-label="Пароль"><button class="btn">Войти</button><p class="small" id="pwerr" style="color:var(--bad);margin:0" hidden>Неверный пароль</p></form></div>
 
 <nav class="tabs" aria-label="Разделы"><div class="in">
   <button class="tab" data-view="train" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/></svg>Тренировка</button>
@@ -513,6 +527,9 @@ THEORY.bio.push(
  <p class="small muted">Правило 10%: на следующий трофический уровень переходит около 10% энергии.</p>`]
 );
 
+</script>
+<script src="rus-math.js"></script>
+<script>
 /* ---------- prompt text ---------- */
 const PROMPT=`Ты — команда из методиста ЕГЭ (химия и биология, 11 класс), когнитивного психолога и мобильного продуктового дизайнера. Спроектируй и собери веб-приложение «Сотка» — тренажёр для подготовки к ЕГЭ по химии и биологии на 90–100 баллов.
 
@@ -566,14 +583,17 @@ function grade(it,ans){
   if(it.type==='multi'){const a=[...it.a].sort().join(''),u=[...ans].sort().join('');if(u===a)return it.pts;
     if(it.pts===2){const A=new Set(it.a),U=new Set(ans);let err=0;A.forEach(x=>{if(!U.has(x))err++});U.forEach(x=>{if(!A.has(x))err++});return err<=1?1:0}return 0}
   if(it.type==='match'){if(ans===it.a)return it.pts;if(it.pts===2&&ans.length===it.a.length){let e=0;for(let i=0;i<ans.length;i++)if(ans[i]!==it.a[i])e++;return e<=1?1:0}return 0}
-  if(it.type==='order'||it.type==='num'){return ans.replace(/[\s,.:%]/g,'')===it.a.replace(/[\s,.:%]/g,'')?it.pts:0}
+  if(it.type==='order'){return ans.replace(/[\s,.:%]/g,'')===it.a.replace(/[\s,.:%]/g,'')?it.pts:0}
+  if(it.type==='num'){const n=s=>s.replace(/\s/g,'').replace(/−/g,'-').replace(',','.');const U=n(ans),A=n(it.a),re=/^-?\d+(\.\d+)?$/;
+    if(re.test(U)&&re.test(A))return parseFloat(U)===parseFloat(A)?it.pts:0;return ans.replace(/[\s,.:%]/g,'')===it.a.replace(/[\s,.:%]/g,'')?it.pts:0}
+  if(it.type==='word'){const n=s=>s.toLowerCase().replace(/ё/g,'е').replace(/[\s,.;«»"-]/g,'');return it.a.split('|').some(x=>n(x)===n(ans))?it.pts:0}
   return 0}
 
 /* ---------- views ---------- */
 const app=document.getElementById('app');
-function setSubject(sub){S.subject=sub;store.set('subject',sub);document.body.classList.toggle('bio',sub==='bio');
-  document.getElementById('sub-chem').setAttribute('aria-pressed',sub==='chem');document.getElementById('sub-bio').setAttribute('aria-pressed',sub==='bio');
-  S.session=null;S.exam=null;render()}
+const SUBS=['chem','bio','rus','math'];
+function paintSubject(sub){SUBS.forEach(s=>{document.body.classList.toggle(s,s===sub&&s!=='chem');document.getElementById('sub-'+s).setAttribute('aria-pressed',s===sub)})}
+function setSubject(sub){S.subject=sub;store.set('subject',sub);paintSubject(sub);S.session=null;S.exam=null;render()}
 function setView(v){S.view=v;document.querySelectorAll('.tab').forEach(t=>t.toggleAttribute('aria-current',t.dataset.view===v));if(t=document.querySelector('.tab[aria-current]'))t.setAttribute('aria-current','page');
   if(location.hash.slice(1)!==v){try{history.replaceState(null,'','#'+v)}catch(e){}}render();window.scrollTo({top:0})}
 var t;
@@ -588,7 +608,7 @@ function render(){
 
 function renderHome(){
   const sub=S.subject,B=BANK[sub],all=itemsOf(sub),dueN=all.filter(due).length,seen=all.filter(i=>S.prog[i.id]).length;
-  app.innerHTML=`<div><h1>${sub==='chem'?'Химия':'Биология'} на сотку</h1><p class="muted" style="margin:6px 0 0">Отвечай, потом смотри разбор. Ошибки вернутся через день, верные ответы — через 3, 7 и 16 дней.</p></div>
+  app.innerHTML=`<div><h1>${B.name} на сотку</h1><p class="muted" style="margin:6px 0 0">Отвечай, потом смотри разбор. Ошибки вернутся через день, верные ответы — через 3, 7 и 16 дней.</p></div>
   <div class="stats"><div class="stat"><b>${dueN}</b><span>на сегодня</span></div><div class="stat"><b>${seen}/${all.length}</b><span>пройдено</span></div><div class="stat"><b>${mastery(all)}%</b><span>освоено</span></div></div>
   <button class="btn" id="go-mix">${dueN?'Повторить на сегодня — '+Math.min(dueN,10)+' заданий':'Всё повторено. Ещё 10 вперемешку'}</button>
   <h2>Темы</h2><div class="topics">${B.topics.map(tp=>{const l=all.filter(i=>i.t===tp.id),m=mastery(l);
@@ -603,7 +623,7 @@ function startSession(list){S.session={list,i:0,ans:'',checked:false,score:0,max
 function ctx(){return S.view==='exam'?S.exam:S.session}
 function renderQuestion(){
   const c=ctx(),it=c.list[c.i],sub=S.view==='exam'?c.sub:S.subject,tp=BANK[sub].topics.find(x=>x.id===it.t);
-  const hint=it.type==='multi'?`Выберите ${it.k===3?'три':'два'} ответа`:it.type==='match'?'Для каждой буквы выберите цифру':it.type==='order'?'Нажимайте варианты по порядку':it.type==='num'?'Введите число':'Решите на бумаге, затем сверьтесь с эталоном';
+  const hint=it.type==='multi'?(it.k?`Выберите ${['','один ответ','два ответа','три ответа'][it.k]}`:'Выберите все верные ответы'):it.type==='match'?'Для каждой буквы выберите цифру':it.type==='order'?'Нажимайте варианты по порядку':it.type==='num'?'Введите число':it.type==='word'?'Впишите ответ (слово или слова без пробелов)':'Решите на бумаге, затем сверьтесь с эталоном';
   let body='';
   if(it.type==='multi'||it.type==='order'){
     body=`<div class="opts">${it.o.map((o,i)=>`<button class="opt" data-v="${i+1}" aria-pressed="${c.ans.includes(String(i+1))}"><span class="n">${i+1}</span><span>${F(o)}</span></button>`).join('')}</div>`;
@@ -611,8 +631,8 @@ function renderQuestion(){
   } else if(it.type==='match'){
     body=`<div class="opts" style="gap:6px">${it.o.map((o,i)=>`<div class="small"><span class="n" style="font-family:var(--mono);color:var(--acc);font-weight:600">${i+1})</span> ${F(o)}</div>`).join('')}</div>
     <div class="match">${it.rows.map((r,ri)=>`<div class="mrow"><span class="lbl">${F(r)}</span><div class="chips">${it.o.map((o,oi)=>`<button class="chip" data-r="${ri}" data-v="${oi+1}" aria-pressed="${(c.ans[ri]||'')===String(oi+1)}">${oi+1}</button>`).join('')}</div></div>`).join('')}</div>`;
-  } else if(it.type==='num'){
-    body=`<input class="num" id="num" inputmode="decimal" autocomplete="off" placeholder="Ответ" value="${esc(c.ans)}">`;
+  } else if(it.type==='num'||it.type==='word'){
+    body=`<input class="num" id="num" ${it.type==='num'?'inputmode="decimal"':'autocapitalize="off" spellcheck="false"'} autocomplete="off" placeholder="Ответ" value="${esc(c.ans)}">`;
   }
   const pos=`${c.i+1} / ${c.list.length}`;
   app.innerHTML=`<div class="card">
@@ -625,15 +645,15 @@ function renderQuestion(){
 }
 function wireQuestion(it,c){
   const ctrl=document.getElementById('ctrl'),fb=document.getElementById('fb');
-  const answerReady=()=>it.type==='part2'||(it.type==='multi'?c.ans.length===it.k:it.type==='match'?c.ans.length===it.rows.length&&!c.ans.includes(' '):it.type==='order'?c.ans.length===it.a.length:c.ans.trim().length>0);
+  const answerReady=()=>it.type==='part2'||(it.type==='multi'?(it.k?c.ans.length===it.k:c.ans.length>0):it.type==='match'?c.ans.length===it.rows.length&&!c.ans.includes(' '):it.type==='order'?c.ans.length===it.a.length:c.ans.trim().length>0);
   function controls(){
     if(!c.checked){ctrl.innerHTML=`<button class="btn" id="check" ${answerReady()?'':'disabled'}>${it.type==='part2'?'Показать эталон':'Проверить'}</button>`;document.getElementById('check').onclick=check}
     else{ctrl.innerHTML=`<button class="btn" id="next">${c.i+1<c.list.length?'Дальше':'Готово'}</button>`;document.getElementById('next').onclick=next}
   }
-  if(it.type==='multi')app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(c.checked)return;const v=b.dataset.v;c.ans=c.ans.includes(v)?c.ans.replace(v,''):(c.ans.length<it.k?c.ans+v:c.ans);renderKeep()});
+  if(it.type==='multi')app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(c.checked)return;const v=b.dataset.v;c.ans=c.ans.includes(v)?c.ans.replace(v,''):((!it.k||c.ans.length<it.k)?c.ans+v:c.ans);renderKeep()});
   if(it.type==='order')app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(c.checked)return;const v=b.dataset.v;c.ans=c.ans.includes(v)?c.ans.slice(0,c.ans.indexOf(v)):c.ans+v;renderKeep()});
   if(it.type==='match')app.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{if(c.checked)return;const r=+b.dataset.r;let a=(c.ans||'').padEnd(it.rows.length,' ').split('');a[r]=b.dataset.v;c.ans=a.join('');renderKeep()});
-  if(it.type==='num'){const inp=document.getElementById('num');inp.oninput=()=>{c.ans=inp.value;const b=document.getElementById('check');if(b)b.disabled=!answerReady()};inp.onkeydown=e=>{if(e.key==='Enter'&&answerReady()&&!c.checked)check()}}
+  if(it.type==='num'||it.type==='word'){const inp=document.getElementById('num');inp.oninput=()=>{c.ans=inp.value;const b=document.getElementById('check');if(b)b.disabled=!answerReady()};inp.onkeydown=e=>{if(e.key==='Enter'&&answerReady()&&!c.checked)check()}}
   function renderKeep(){const y=window.scrollY;renderQuestion();window.scrollTo({top:y})}
   function check(){
     c.checked=true;
@@ -648,7 +668,7 @@ function wireQuestion(it,c){
     const exp=`<div class="sol">${F(it.ex)}</div>${it.trap?`<div class="trap">Ловушка: ${F(it.trap)}</div>`:''}`;
     if(S.view==='exam'&&!S.exam.showAnswers){fb.innerHTML='';next();return}
     fb.innerHTML=pts===it.pts?`<div class="verdict ok"><strong>Верно · +${pts}</strong>${exp}</div>`:
-      `<div class="verdict no"><strong>${pts?'Почти · +'+pts+' из '+it.pts:'Неверно'}</strong><div>Правильный ответ: <b style="font-family:var(--mono)">${it.a}</b>${c.ans.trim()?' · ваш: <span style="font-family:var(--mono)">'+esc(c.ans.trim())+'</span>':''}</div>${exp}</div>`;
+      `<div class="verdict no"><strong>${pts?'Почти · +'+pts+' из '+it.pts:'Неверно'}</strong><div>Правильный ответ: <b style="font-family:var(--mono)">${it.a.split('|').join(' / ')}</b>${c.ans.trim()?' · ваш: <span style="font-family:var(--mono)">'+esc(c.ans.trim())+'</span>':''}</div>${exp}</div>`;
     controls();
   }
   function next(){c.checked=false;c.ans='';advance()}
@@ -665,12 +685,12 @@ function renderTheory(){
 
 function renderExamStart(){
   const sub=S.subject,all=itemsOf(sub);
-  const full=sub==='chem'?{n1:28,n2:6,min:210}:{n1:21,n2:7,min:235};
+  const full={chem:{n1:28,n2:6,min:210},bio:{n1:21,n2:7,min:235},rus:{n1:26,n2:1,min:210},math:{n1:13,n2:7,min:235}}[sub];
   app.innerHTML=`<div><h1>Вариант</h1><p class="muted" style="margin:6px 0 0">Задания вперемешку по всем темам, включая часть 2. Разбор — в конце, как на экзамене.</p></div>
   <div class="card"><div class="checks"><label><input type="checkbox" id="show"> Показывать разбор после каждого задания</label></div>
   <button class="btn" id="start-full">Полный вариант: ${full.n1+full.n2} заданий, ${Math.floor(full.min/60)} ч ${full.min%60} мин</button>
   <button class="btn ghost" id="start">Мини-вариант: 12 заданий, 30 мин</button></div>`;
-  const go=(n1,n2,min)=>{const p1=shuffle(all.filter(i=>i.type!=='part2')).slice(0,n1),p2=sub==='chem'?pickLines(all,n2):shuffle(all.filter(i=>i.type==='part2')).slice(0,n2);
+  const go=(n1,n2,min)=>{const p1=shuffle(all.filter(i=>i.type!=='part2')).slice(0,n1),p2=sub==='bio'?shuffle(all.filter(i=>i.type==='part2')).slice(0,n2):pickLines(all,n2);
     S.exam={sub,list:[...p1,...p2],i:0,ans:'',checked:false,score:0,max:0,showAnswers:document.getElementById('show').checked,end:Date.now()+min*60e3,done:false,log:[]};
     S.exam.int=setInterval(tick,1000);render();window.scrollTo({top:0})};
   document.getElementById('start').onclick=()=>go(10,2,30);
@@ -699,12 +719,15 @@ function renderPrompt(){
 }
 
 /* ---------- boot ---------- */
-document.getElementById('sub-chem').onclick=()=>setSubject('chem');
-document.getElementById('sub-bio').onclick=()=>setSubject('bio');
+if(!BANK[S.subject])S.subject='chem';
+SUBS.forEach(s=>document.getElementById('sub-'+s).onclick=()=>setSubject(s));
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(['train','theory','exam','prompt'].includes(v)&&v!==S.view)setView(v)});
-document.body.classList.toggle('bio',S.subject==='bio');
-document.getElementById('sub-chem').setAttribute('aria-pressed',S.subject==='chem');document.getElementById('sub-bio').setAttribute('aria-pressed',S.subject==='bio');
+paintSubject(S.subject);
+(function(){const L=document.getElementById('lock'),HASH=2085880512;const h=s=>{let x=5381;for(const ch of s)x=(Math.imul(x,33)^ch.charCodeAt(0))>>>0;return x};
+ if(store.get('ok',0)===1){L.remove();return}
+ const pw=document.getElementById('pw');setTimeout(()=>pw.focus(),50);
+ document.getElementById('lockf').onsubmit=e=>{e.preventDefault();if(h(pw.value.trim())===HASH){store.set('ok',1);L.remove()}else{document.getElementById('pwerr').hidden=false;pw.value=''}}})();
 const h=location.hash.slice(1);setView(['train','theory','exam','prompt'].includes(h)?h:'train');
 </script>
 
