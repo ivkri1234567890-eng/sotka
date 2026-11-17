@@ -154,9 +154,29 @@ function aggregate(records,plan,filters){
   pairs:[...pairs.entries()].map(([k,v])=>{const [m,d]=k.split('\u0001');return {manager:m,dealer:d,qty:v};}).sort((a,b)=>b.qty-a.qty||cmpStr(a.manager,b.manager)||cmpStr(a.dealer,b.dealer)),
   models:grouped(rr,'model'),options:opt,filters:Object.assign({},f),rows:rr.length};
  res.direction_plans={};if(hasPlan)for(const d of DIRECTIONS)res.direction_plans[d]=sum(pp.filter(r=>r.direction===d).map(r=>r.qty));
+ res.detail=detail(rr,pp,hasPlan,plan,start,end,f);
  if(Math.abs(sum(res.directions.map(x=>x[1]))-actual)>1e-7)throw Error('Сверка направлений не сошлась');
  if(Math.abs(sum(DIRECTIONS.map(d=>sum(managers[d].map(x=>x[1]))))-actual)>1e-7)throw Error('Сверка менеджеров не сошлась');
  return res;
+}
+/** Разрезы для презентации: направление × модель, последний месяц, менеджеры дилеров. */
+const modelNo=m=>+String(m).replace(/\D/g,'')||0;
+function detail(rr,pp,hasPlan,planAll,start,end,f){
+ const dirs=DIRECTIONS.filter(d=>!f.direction||f.direction===d);
+ const last=end;
+ const pick=(arr,o)=>sum(arr.filter(r=>Object.keys(o).every(k=>r[k]===o[k])).map(r=>r.qty));
+ const models=[...new Set(rr.map(r=>r.model).concat(pp.map(r=>r.model)))].sort((a,b)=>modelNo(a)-modelNo(b));
+ const shown=models.filter(m=>pick(rr,{model:m})!==0||pick(pp,{model:m})!==0);
+ const zero=models.filter(m=>!shown.includes(m));
+ const dirModel={},lastDir={},lastModel={};
+ for(const d of dirs){dirModel[d]={};for(const m of models)dirModel[d][m]={fact:pick(rr,{direction:d,model:m}),plan:hasPlan?pick(pp,{direction:d,model:m}):null};
+  lastDir[d]={fact:pick(rr,{direction:d,month:last}),plan:hasPlan?pick(pp,{direction:d,month:last}):null};}
+ for(const m of models)lastModel[m]={fact:pick(rr,{model:m,month:last}),plan:hasPlan?pick(pp,{model:m,month:last}):null};
+ const managersLast={};for(const d of dirs){managersLast[d]={};for(const r of rr)if(r.direction===d&&r.month===last)managersLast[d][r.manager]=(managersLast[d][r.manager]||0)+r.qty;}
+ const dealerManagers={};
+ for(const r of rr){if(r.direction!=='ССС')continue;const o=dealerManagers[r.dealer]||(dealerManagers[r.dealer]={});o[r.manager]=(o[r.manager]||0)+r.qty;}
+ for(const k in dealerManagers)dealerManagers[k]=Object.entries(dealerManagers[k]).sort((a,b)=>b[1]-a[1]||cmpStr(a[0],b[0])).map(x=>x[0]);
+ return {dirs,last,models,shownModels:shown,zeroModels:zero,dirModel,lastDir,lastModel,managersLast,dealerManagers};
 }
 /** Годы в данных — для выбора. */
 const years=records=>[...new Set(records.map(r=>r.year))].sort((a,b)=>a-b);

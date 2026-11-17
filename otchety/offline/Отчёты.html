@@ -6531,9 +6531,29 @@ function aggregate(records,plan,filters){
   pairs:[...pairs.entries()].map(([k,v])=>{const [m,d]=k.split('\u0001');return {manager:m,dealer:d,qty:v};}).sort((a,b)=>b.qty-a.qty||cmpStr(a.manager,b.manager)||cmpStr(a.dealer,b.dealer)),
   models:grouped(rr,'model'),options:opt,filters:Object.assign({},f),rows:rr.length};
  res.direction_plans={};if(hasPlan)for(const d of DIRECTIONS)res.direction_plans[d]=sum(pp.filter(r=>r.direction===d).map(r=>r.qty));
+ res.detail=detail(rr,pp,hasPlan,plan,start,end,f);
  if(Math.abs(sum(res.directions.map(x=>x[1]))-actual)>1e-7)throw Error('Сверка направлений не сошлась');
  if(Math.abs(sum(DIRECTIONS.map(d=>sum(managers[d].map(x=>x[1]))))-actual)>1e-7)throw Error('Сверка менеджеров не сошлась');
  return res;
+}
+/** Разрезы для презентации: направление × модель, последний месяц, менеджеры дилеров. */
+const modelNo=m=>+String(m).replace(/\D/g,'')||0;
+function detail(rr,pp,hasPlan,planAll,start,end,f){
+ const dirs=DIRECTIONS.filter(d=>!f.direction||f.direction===d);
+ const last=end;
+ const pick=(arr,o)=>sum(arr.filter(r=>Object.keys(o).every(k=>r[k]===o[k])).map(r=>r.qty));
+ const models=[...new Set(rr.map(r=>r.model).concat(pp.map(r=>r.model)))].sort((a,b)=>modelNo(a)-modelNo(b));
+ const shown=models.filter(m=>pick(rr,{model:m})!==0||pick(pp,{model:m})!==0);
+ const zero=models.filter(m=>!shown.includes(m));
+ const dirModel={},lastDir={},lastModel={};
+ for(const d of dirs){dirModel[d]={};for(const m of models)dirModel[d][m]={fact:pick(rr,{direction:d,model:m}),plan:hasPlan?pick(pp,{direction:d,model:m}):null};
+  lastDir[d]={fact:pick(rr,{direction:d,month:last}),plan:hasPlan?pick(pp,{direction:d,month:last}):null};}
+ for(const m of models)lastModel[m]={fact:pick(rr,{model:m,month:last}),plan:hasPlan?pick(pp,{model:m,month:last}):null};
+ const managersLast={};for(const d of dirs){managersLast[d]={};for(const r of rr)if(r.direction===d&&r.month===last)managersLast[d][r.manager]=(managersLast[d][r.manager]||0)+r.qty;}
+ const dealerManagers={};
+ for(const r of rr){if(r.direction!=='ССС')continue;const o=dealerManagers[r.dealer]||(dealerManagers[r.dealer]={});o[r.manager]=(o[r.manager]||0)+r.qty;}
+ for(const k in dealerManagers)dealerManagers[k]=Object.entries(dealerManagers[k]).sort((a,b)=>b[1]-a[1]||cmpStr(a[0],b[0])).map(x=>x[0]);
+ return {dirs,last,models,shownModels:shown,zeroModels:zero,dirModel,lastDir,lastModel,managersLast,dealerManagers};
 }
 /** Годы в данных — для выбора. */
 const years=records=>[...new Set(records.map(r=>r.year))].sort((a,b)=>a-b);
@@ -6542,104 +6562,186 @@ window.SalesEngine={loadActual,loadPlan,aggregate,years,direction,model,DIRECTIO
 })();
 
 </script><script>/* sales-ppt.js */
-/* «Дашборд продаж»: PowerPoint текущего среза. Диаграммы — настоящие диаграммы PowerPoint
-   со встроенными данными (редактируются), таблицы — редактируемые, длинные списки разбиваются по 11 строк.
-   Источник данных — тот же результат SalesEngine.aggregate(), что и на экране. */
+/* «Дашборд продаж»: PowerPoint по образцу «Пульс продаж» (Modern_Presentation).
+   Все цифры, фамилии, дилеры, месяцы и выводы — из результата SalesEngine.aggregate() по загруженному Excel.
+   Диаграммы — настоящие диаграммы PowerPoint со встроенными данными, таблицы редактируемые,
+   длинные списки разбиваются на слайды без обрезки. */
 (function(){
 'use strict';
-const INK='15243F',MUTED='738099',VIOLET='6564EE',VIOLET2='8D75F6',TEAL='14B8A6',BG='F4F6FB',GREY='B8C2D8',AMBER='F1AE66',LINE='E3E7F0';
-const PER=11;
-const fmt=n=>n==null?'Нет плана':(n<0?'-':'')+String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-const pct=n=>n==null?'Нет плана':Math.round(n)+'%';
+const INK='18233C',MUTED='62758C',VIOLET='6864EE',VIOLET_L='E5E3FF',TEAL='14B8A6',GREY='C4C9D9',RED='D26373',BG='F4F6FB',ALT='EEF0F9',LINE='D6DBE8';
+const MON_FULL=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const MON_GEN=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const plural=(n,a,b,c)=>{n=Math.abs(Math.round(n))%100;const m=n%10;return n>10&&n<20?c:m===1?a:m>=2&&m<=4?b:c;};
+const fmt=n=>n==null?'—':(n<0?'−':'')+String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const sig=n=>n==null?'—':n>0?'+'+fmt(n):fmt(n);
+const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+const share=(a,b)=>b?(a/b*100).toFixed(1)+'%':'—';
+const auto=n=>fmt(n)+' '+plural(n,'автомобиль','автомобиля','автомобилей');
+const surname=s=>String(s).trim().split(/\s+/)[0];
 
 async function build(data){
  if(typeof PptxGenJS!=='function')throw Error('Модуль PowerPoint не загружен.');
+ const D=data.detail;
  const p=new PptxGenJS();
  p.defineLayout({name:'WIDE',width:13.333,height:7.5});p.layout='WIDE';
- p.author='Центр отчётов';p.title='Продажи '+data.year;
- const period=data.year+' · '+data.months[0]+(data.months.length>1?'–'+data.months[data.months.length-1]:'')+' · автомобили, шт.';
- const filt=[];const F=data.filters||{};
- if(F.direction)filt.push('направление '+F.direction);if(F.manager)filt.push('менеджер '+F.manager);if(F.dealer)filt.push('получатель '+F.dealer);if(F.model)filt.push('модель '+F.model);
+ p.author='Центр отчётов';p.title='Пульс продаж '+data.year;
+ const ms=data.month_start,me=data.month_end,nM=me-ms+1;
+ const period=(nM===1?cap(MON_FULL[me-1]):cap(MON_FULL[ms-1])+'–'+MON_FULL[me-1])+' '+data.year;
+ const periodLow=nM===1?MON_FULL[me-1]+' '+data.year:MON_FULL[ms-1]+'–'+MON_FULL[me-1];
+ const nMon=nM===1?'месяц':nM+' '+plural(nM,'месяц','месяца','месяцев');
+ const lastName=cap(MON_FULL[me-1]);
+ const F=data.filters||{};
+ const filt=[F.direction&&'направление '+F.direction,F.manager&&'менеджер '+F.manager,F.dealer&&'получатель '+F.dealer,F.model&&'модель '+F.model].filter(Boolean);
+ const hasPlan=data.plan!=null;
+ // фамилии — если фамилия не повторяется у разных людей; иначе полностью
+ const allMgr=[...new Set(data.options.manager)];
+ const sn=new Map();for(const m of allMgr){const k=surname(m);sn.set(k,(sn.get(k)||0)+1);}
+ const who=m=>sn.get(surname(m))===1&&m!=='Не указан'?surname(m):m;
  let n=0;
- const txt=(s,t,x,y,w,h,o)=>s.addText(String(t),Object.assign({x,y,w,h,fontFace:'Arial',fontSize:20,color:INK,margin:0,valign:'top',fit:'shrink'},o||{}));
+ const txt=(s,t,x,y,w,h,o)=>s.addText(String(t),Object.assign({x,y,w,h,fontFace:'Arial',fontSize:16,color:INK,margin:0,valign:'top',fit:'shrink'},o||{}));
  function slide(title,subtitle){
   const s=p.addSlide();n++;s.background={color:BG};
-  s.addShape(p.ShapeType.rect,{x:0,y:0,w:0.16,h:7.5,fill:{color:VIOLET},line:{color:VIOLET}});
-  txt(s,title,.6,.35,12.1,.65,{fontSize:29,bold:true});
-  if(subtitle)txt(s,subtitle,.62,1.05,12,.5,{fontSize:14,color:MUTED});
-  txt(s,period+(filt.length?' · '+filt.join(', '):''),.62,7.08,11,.28,{fontSize:10,color:MUTED});
-  txt(s,String(n),12.2,7.05,.5,.3,{fontSize:11,color:MUTED,align:'right'});
+  txt(s,title,.57,.31,12.19,.62,{fontSize:28.5,bold:true});
+  if(subtitle)txt(s,subtitle,.6,1.02,12.08,.52,{fontSize:15.75,color:MUTED});
+  txt(s,period+'  ·  автомобили, шт.'+(filt.length?'  ·  '+filt.join(', '):''),.6,7.05,10.94,.26,{fontSize:11.25,color:MUTED});
+  txt(s,String(n).padStart(2,'0'),12.19,7.03,.62,.29,{fontSize:13.5,color:MUTED,align:'right'});
   return s;
  }
- function card(s,x,y,w,h,fill){s.addShape(p.ShapeType.roundRect,{x,y,w,h,rectRadius:0.12,fill:{color:fill||'FFFFFF'},line:{color:fill||LINE,width:0.75}});}
+ const note=(s,t,y,o)=>t&&txt(s,t,.6,y,12.12,.6,Object.assign({fontSize:13.5,color:MUTED},o||{}));
+ function table(s,head,rows,o){
+  o=o||{};
+  const body=[head.map(h=>({text:String(h),options:{bold:true,color:'FFFFFF',fill:{color:INK}}}))]
+   .concat(rows.map((r,i)=>r.map(v=>{const cell=typeof v==='object'&&v!==null?v:{text:String(v)};return {text:String(cell.text),options:Object.assign({color:INK,fill:{color:i%2?ALT:'FFFFFF'}},cell.options||{})};})));
+  s.addTable(body,{x:.6,y:o.y||1.82,w:12.12,colW:o.colW,fontFace:'Arial',fontSize:o.fontSize||16.5,rowH:o.rowH||.45,valign:'middle',margin:[0,.1,0,.1],border:{type:'solid',pt:1,color:INK},autoPage:false});
+ }
  function chart(s,labels,series,kind,o){
-  const multi=series.length>1;
-  const colors=multi?series.map((x,i)=>x.color||[GREY,VIOLET,TEAL][i%3]):[series[0].color||VIOLET];
-  const box=Object.assign({x:.65,y:1.85,w:12,h:4.85},o||{});
-  card(s,box.x-.15,box.y-.15,box.w+.3,box.h+.3);
-  const type=kind==='line'?p.ChartType.line:p.ChartType.bar;
-  s.addChart(type,series.map(x=>({name:x.name,labels,values:x.values.map(v=>Math.round(v*100)/100)})),Object.assign({},box,{
-   barDir:kind==='horizontal'?'bar':'col',chartColors:colors,
-   showLegend:multi,legendPos:'b',legendFontSize:11,legendFontFace:'Arial',
-   catAxisLabelFontSize:11,valAxisLabelFontSize:11,catAxisLabelFontFace:'Arial',valAxisLabelFontFace:'Arial',
-   catAxisLabelColor:MUTED,valAxisLabelColor:MUTED,catAxisLineShow:false,valAxisLineShow:false,
-   valGridLine:{color:LINE,size:1},catGridLine:{style:'none'},
-   lineSize:kind==='line'?3:undefined,lineDataSymbol:kind==='line'?'circle':undefined,lineDataSymbolSize:7,
-   showValue:true,dataLabelFontSize:10,dataLabelColor:INK,dataLabelFormatCode:'# ##0',dataLabelPosition:kind==='line'?'t':'outEnd',
-   barGapWidthPct:60
-  }));
+  const box=Object.assign({x:.6,y:1.88,w:12.12,h:4.17},o||{});
+  const opts=Object.assign({},box,{
+   chartColors:series.map(x=>x.color),showLegend:series.length>1,legendPos:'b',legendFontSize:11,legendFontFace:'Arial',
+   catAxisLabelFontSize:11,valAxisLabelFontSize:11,catAxisLabelFontFace:'Arial',valAxisLabelFontFace:'Arial',catAxisLabelColor:'333333',valAxisLabelColor:'333333',
+   valGridLine:{color:'E3E7F0',size:1},catGridLine:{style:'none'},valAxisLineShow:false,
+   showValue:true,dataLabelFontSize:11,dataLabelColor:'222222',dataLabelFormatCode:'0',dataLabelFontFace:'Arial'});
+  if(kind==='line')Object.assign(opts,{lineSize:3,lineDataSymbol:'circle',lineDataSymbolSize:7,dataLabelPosition:'t'});
+  else Object.assign(opts,{barDir:kind==='horizontal'?'bar':'col',barGapWidthPct:kind==='horizontal'?60:80,dataLabelPosition:'outEnd'});
+  s.addChart(kind==='line'?p.ChartType.line:p.ChartType.bar,series.map(x=>({name:x.name,labels,values:x.values})),opts);
  }
- function table(s,head,rows,widths,aligns){
-  const nrows=rows.length+1;const fs=nrows>11?13:16;
-  const body=[head.map((h,j)=>({text:String(h),options:{bold:true,color:'FFFFFF',fill:{color:INK},align:aligns&&aligns[j]||'left'}}))]
-   .concat(rows.map((r,i)=>r.map((v,j)=>({text:String(v),options:{color:INK,fill:{color:i%2?'EDEFF8':'FFFFFF'},align:aligns&&aligns[j]||'left'}}))));
-  s.addTable(body,{x:.65,y:1.85,w:12,colW:widths,fontFace:'Arial',fontSize:fs,rowH:.39,valign:'middle',margin:[0,0.12,0,0.12],border:{type:'solid',pt:0.5,color:LINE},autoPage:false});
- }
+ const dirRow=(d,f,pl)=>[d,pl==null?'—':fmt(pl),fmt(f),pl?pct(f,pl):'—',pl==null?'—':{text:fmt(f-pl),options:{color:f-pl<0?INK:INK}}];
+
  // 1. Итоги
- let s=slide('Продажи. Итоги периода','Дашборд по направлениям и результатам команды');
- const metrics=[['Продано',fmt(data.actual),true],['Целевой план',fmt(data.plan)],['Выполнение',pct(data.fulfillment)],['Отклонение',data.delta==null?'Нет плана':(data.delta>0?'+':'')+fmt(data.delta)]];
- metrics.forEach(([l,v,hero],i)=>{const x=.65+3.1*i;card(s,x,1.85,2.9,2.05,hero?VIOLET:'FFFFFF');txt(s,l,x+.3,2.1,2.4,.4,{fontSize:15,color:hero?'E6E2FF':MUTED});txt(s,v,x+.3,2.7,2.4,.9,{fontSize:v.length>8?26:38,bold:true,color:hero?'FFFFFF':VIOLET});});
- const dirs=data.directions;
- dirs.forEach(([d,v],i)=>{const x=.65+4.13*i;card(s,x,4.35,3.93,1.9);txt(s,d,x+.3,4.6,3.3,.4,{fontSize:16,color:MUTED,bold:true});
-  const pl=data.direction_plans&&data.direction_plans[d];
-  txt(s,fmt(v),x+.3,5.05,3.3,.7,{fontSize:32,bold:true,color:[VIOLET,TEAL,'D9822B'][i%3]});
-  txt(s,pl?'план '+fmt(pl)+' · '+Math.round(v/pl*100)+'%':'план не задан',x+.3,5.75,3.3,.35,{fontSize:12,color:MUTED});});
- if(!dirs.length)txt(s,'Нет продаж в выбранном срезе',.65,4.6,12,.6,{fontSize:22,color:MUTED});
- // 2. Динамика
- s=slide('Динамика план–факт','По месяцам выбранного периода');
- const facts=data.months.map((m,i)=>data.series.reduce((a,se)=>a+se.actual[i],0));
- const ser=[{name:'Факт',values:facts,color:VIOLET}];
- if(data.plan!=null)ser.unshift({name:'План',values:data.months.map((m,i)=>data.series.reduce((a,se)=>a+se.plan[i],0)),color:GREY});
- chart(s,data.months,ser,'line');
+ let s=slide('Пульс продаж',period+'. План, результат и вклад команды');
+ const kpi=[['Факт',fmt(data.actual),true],['План',hasPlan?fmt(data.plan):'—'],['Выполнение',hasPlan?pct(data.actual,data.plan):'—'],['Отклонение',hasPlan?fmt(data.delta):'—',false,data.delta<0]];
+ kpi.forEach(([l,v,hero,neg],i)=>{const x=.5+3.125*i;
+  s.addShape(p.ShapeType.roundRect,{x,y:1.82,w:2.95,h:1.72,rectRadius:.08,fill:{color:hero?VIOLET:'FFFFFF'},line:{color:hero?VIOLET:'FFFFFF'}});
+  txt(s,l,x+.21,2.03,2.6,.42,{fontSize:17.25,color:hero?VIOLET_L:MUTED});
+  txt(s,v,x+.21,2.54,2.6,.94,{fontSize:v.length>7?34:43.5,bold:true,color:hero?'FFFFFF':neg?RED:INK});});
+ const dirs=D.dirs;
+ table(s,['Направление','План','Факт','Исполнение','Отклонение'],dirs.map(d=>{const f=(data.directions.find(x=>x[0]===d)||[0,0])[1];const pl=hasPlan?data.direction_plans[d]:null;return dirRow(d,f,pl);}),{y:3.91,colW:[3.54,1.98,1.98,2.4,2.22],rowH:.585});
+ if(!hasPlan)note(s,data.filters.manager||data.filters.dealer?'Индивидуальный план для выбранного менеджера или получателя в источнике не задан — сравнение с планом не делается.':'Целевой план не загружен — показан только факт.',6.45);
+
+ // 2. Исполнение по направлениям
+ const facts=dirs.map(d=>(data.directions.find(x=>x[0]===d)||[0,0])[1]);
+ let sub2='';
+ if(data.actual){const i=facts.indexOf(Math.max(...facts));const d=dirs[i];sub2=d+' даёт '+Math.round(facts[i]/data.actual*100)+'% объёма продаж';
+  if(hasPlan&&data.delta<0){const gap=facts[i]-data.direction_plans[d];if(gap<0)sub2+=' и '+Math.round(gap/data.delta*100)+'% общего отставания от плана';}}
+ s=slide('Исполнение плана по направлениям',sub2||'Нет продаж в выбранном срезе');
+ const ser2=[{name:'Факт '+nMon,values:facts,color:TEAL}];
+ if(hasPlan)ser2.unshift({name:'План '+nMon,values:dirs.map(d=>data.direction_plans[d]),color:GREY});
+ chart(s,dirs,ser2,'bar');
+
+ // 3. Динамика по месяцам
+ const mf=data.months.map((m,i)=>data.series.reduce((a,se)=>a+se.actual[i],0));
+ const mp=hasPlan?data.months.map((m,i)=>data.series.reduce((a,se)=>a+se.plan[i],0)):null;
+ s=slide('Динамика продаж по месяцам',(hasPlan?'Помесячный план и факт из загруженных файлов':'Помесячный факт из загруженного файла')+'. Всего '+auto(data.actual));
+ chart(s,data.months,(mp?[{name:'План',values:mp,color:GREY}]:[]).concat([{name:'Факт',values:mf,color:TEAL}]),'line',{h:3.95});
+ if(hasPlan)note(s,'Целевой план за '+nMon+': '+fmt(data.plan)+'. Факт: '+fmt(data.actual)+'. '+(data.delta<0?'Недовыполнение: '+auto(-data.delta):data.delta>0?'Перевыполнение: '+auto(data.delta):'План выполнен точно')+'.',6.0);
+
+ // 4. Последний месяц
+ if(nM>1){
+  const lf=dirs.reduce((a,d)=>a+D.lastDir[d].fact,0),lp=hasPlan?dirs.reduce((a,d)=>a+D.lastDir[d].plan,0):null;
+  s=slide(lastName+': план и факт',auto(lf)+(hasPlan?' при плане '+fmt(lp)+'. Выполнение '+pct(lf,lp)+', отклонение '+fmt(lf-lp):''));
+  table(s,['Направление','План','Факт','Исполнение','Отклонение'],dirs.map(d=>dirRow(d,D.lastDir[d].fact,hasPlan?D.lastDir[d].plan:null)).concat([dirRow('Всего',lf,lp)]),{y:1.82,colW:[3.54,1.98,1.98,2.4,2.22],rowH:.6});
+  if(hasPlan&&lf-lp<0){
+   let worst=null;for(const m of D.models){const x=D.lastModel[m];const dv=x.fact-x.plan;if(!worst||dv<worst.dv)worst={m,dv,x};}
+   if(worst&&worst.dv<0)note(s,worst.m+': '+fmt(worst.x.fact)+' из '+fmt(worst.x.plan)+' '+plural(worst.x.plan,'автомобиля','автомобилей','автомобилей')+' по плану. Отклонение '+fmt(worst.dv)+', или '+Math.round(worst.dv/(lf-lp)*100)+'% общего недовыполнения '+MON_GEN[me-1]+'.',5.4,{fontSize:16.5,bold:true,color:INK});
+  }
+ }
+
+ // 5. Модели
+ const mods=D.shownModels;
+ const modelTot=m=>dirs.reduce((a,d)=>a+D.dirModel[d][m].fact,0);
+ let sub5='';if(data.actual&&mods.length){const top=mods.slice().sort((a,b)=>modelTot(b)-modelTot(a))[0];sub5=top+': '+auto(modelTot(top))+', '+Math.round(modelTot(top)/data.actual*100)+'% общего результата';}
+ s=slide('Структура продаж по моделям',sub5);
+ const mw=Math.min(1.6,8.6/Math.max(1,mods.length+1));
+ table(s,['Направление'].concat(mods,['Всего']),dirs.map(d=>[d].concat(mods.map(m=>fmt(D.dirModel[d][m].fact)),[fmt(mods.reduce((a,m)=>a+D.dirModel[d][m].fact,0))])).concat([['Всего'].concat(mods.map(m=>fmt(modelTot(m))),[fmt(data.actual)])]),{y:1.82,colW:[12.12-mw*(mods.length+1)].concat(Array(mods.length+1).fill(mw)),rowH:.66});
+ const notes5=[];if(D.models.some(m=>m==='В45'))notes5.push('В45 включает В45 Про.');
+ if(D.zeroModels.length)notes5.push(D.zeroModels.join(', ')+': '+(hasPlan?'целевой план и факт равны':'факт равен')+' нулю во всех направлениях.');
+ note(s,notes5.join(' '),5.35);
+
+ // 6–8. Направления: динамика и модели
  for(const se of data.series){
-  s=slide(se.name+': динамика продаж',se.plan!=null?'Помесячное сравнение с целевым планом':'План для выбранного менеджера или дилера отсутствует');
-  const ss=[{name:'Факт',values:se.actual,color:VIOLET}];if(se.plan!=null)ss.unshift({name:'План',values:se.plan,color:GREY});
-  chart(s,data.months,ss,'line');
-  const rows=data.managers[se.name]||[];
-  for(let st=0;st<rows.length;st+=PER){
-   s=slide(se.name+': продажи менеджеров',rows.length>PER?'Фамилии менеджеров и количество автомобилей · места '+(st+1)+'–'+Math.min(st+PER,rows.length):'Фамилии менеджеров и количество автомобилей');
-   table(s,['Менеджер','Продано'],rows.slice(st,st+PER).map(([nm,q])=>[nm,fmt(q)]),[9,3],['left','right']);
+  const d=se.name,f=se.actual.reduce((a,b)=>a+b,0),pl=se.plan?se.plan.reduce((a,b)=>a+b,0):null;
+  s=slide(d+': динамика выполнения плана',pl!=null?'План '+fmt(pl)+', факт '+fmt(f)+', выполнение '+pct(f,pl):'Факт '+fmt(f)+'. План для этого среза не задан');
+  chart(s,data.months,(se.plan?[{name:'План',values:se.plan,color:GREY}]:[]).concat([{name:'Факт',values:se.actual,color:TEAL}]),'line',{y:1.72,h:3.45});
+  const rows=[];
+  if(se.plan)rows.push(['План'].concat(mods.map(m=>fmt(D.dirModel[d][m].plan))));
+  rows.push(['Факт'].concat(mods.map(m=>fmt(D.dirModel[d][m].fact))));
+  if(se.plan)rows.push(['Отклонение'].concat(mods.map(m=>fmt(D.dirModel[d][m].fact-D.dirModel[d][m].plan))));
+  const w=(12.12-2.2)/Math.max(1,mods.length);
+  table(s,['За '+nMon].concat(mods),rows,{y:5.32,colW:[2.2].concat(Array(mods.length).fill(w)),rowH:.3,fontSize:13.5});
+ }
+
+ // 9–10. Менеджеры направлений (кроме ССС — там отдельный слайд)
+ for(const d of dirs.filter(x=>x!=='ССС')){
+  const list=data.managers[d]||[];if(!list.length)continue;
+  const tot=list.reduce((a,x)=>a+x[1],0);
+  for(let st=0;st<list.length;st+=11){
+   s=slide(d+': продажи по менеджерам'+(list.length>11?' ('+(st/11+1)+')':''),'Фамилии и количество автомобилей. Индивидуальных планов в сводном источнике нет');
+   const head=['Менеджер',nM>1?nMon:lastName];if(nM>1)head.push(lastName);head.push('Доля');
+   const part=list.slice(st,st+11);
+   table(s,head,part.map(([m,q])=>{const r=[who(m),fmt(q)];if(nM>1)r.push(fmt(D.managersLast[d][m]||0));r.push(share(q,tot));return r;}),{y:1.73,colW:nM>1?[5.77,2.19,2.08,2.08]:[7.96,2.08,2.08],rowH:part.length>6?.36:.68,fontSize:part.length>6?13.5:16.5});
+   note(s,'Факт из выгрузки: суммарное количество автомобилей по менеджеру за '+periodLow+'. '+(list.some(x=>x[0]==='Не указан')?'Часть продаж без менеджера — «Не указан».':'Все продажи распределены.'),6.49);
   }
  }
+
+ // 11–16. ССС
+ const sss=data.managers['ССС']||[];
  const dl=data.dealers;
- if(dl.length){
-  s=slide('Топ дилеров','Реализация дилерам, автомобили');
-  const top=dl.slice(0,8).reverse();
-  chart(s,top.map(a=>a[0]),[{name:'Продано',values:top.map(a=>a[1]),color:TEAL}],'horizontal');
-  for(let st=0;st<dl.length;st+=PER){
-   s=slide('Рейтинг дилеров','Места '+(st+1)+'–'+Math.min(st+PER,dl.length)+' из '+dl.length);
-   table(s,['№','Дилер','Продано'],dl.slice(st,st+PER).map(([nm,v],i)=>[st+i+1,nm,fmt(v)]),[.7,9.3,2],['center','left','right']);
-  }
-  for(let st=0;st<data.pairs.length;st+=PER){
-   s=slide('ССС: менеджер и дилер','Подтверждённые продажи по получателям'+(data.pairs.length>PER?' · '+(st+1)+'–'+Math.min(st+PER,data.pairs.length)+' из '+data.pairs.length:''));
-   table(s,['Менеджер','Дилер','Продано'],data.pairs.slice(st,st+PER).map(r=>[r.manager,r.dealer,fmt(r.qty)]),[4.5,6,1.5],['left','left','right']);
+ if(dirs.includes('ССС')&&(sss.length||dl.length)){
+  const tot=sss.reduce((a,x)=>a+x[1],0);
+  s=slide('ССС: результат менеджеров',(sss.some(x=>x[0]==='Не указан')||dl.some(x=>x[0]==='Не указан')?'Часть продаж без менеджера или получателя':'Все '+auto(tot)+' распределены по менеджерам и дилерам'));
+  table(s,['Менеджер','Продано по детализации'],sss.slice(0,11).map(([m,q])=>[who(m),fmt(q)]),{y:1.82,colW:[8.36,3.76],rowH:sss.length>6?.4:.62});
+  const multi=Object.entries(D.dealerManagers).filter(([k,v])=>v.length>1);
+  note(s,multi.length?'Дилеров у нескольких менеджеров: '+multi.length+' ('+multi.slice(0,4).map(([k,v])=>k+' — '+v.map(who).join(', ')).join('; ')+(multi.length>4?'…':'')+').':'Каждый дилер закреплён за одним менеджером.',sss.length>6?6.45:4.55);
+  if(sss.length>11)for(let st=11;st<sss.length;st+=11){s=slide('ССС: результат менеджеров (продолжение)','');table(s,['Менеджер','Продано по детализации'],sss.slice(st,st+11).map(([m,q])=>[who(m),fmt(q)]),{colW:[8.36,3.76],rowH:.4});}
+  if(dl.length){
+   s=slide('Топ дилеров по объёму продаж','Рейтинг по количеству автомобилей за '+periodLow);
+   const top=dl.slice(0,8).reverse();
+   chart(s,top.map(x=>x[0]),[{name:'Продано',values:top.map(x=>x[1]),color:VIOLET}],'horizontal',{h:4.3});
+   note(s,'Рейтинг отражает реализацию получателям ССС по выгрузке. Продажи дилеров конечным клиентам источник не раскрывает.',6.45);
+   for(let st=0;st<dl.length;st+=11){
+    const part=dl.slice(st,st+11);
+    s=slide('Рейтинг дилеров: '+(st+1)+'–'+(st+part.length),'От большего объёма к меньшему. При равном количестве место условное');
+    table(s,['№','Дилер','Продано','Менеджеры'],part.map(([nm,q],i)=>[st+i+1,nm,fmt(q),(D.dealerManagers[nm]||[]).map(who).join(', ')]),{y:1.72,colW:[.73,5.62,1.56,4.21],rowH:.39});
+   }
+   const pr=data.pairs;const PER=12;const parts=Math.ceil(pr.length/PER);
+   for(let st=0;st<pr.length;st+=PER){
+    s=slide('ССС: менеджер и дилер','Детализация продаж за '+(nM>1?nMon:MON_FULL[me-1])+(parts>1?', часть '+(st/PER+1):''));
+    table(s,['Менеджер / дилер','Продано'],pr.slice(st,st+PER).map(r=>[who(r.manager)+' / '+r.dealer,fmt(r.qty)]),{y:1.72,colW:[10.12,2],rowH:.36,fontSize:13.5});
+   }
   }
  }
- const md=data.models;
- for(let st=0;st<Math.max(1,md.length);st+=PER){
-  s=slide('Структура по моделям','В45 объединяет Валдай 45 и Валдай 45 Про');
-  table(s,['Модель','Продано'],md.slice(st,st+PER).map(([k,v])=>[k,fmt(v)]),[9,3],['left','right']);
- }
+
+ // 17. Выводы
+ s=slide('Результаты за '+(nM>1?nMon:MON_FULL[me-1]),auto(data.actual)+(hasPlan?' при целевом плане '+fmt(data.plan)+'. Выполнение '+pct(data.actual,data.plan):''));
+ const res=[];
+ for(const d of dirs){const f=(data.directions.find(x=>x[0]===d)||[0,0])[1];const pl=hasPlan?data.direction_plans[d]:null;res.push([d,pl!=null?fmt(f)+' из '+fmt(pl)+'. Отклонение '+fmt(f-pl):fmt(f)+(hasPlan?'':', план не задан')]);}
+ for(const d of dirs){const list=data.managers[d]||[];if(!list.length)continue;const tot=list.reduce((a,x)=>a+x[1],0);
+  if(d==='ССС'){res.push(['Лидер ССС',who(list[0][0])+' '+auto(list[0][1])]);continue;}
+  const lead=list.filter((x,i)=>i===0||x[1]/tot>=0.05).slice(0,3);res.push(['Лидеры '+d,lead.map(([m,q])=>who(m)+' '+fmt(q)).join(', ')]);}
+ if(dl.length)res.push(['Топ-3 дилеров',dl.slice(0,3).map(([k,v])=>k+' '+fmt(v)).join(', ')]);
+ table(s,['Показатель','Результат'],res,{y:1.82,colW:[2.6,9.52],rowH:.42,fontSize:res.length>8?13.5:15});
+ if(dl.length){const t3=dl.slice(0,3).reduce((a,x)=>a+x[1],0),ts=dl.reduce((a,x)=>a+x[1],0);note(s,(dl.length>=3?'Три крупнейших дилера дают ':'Крупнейшие дилеры дают ')+auto(t3)+', или '+Math.round(t3/ts*100)+'% объёма ССС.',Math.min(6.4,1.82+.42*(res.length+1)+.25));}
  return await p.write({outputType:'uint8array'});
 }
 window.SalesPPT={build};
@@ -6748,7 +6850,9 @@ $('sdPpt').onclick=async()=>{
   const d=E.aggregate(records,plan,filters()); // тот же расчёт, что на экране
   const bytes=await P.build(d);
   const f=d.filters;const tag=[f.direction,f.manager,f.dealer,f.model].filter(Boolean).join(' ');
-  const name='Продажи '+d.year+' '+d.months[0]+(d.months.length>1?'–'+d.months[d.months.length-1]:'')+(tag?' — '+tag:'')+'.pptx';
+  const MF=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  const per=(d.month_start===d.month_end?MF[d.month_end-1]:MF[d.month_start-1]+'–'+MF[d.month_end-1])+' '+d.year;
+  const name='Пульс продаж — '+per+(tag?' — '+tag:'')+'.pptx';
   saveFile(name.replace(/[\\/:*?"<>|]+/g,' '),bytes,'application/vnd.openxmlformats-officedocument.presentationml.presentation');
   status('');
  }catch(e){status(e.message||String(e),true);}

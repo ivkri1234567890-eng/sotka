@@ -30,7 +30,7 @@
 
 ЦЕЛОСТНОСТЬ
 SHA-256 файла «Отчёты.html»:
-0d8291dff84f104c0cc941b182353b7f80975a4f39cd8a32b973be7d27803821
+50f3511cc7bdaaae28e4a3b1f7af14e50a090d025b9c6591ea1122ff825d7682
 Проверка в Windows: certutil -hashfile Отчёты.html SHA256
 
 ИСХОДНЫЙ КОД

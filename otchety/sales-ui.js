@@ -100,7 +100,9 @@ $('sdPpt').onclick=async()=>{
   const d=E.aggregate(records,plan,filters()); // тот же расчёт, что на экране
   const bytes=await P.build(d);
   const f=d.filters;const tag=[f.direction,f.manager,f.dealer,f.model].filter(Boolean).join(' ');
-  const name='Продажи '+d.year+' '+d.months[0]+(d.months.length>1?'–'+d.months[d.months.length-1]:'')+(tag?' — '+tag:'')+'.pptx';
+  const MF=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  const per=(d.month_start===d.month_end?MF[d.month_end-1]:MF[d.month_start-1]+'–'+MF[d.month_end-1])+' '+d.year;
+  const name='Пульс продаж — '+per+(tag?' — '+tag:'')+'.pptx';
   saveFile(name.replace(/[\\/:*?"<>|]+/g,' '),bytes,'application/vnd.openxmlformats-officedocument.presentationml.presentation');
   status('');
  }catch(e){status(e.message||String(e),true);}
