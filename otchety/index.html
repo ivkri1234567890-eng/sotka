@@ -26,10 +26,51 @@ textarea{width:100%;min-height:120px;margin-top:6px;padding:9px;border-radius:10
 .preview{overflow:auto;max-height:360px;margin-top:10px;border:1px solid var(--line);border-radius:10px}.preview table{font-size:13px;min-width:100%}.preview td,.preview th{white-space:nowrap;text-align:left;padding:5px 8px}.preview tr.sub td{font-weight:700;background:var(--bg)}
 .txt{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}#odDate{width:100%;margin-top:6px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-height:44px}.dl{display:block;text-align:center;border-radius:13px;padding:14px;font-weight:750;background:var(--blue);color:#fff;text-decoration:none;margin-top:8px}.seg{display:flex;gap:6px;margin:0 0 12px}.seg button{flex:1;margin:0;min-height:44px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}.seg button[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}#mgView{display:none}#obrazecView.mg-mode>#mgView{display:block}#obrazecView.mg-mode>:not(.mgkeep){display:none!important}
 body.has-sendbar main{padding-bottom:150px}html:has(body.has-sendbar){scroll-padding-bottom:150px}
+
+main.wide{max-width:1240px}
+#salesView{--sv:#6564ee;--st:#14b8a6;--sm:#8a93a8;--sl:#edf0f7;--sp:#fff;--sk:#1b2741}
+@media(prefers-color-scheme:dark){#salesView{--sp:#1b2638;--sk:#e7edf8;--sl:#2b3850;--sm:#9fadc4}}
+#salesView .eyebrow{font-size:10px;letter-spacing:2px;color:var(--sm);font-weight:700}
+#salesView .sdhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-top:6px}
+#salesView .sdtitle{font-size:32px;letter-spacing:-1px;margin:8px 0 4px}#salesView .dot{display:inline-block;background:var(--st);height:9px;width:9px;border-radius:50%;margin-left:10px;vertical-align:middle}
+#salesView .sdsub,#salesView .sdnote{color:var(--sm);margin:4px 0;font-size:14px}
+#salesView button.primary{background:var(--sv);color:#fff;border:0;box-shadow:0 6px 18px #6564ee30;width:auto;padding:13px 20px;margin:0}
+#salesView .sdhead .primary{margin-top:12px}
+#salesView button.ghost{background:var(--sp);color:var(--sk);border:1px solid var(--sl);width:auto;padding:9px 14px;margin:0;min-height:40px}
+#salesView .sdpanel{background:var(--sp);padding:20px;border-radius:18px;margin-top:16px;box-shadow:0 5px 20px #1b274108;min-width:0;border:1px solid var(--sl)}
+#salesView .sdpanel summary{font-weight:750;cursor:pointer}
+#salesView .sdpanel label{margin-top:12px}
+#salesView #sdLoad{margin-top:4px}
+#salesView .sdfilters{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;margin:16px 0}
+#salesView .sdfilters label{margin:0;font-size:11px;color:var(--sm);font-weight:600;flex:1 1 130px}
+#salesView .sdfilters select{margin-top:5px;min-height:40px;padding:7px}
+#salesView #sdStatus{white-space:pre-line;color:var(--sm);font-size:14px}#salesView #sdStatus.err{color:#c04758}
+#salesView .sdempty{color:var(--sm);text-align:center;padding:34px 20px}
+#salesView .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 0}
+#salesView .kpi{background:var(--sp);padding:20px;border-radius:17px;border:1px solid var(--sl);overflow:hidden}
+#salesView .kpi.hero{color:#fff;background:linear-gradient(120deg,#6564ee,#8d75f6);border:0}
+#salesView .kpi .label{font-size:12px;color:var(--sm)}#salesView .kpi.hero .label,#salesView .kpi.hero small{color:#e6e2ff}
+#salesView .kpi strong{display:block;font-size:34px;letter-spacing:-1px;margin:12px 0 8px}#salesView .kpi small{color:var(--sm);font-size:11px}
+#salesView .progress{height:5px;background:var(--sl);border-radius:20px;margin-top:12px;overflow:hidden}#salesView .progress>i{display:block;height:100%;background:var(--st);border-radius:20px}
+#salesView .sdgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px}#salesView .sdgrid.two{grid-template-columns:1fr 1fr}
+#salesView h3{font-size:19px;letter-spacing:-.4px;margin:6px 0 12px}
+#salesView .panelhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+#salesView .legend{display:flex;align-items:center;gap:7px;color:var(--sm);font-size:11px;margin-top:8px}#salesView .legend i{height:7px;width:7px;border-radius:50%;display:inline-block;margin-right:4px}
+#salesView .legend .actual{background:var(--sv)}#salesView .legend .target{background:#c1c8d9}
+#salesView svg{width:100%;height:auto;display:block;overflow:visible}#salesView svg .g{stroke:var(--sl)}#salesView svg .ax{fill:#929cb0;font-size:11px}#salesView svg .lv{fill:#6263c7;font-size:11px;font-weight:700}
+#salesView .channel{margin:16px 0 20px}#salesView .channel b{font-size:15px}#salesView .channel .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--sm);margin:8px 0}#salesView .channel .meta strong{color:var(--sk)}
+#salesView .chipsm{display:flex;flex-wrap:wrap;gap:6px}#salesView .chipm{background:var(--sl);border-radius:999px;padding:4px 10px;font-size:12px}
+#salesView .tabs{display:flex;gap:3px;background:var(--sl);padding:3px;border-radius:9px}#salesView .tabs button{padding:7px 11px;border:0;background:transparent;color:var(--sm);font-size:12px;margin:0;width:auto;min-height:32px;border-radius:7px}#salesView .tabs button.on{background:var(--sp);color:var(--sv)}
+#salesView .rank{display:grid;grid-template-columns:22px minmax(0,1fr) 56px;gap:10px;align-items:center;margin:13px 0}#salesView .rank .no{font-size:10px;color:#a4adc0}#salesView .rank .name{font-size:13px;overflow-wrap:anywhere}#salesView .rank .value{text-align:right;font-weight:700;font-size:15px}
+#salesView .rank .bar{height:4px;border-radius:20px;background:var(--sl);margin-top:6px}#salesView .rank .bar>i{height:100%;display:block;background:linear-gradient(90deg,#6b6af0,#a6a0ff);border-radius:20px}#salesView #sdDealers .rank .bar>i{background:linear-gradient(90deg,#11b5a7,#77dac7)}
+#salesView .scroll{max-height:440px;overflow:auto;padding-right:6px}#salesView .count{font-size:11px;color:var(--sm);padding-top:10px}#salesView .empty{color:var(--sm)}
+#salesView .tw{overflow-x:auto}#salesView table{margin-top:12px;font-size:13px}#salesView td,#salesView th{text-align:left;padding:10px 6px;border-bottom:1px solid var(--sl)}#salesView td:last-child,#salesView th:last-child{text-align:right}
+@media(max-width:900px){#salesView .sdgrid,#salesView .sdgrid.two{grid-template-columns:1fr}#salesView .kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){#salesView .kpi{padding:15px}#salesView .kpi strong{font-size:26px}#salesView .sdpanel{padding:15px}#salesView .sdfilters label{flex:1 1 40%}#salesView .sdhead .primary{width:100%}}
 .ideas{margin:6px 0 0;padding-left:18px;line-height:1.45;color:var(--muted);font-size:15px}
 </style>
 <div class="gate" id="gate"><form id="gateForm" class="panel" autocomplete="off"><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h2 style="margin-top:8px">Центр отчётов ДПГА</h2><label for="pw">Пароль<input type="password" id="pw" inputmode="numeric" required></label><button type="submit">Войти</button><p class="err" id="pwErr" hidden>Неверный пароль</p></form></div>
-<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button><button id="obrazecMode" aria-pressed="false">По образцу</button><button id="skladMode" aria-pressed="false" type="button" onclick="location.href='sklad.html'">Склад ТС</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
+<main id="app" hidden><div class="brand">ЦЕНТР ОТЧЁТОВ</div><h1>Центр отчётов ДПГА</h1><nav class="modes" aria-label="Тип отчёта"><button id="batchMode" aria-pressed="false">Пакет отчётов</button><button id="ratingMode" aria-pressed="true">Рейтинг ТП</button><button id="meetingMode" aria-pressed="false">К оперативному совещанию</button><button id="gibddMode" aria-pressed="false">ГИБДД по менеджерам</button><button id="opisiMode" aria-pressed="false">Описи</button><button id="obrazecMode" aria-pressed="false">По образцу</button><button id="salesMode" aria-pressed="false">Дашборд продаж</button><button id="skladMode" aria-pressed="false" type="button" onclick="location.href='sklad.html'">Склад ТС</button></nav><section id="ratingView"><p class="intro">Выберите период и три файла Excel. Расчёт выполняется на устройстве.</p>
 <form id="form">
  <div class="panel period"><label>Месяц<select id="month"></select></label><label>Год<input id="year" type="number" min="2000" max="2100" required></label></div>
  <div class="panel">
@@ -271,6 +312,28 @@ body.has-sendbar main{padding-bottom:150px}html:has(body.has-sendbar){scroll-pad
  <li>Отправляет готовое в Telegram и на почту, без интернета — ставит в очередь. Кнопка отправки появляется и у других отчётов центра после скачивания.</li>
 </ul></details>
 </section>
+<section id="salesView" hidden>
+<div class="sdhead"><div><div class="eyebrow">КОММЕРЧЕСКИЙ БЛОК</div><h2 class="sdtitle">Пульс продаж<span class="dot"></span></h2><p id="sdSub" class="sdsub">План, результат и вклад команды</p></div><button type="button" id="sdPpt" class="primary" disabled>Скачать PowerPoint ↗</button></div>
+<details class="sdpanel" id="sdUpload" open><summary>Файлы</summary>
+ <label>Реализация (Excel)<input type="file" id="sdFact" accept=".xlsx,.xlsm,.xls"></label>
+ <label>Целевой план (Excel), необязательно<input type="file" id="sdPlanFile" accept=".xlsx,.xlsm,.xls"></label>
+ <button type="button" id="sdLoad" class="primary">Построить дашборд</button>
+ <p id="sdFiles" class="sdnote"></p><button type="button" id="sdClearPlan" class="ghost" hidden>Убрать план</button>
+ <p class="sdnote">Нужные колонки реализации: Направление реализации, Подробный по дивизионам, Дата документа ППС, Матричные продажи - менеджер по сделке, Получатель, Кол-во. План — лист «Планы» с блоками направлений и месяцами. Всё считается на этом устройстве, файлы никуда не отправляются.</p>
+</details>
+<div class="sdfilters"><label>Год<select id="sdYear"></select></label><label>С месяца<select id="sdMs"></select></label><label>По месяц<select id="sdMe"></select></label><label>Направление<select id="sdDir"><option value="">Все направления</option></select></label><label>Менеджер<select id="sdMgr"><option value="">Вся команда</option></select></label><label>Модель<select id="sdModel"><option value="">Все модели</option></select></label><label>Дилер / получатель<select id="sdDealer"><option value="">Все получатели</option></select></label><button type="button" id="sdReset" class="ghost">Сбросить</button></div>
+<div id="sdStatus" role="status" aria-live="polite"></div>
+<div id="sdEmpty" class="sdpanel sdempty">Загрузите выгрузку реализации — появятся продажи по направлениям, динамика план–факт, рейтинг менеджеров и дилеров.</div>
+<div id="sdBody" hidden>
+<section id="sdKpis" class="kpis"></section>
+<div class="sdgrid"><section class="sdpanel"><div class="panelhead"><div><span class="eyebrow">ДИНАМИКА</span><h3>План и факт</h3></div><div class="legend"><i class="actual"></i>Факт <span id="sdLegendPlan"><i class="target"></i>План</span></div></div><div id="sdTrend"></div></section>
+<section class="sdpanel"><span class="eyebrow">КАНАЛЫ ПРОДАЖ</span><h3>Результат направлений</h3><div id="sdChannels"></div><div id="sdModels" class="chipsm"></div></section></div>
+<div class="sdgrid two"><section class="sdpanel"><div class="panelhead"><div><span class="eyebrow">КОМАНДА</span><h3>Кто создаёт результат</h3></div><div id="sdTabs" class="tabs"></div></div><div id="sdManagers" class="scroll"></div></section>
+<section class="sdpanel"><div class="panelhead"><div><span class="eyebrow">ДИЛЕРСКАЯ СЕТЬ</span><h3>Лидеры продаж</h3></div><span id="sdDealerTotal" class="count"></span></div><div id="sdDealers" class="scroll"></div></section></div>
+<details class="sdpanel"><summary id="sdPairsSum">ССС: все связки «менеджер — дилер»</summary><div id="sdPairs"></div></details>
+<p class="sdnote">Количество автомобилей по дате документа ППС, со знаком (возвраты уменьшают итог, повторные VIN не удаляются). В45 включает Валдай 45 и Валдай 45 Про. Дилерский рейтинг — реализация получателям ССС. Для менеджера или дилера план не подставляется.</p>
+</div>
+</section>
 <section id="batchView" hidden>
 <p class="intro">Загрузите исходники за закрытый месяц. Готовые отчёты скачаются одним ZIP. Обработка выполняется в браузере.</p>
 <form id="batchForm">
@@ -342,7 +405,7 @@ el('save').onclick=()=>{
 
 <script src="opisi-blank.js?v=202611152100"></script><script src="opisi-engine.js?v=202611152100"></script><script src="gibdd-ui.js?v=202611152100"></script>
 <script src="opisi-ui.js?v=202611152100"></script><script src="batch.js?v=202611152100"></script>
-<script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-merge.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script>
+<script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-merge.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script><script src="pptxgen.min.js?v=202611152100"></script><script src="sales-engine.js?v=202611152100"></script><script src="sales-ppt.js?v=202611152100"></script><script src="sales-ui.js?v=202611152100"></script>
 <script>
 (()=>{
  const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');

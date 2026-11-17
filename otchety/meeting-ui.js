@@ -1,9 +1,10 @@
-for(const mode of ['batch','rating','meeting','gibdd','opisi','obrazec']){
+for(const mode of ['batch','rating','meeting','gibdd','opisi','obrazec','sales']){
  el(mode+'Mode').onclick=()=>{
-  for(const other of ['batch','rating','meeting','gibdd','opisi','obrazec']){
+  for(const other of ['batch','rating','meeting','gibdd','opisi','obrazec','sales']){
    el(other+'View').hidden=other!==mode;
    el(other+'Mode').setAttribute('aria-pressed',String(other===mode));
   }
+  el('app').classList.toggle('wide',mode==='sales');
  };
 }
 months.forEach((m,i)=>el('meetingMonth').add(new Option(cap(m),i+1)));
