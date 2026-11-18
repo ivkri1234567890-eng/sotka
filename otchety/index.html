@@ -408,16 +408,17 @@ el('save').onclick=()=>{
 <script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-merge.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script><script src="pptxgen.min.js?v=202611152100"></script><script src="sales-engine.js?v=202611152100"></script><script src="sales-ppt.js?v=202611152100"></script><script src="sales-ui.js?v=202611152100"></script>
 <script>
 (()=>{
- const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
+ const HASH='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5', app=el('app'), gate=el('gate');
+ try{const nv=performance.getEntriesByType('navigation')[0];if(nv&&nv.type==='reload')sessionStorage.removeItem('sotka-gate');}catch(e){}
  const open=()=>{gate.hidden=true;app.hidden=false;};
- try{if(sessionStorage.getItem('dpga-auth')===HASH)open();}catch(e){}
+ try{if(sessionStorage.getItem('sotka-gate')===HASH)open();}catch(e){}
  if(!app.hidden)return;
  el('pw').focus();
  el('gateForm').onsubmit=async e=>{
   e.preventDefault();
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(el('pw').value.trim()));
   const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-  if(hex===HASH){try{sessionStorage.setItem('dpga-auth',HASH);}catch(e){}open();}
+  if(hex===HASH){try{sessionStorage.setItem('sotka-gate',HASH);}catch(e){}open();}
   else{el('pwErr').hidden=false;el('pw').select();}
  };
 })();

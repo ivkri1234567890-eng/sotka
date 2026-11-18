@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru">
-<head>
+<head><script src="/sotka/gate.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2f6f8f">
@@ -236,7 +236,7 @@ function drawScene(cv,scene,text,seed){const g=cv.getContext('2d'),W=cv.width,H=
 function dayIndex(){return Math.floor(Date.now()/864e5)}
 
 /* ============ views ============ */
-const S={view:LS.get('sk:auth',false)?'home':'login',tab:'home',m:null,cmp:null,grp:'Активность',edit:null,ex:null,motiv:dayIndex()};
+const S={view:LS.get('sk:auth',false)||(function(){try{return sessionStorage.getItem('sotka-gate')==='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5'}catch(e){return false}})()?'home':'login',tab:'home',m:null,cmp:null,grp:'Активность',edit:null,ex:null,motiv:dayIndex()};
 function render(){const v=S.view;let h='';
  const V={login:vLogin,home:vHome,labs:vLabs,marker:vMarker,result:vResult,compare:vCompare,diary:vDiary,cal:vCal,more:vMore,ex:vEx,exrun:vExRun,advice:vAdvice,motiv:vMotiv,ai:vAI,report:vReport,profile:vProfile,files:vFiles}[v]||vHome;h=V();
  app.innerHTML=h+(v!=='login'&&v!=='exrun'&&v!=='report'?nav():'');if(v==='motiv'||v==='home')paintMotiv();if(v==='exrun')startRun();window.scrollTo&&S.last!==v&&window.scrollTo(0,0);S.last=v}
@@ -452,5 +452,6 @@ render();syncReminders();
 window.__sk={DB,S,render,trend,status,series,summary,remindersList,ics,AFFIRM};
 </script>
 <script src="/sotka/hub.js" defer></script>
+<script>document.addEventListener('sotka-unlock',function(){try{if(S.view==='login'){S.view='home';render()}}catch(e){}});</script>
 </body>
 </html>

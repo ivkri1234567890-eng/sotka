@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru">
-<head>
+<head><script src="/sotka/gate.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Сотка: химия, биология, русский, математика</title>
@@ -725,7 +725,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setView(b.dataset.vie
 window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(['train','theory','exam','prompt'].includes(v)&&v!==S.view)setView(v)});
 paintSubject(S.subject);
 (function(){const L=document.getElementById('lock'),HASH=2085880512;const h=s=>{let x=5381;for(const ch of s)x=(Math.imul(x,33)^ch.charCodeAt(0))>>>0;return x};
- if(store.get('ok',0)===1){L.remove();return}
+ L.remove();return; // вход — общий, gate.js
  const pw=document.getElementById('pw');setTimeout(()=>pw.focus(),50);
  document.getElementById('lockf').onsubmit=e=>{e.preventDefault();if(h(pw.value.trim())===HASH){store.set('ok',1);L.remove()}else{document.getElementById('pwerr').hidden=false;pw.value=''}}})();
 const h=location.hash.slice(1);setView(['train','theory','exam','prompt'].includes(h)?h:'train');

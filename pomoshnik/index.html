@@ -148,15 +148,16 @@ ul.ai{list-style:none;padding:0;margin:0;display:grid;gap:8px}ul.ai li{padding:8
 (()=>{
  const app=document.getElementById('app'),gate=document.getElementById('gate');
  const open=()=>{gate.hidden=true;app.hidden=false;};
- const want='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699';
- try{if(sessionStorage.getItem('pom-auth')===want)open();}catch(e){}
+ const want='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5';
+ try{const nv=performance.getEntriesByType('navigation')[0];if(nv&&nv.type==='reload')sessionStorage.removeItem('sotka-gate');}catch(e){}
+ try{if(sessionStorage.getItem('sotka-gate')===want)open();}catch(e){}
  if(!app.hidden)return;
  document.getElementById('pw').focus();
  document.getElementById('gateForm').onsubmit=async e=>{
   e.preventDefault();
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(document.getElementById('pw').value.trim()));
   const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-  if(hex===want){try{sessionStorage.setItem('pom-auth',want);}catch(e){}open();}
+  if(hex===want){try{sessionStorage.setItem('sotka-gate',want);}catch(e){}open();}
   else{document.getElementById('pwErr').hidden=false;document.getElementById('pw').select();}
  };
 })();

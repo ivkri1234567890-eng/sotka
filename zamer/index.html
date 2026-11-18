@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru">
-<head>
+<head><script src="/sotka/gate.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Замер и смета 2.8</title>
@@ -2232,7 +2232,7 @@ function sha256js(ascii){/* fallback for non-secure contexts (file:// on old Web
 /* ---------- web access code (Android uses its own activation screen) ---------- */
 const GATE28={salt:'zamer-web-v1|',hash:'322e7e44d50396905b786e1b78e03220da398867b761e3d5524dface0dae9337'};
 async function sha28(s){try{if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}return sha256js(s)}
-function gate28(){let ok=false;try{ok=localStorage.getItem('zs:gate')===GATE28.hash}catch(e){}
+function gate28(){let ok=(function(){try{return sessionStorage.getItem('sotka-gate')==='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5'}catch(e){return false}})();try{ok=ok||localStorage.getItem('zs:gate')===GATE28.hash}catch(e){}
  if(NATIVE||window.Access||ok){render();return}
  app.innerHTML=`<div class="gate28"><div class="card"><div style="font-size:42px;text-align:center">📐</div><h2 style="text-align:center;margin:6px 0">Замер и смета</h2><p class="small muted" style="text-align:center">Введите код доступа</p>
  <input id="g28" type="password" inputmode="numeric" autocomplete="off" maxlength="12" style="text-align:center;font-size:22px;letter-spacing:6px" aria-label="Код доступа"><button class="btn wide" id="g28b" style="margin-top:10px">Войти</button><p id="g28e" class="small" style="color:#c0392b;text-align:center;min-height:1.2em"></p></div></div>`;
@@ -2246,5 +2246,6 @@ gate28();
 <input type="file" id="ph27in" accept="image/*" hidden>
 <script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{})</script>
 <script src="/sotka/hub.js" defer></script>
+<script>document.addEventListener('sotka-unlock',function(){try{render()}catch(e){}});</script>
 </body>
 </html>
