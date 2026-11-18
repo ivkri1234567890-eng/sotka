@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Замер и смета 2.7</title>
-<meta name="theme-color" content="#f4f3f0"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Замер и смета">
+<title>Замер и смета 2.8</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Замер и смета">
+<meta name="theme-color" content="#f4f3f0">
 <style>
 :root{--bg:#f4f3f0;--surface:#fff;--ink:#1d1f22;--muted:#6b6f76;--line:#e3e0da;--acc:#e0620d;--acc-ink:#fff;--acc-soft:#fde9d9;--ok:#1f8a5b;--bad:#c2412d;--blue:#2f6fd0;
  --font:Roboto,"Segoe UI",system-ui,-apple-system,sans-serif;--mono:"Roboto Mono",ui-monospace,monospace}
@@ -92,6 +96,24 @@ table.t27{width:100%;border-collapse:collapse;margin-top:6px}table.t27 td{paddin
 svg.gantt27{width:100%;height:auto;display:block;margin:8px 0}
 .tabs2{margin-top:-4px}
 .fold27>h3{cursor:pointer;margin:0}.fold27>h3:before{content:"▸ ";color:#e0620d}.fold27.open>h3:before{content:"▾ "}.fold27:not(.open)>*:not(h3){display:none}.fold27.open>h3{margin-bottom:8px}
+/* 2.8 */
+.steps28{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 10px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.st28{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:74px;padding:7px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:500 12px var(--font);cursor:pointer;position:relative}
+.st28 span{font-size:20px;line-height:1}.st28 b{font-weight:600;white-space:nowrap}.st28 i{position:absolute;top:-6px;right:-4px;background:var(--ok,#2a9d5c);color:#fff;border-radius:999px;font:700 11px var(--font);padding:1px 6px;font-style:normal}
+.st28.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}.st28:disabled{opacity:.4}
+.pe-wrap{position:sticky;top:0;z-index:5;background:var(--bg,#f4f4f2);padding-bottom:4px}
+.pe-wrap svg{width:100%;height:auto;max-height:46vh;display:block;background:var(--surface);border-radius:14px;touch-action:pan-y}
+.pe-wrap svg .hit28,svg[data-view] [data-ed]{cursor:grab}
+.sheetbox svg[data-view] [data-ed]:hover>*{opacity:.8}
+.pe-panel{border:2px solid #e0620d}
+.pe-sheet{max-height:70vh}
+.hint28{margin:6px 4px 8px}.ok28{color:var(--ok,#2a9d5c);font-weight:600;margin:0}.bad28{color:#c0392b}
+#tip28{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:60;background:#e0620d;color:#fff;font:700 14px var(--font,system-ui);padding:8px 14px;border-radius:999px;box-shadow:0 4px 14px #0003;pointer-events:none;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+.gate28{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:16px}.gate28 .card{width:100%;max-width:360px}
+.sheetbox svg text,.sheetbox svg line,svg[data-view] text{pointer-events:none}
+.sheetbox svg *{pointer-events:none}.sheetbox svg [data-ed],.sheetbox svg [data-ed] *{pointer-events:auto}
+.pe-sheet{max-height:56vh}.pe-sheet~*{}
+.pl-back:has(+.pe-sheet){background:#0000001f}
 </style>
 </head>
 <body>
@@ -941,7 +963,7 @@ vRoom=function(){const p=P(),r=RM(),base=oldVRoom24();if(!p||!r)return base;ensu
  return base+`<div class="card list" id="objectTools"><h3>${esc(k.n)}</h3>${extra}${k.seats&&geo(r).closed&&num(r.seats)>0?`<p class="small">${fmt(geo(r).floor/num(r.seats),1)} м² на рабочее место</p>`:''}</div>`};
 
 const oldVSettings24=vSettings;
-vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">Bosch, Leica и другие Bluetooth-дальномеры. Включите Bluetooth на приборе и нажмите «Подключить»: появится список найденных устройств. Каждый замер приходит в приложение.</p>').replace('версия 2.3','версия 2.7').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
+vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">Bosch, Leica и другие Bluetooth-дальномеры. Включите Bluetooth на приборе и нажмите «Подключить»: появится список найденных устройств. Каждый замер приходит в приложение.</p>').replace('версия 2.3','версия 2.8').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
 const oldVHome24=vHome;
 vHome=function(){let h=oldVHome24().replace('Подключите дальномер Bosch GLM','Подключите Bluetooth-дальномер (Bosch, Leica и др.)');for(const p of DB.projects)if(p.kind&&p.kind!=='flat')h=h.replace(new RegExp('(data-a="open" data-id="'+p.id+'">[\\s\\S]*?<div class="t">[^<]*)'),m=>m+' <span class="badge">'+esc(kindOf(p).n)+'</span>');return h};
 
@@ -1619,24 +1641,31 @@ function dim27(A,B,dir,off,label,o={}){const A2=[A[0]+dir[0]*off,A[1]+dir[1]*off
 function frame27(p,o){const s=DB.settings,x0=20,y0=5,x1=415,y1=292,bx=x1-185,by=y1-40;let g=`<rect x="${x0}" y="${y0}" width="${x1-x0}" height="${y1-y0}" fill="none" stroke="#000" stroke-width=".7"/>`;
  g+=`<rect x="${bx}" y="${by}" width="185" height="40" fill="#fff" stroke="#000" stroke-width=".7"/>`;
  const row=(y,h)=>ln27([bx,y],[x1,y],.35);g+=row(by+8)+row(by+16)+row(by+24)+row(by+32)+ln27([bx+130,by+16],[bx+130,y1],.35)+ln27([bx+155,by+16],[bx+155,y1],.35);
- g+=tx27(bx+92,by+6,((p.name||'Объект')+(p.addr?' · '+p.addr:'')).slice(0,70),{s:3,b:1})+tx27(bx+92,by+14,o.title,{s:3.4,b:1});
+ g+=tx27(bx+92,by+6,(p.name||'Объект')+(p.addr?' · '+p.addr:''),{s:3.2,b:1})+tx27(bx+92,by+14,o.title,{s:3.4,b:1});
  g+=tx27(bx+3,by+21,'Исполнитель: '+(s.master||s.company||''),{a:'start',s:2.6})+tx27(bx+3,by+29,'Заказчик: '+(p.client||''),{a:'start',s:2.6})+tx27(bx+3,by+37,'Дата: '+(p.date||today())+'  ·  '+(s.company||'Замер и смета'),{a:'start',s:2.6});
  g+=tx27(bx+142.5,by+21,'Масштаб',{s:2.3})+tx27(bx+142.5,by+30,o.scale,{s:3.4,b:1})+tx27(bx+170,by+21,'Лист',{s:2.3})+tx27(bx+170,by+30,o.n+' / '+o.N,{s:3.4,b:1})+tx27(bx+142.5,by+37.5,'',{});
  return g}
 function sampleSeg27(s,n){if(!s.curve)return[s.at(0),s.at(1)];const m=Math.max(8,Math.ceil(n));return Array.from({length:m+1},(_,i)=>s.at(i/m))}
 /* draws one room in sheet coordinates. M — model→sheet mapping; G — local→model mapping (identity or roomGlobal) */
-function roomDrawing27(r,G,M,k,opt={}){const g=geo(r),segs=g.segments,sign=g.sign;let s='',dims='';const S=q=>M(G(q));
+function roomDrawing27(r,G,M,k,opt={}){const g=geo(r),segs=g.segments,sign=g.sign;let s='',dims='';const S=q=>M(G(q));if(typeof REG28!=='undefined'&&REG28)REG28[r.id]=S;const ED=(src,i)=>`data-ed="${r.id}|${src}|${i}"`;
  const inward=(seg,t)=>{const tg=seg.tangent(t),n=[-tg[1]*sign,tg[0]*sign],a=S(seg.at(t)),b=S([seg.at(t)[0]+n[0],seg.at(t)[1]+n[1]]),l=Math.hypot(b[0]-a[0],b[1]-a[1])||1;return[(b[0]-a[0])/l,(b[1]-a[1])/l]};
  const poly=[];segs.forEach(seg=>{const pts=sampleSeg27(seg,seg.length*4);pts.slice(0,-1).forEach(q=>poly.push(S(q)))});
  s+=`<polygon points="${poly.map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="${opt.fill||'#f6f5f2'}" stroke="#000" stroke-width=".7" stroke-linejoin="round"/>`;
  segs.forEach((seg,wi)=>{const L=seg.length,a=S(seg.at(0)),b=S(seg.at(1)),inn=inward(seg,.5),out=[-inn[0],-inn[1]];
   const ops=(r.ops||[]).filter(o=>num(o.wall)===wi+1).map(o=>opAt(r,o)?{o,...opAt(r,o)}:null).filter(Boolean).sort((x,y)=>x.off-y.off);
   for(const x of ops){const pts=sampleSeg27(seg,8).length>2?Array.from({length:9},(_,i)=>S(seg.at(x.t0+(x.t1-x.t0)*i/8))):[S(seg.at(x.t0)),S(seg.at(x.t1))];
-   s+=`<polyline points="${pts.map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="none" stroke="#fff" stroke-width="1.1"/>`;
+   const blk=x.o.grp&&(r.ops||[]).filter(o=>o.grp===x.o.grp).length>1,key=blk?'blk|'+x.o.grp:'op|'+(r.ops||[]).indexOf(x.o);let e=`<polyline points="${pts.map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="none" stroke="#fff" stroke-width="1.1"/>`;
    const A=S(seg.at(x.t0)),B=S(seg.at(x.t1));
-   if(x.o.type==='window'){for(const d of[-.9,0,.9])s+=ln27([A[0]+out[0]*(1.2+d),A[1]+out[1]*(1.2+d)],[B[0]+out[0]*(1.2+d),B[1]+out[1]*(1.2+d)],.18);s+=ln27(A,[A[0]+out[0]*2.4,A[1]+out[1]*2.4],.35)+ln27(B,[B[0]+out[0]*2.4,B[1]+out[1]*2.4],.35)}
-   else{const w=Math.hypot(B[0]-A[0],B[1]-A[1]),leaf=[A[0]+inn[0]*w,A[1]+inn[1]*w];s+=ln27(A,leaf,.35)+`<path d="M ${f1(B[0])} ${f1(B[1])} A ${f1(w)} ${f1(w)} 0 0 ${((B[0]-A[0])*inn[1]-(B[1]-A[1])*inn[0])>0?0:1} ${f1(leaf[0])} ${f1(leaf[1])}" fill="none" stroke="#000" stroke-width=".13" stroke-dasharray="1 .6"/>`}}
-  for(const rd of radsOf(r).filter(x=>num(x.wall)===wi+1)){const t0=num(rd.offset)/L,t1=(num(rd.offset)+num(rd.w))/L,A=S(seg.at(t0)),B=S(seg.at(t1)),d=Math.max(1.4,.09*k);s+=`<polygon points="${[A,B,[B[0]+inn[0]*d,B[1]+inn[1]*d],[A[0]+inn[0]*d,A[1]+inn[1]*d]].map(q=>f1(q[0]+inn[0]*.5)+','+f1(q[1]+inn[1]*.5)).join(' ')}" fill="#fff" stroke="#000" stroke-width=".25"/>`+tx27((A[0]+B[0])/2+inn[0]*(d+2.6),(A[1]+B[1])/2+inn[1]*(d+2.6)+.8,'рад.',{s:1.9})}
+   if(x.o.type==='window'){for(const d of[-.9,0,.9])e+=ln27([A[0]+out[0]*(1.2+d),A[1]+out[1]*(1.2+d)],[B[0]+out[0]*(1.2+d),B[1]+out[1]*(1.2+d)],.18);e+=ln27(A,[A[0]+out[0]*2.4,A[1]+out[1]*2.4],.35)+ln27(B,[B[0]+out[0]*2.4,B[1]+out[1]*2.4],.35)}
+   else{const hb=x.o.hinge==='b',H=hb?B:A,O=hb?A:B,dir=x.o.swing==='out'?out:inn,w=Math.hypot(B[0]-A[0],B[1]-A[1]),leaf=[H[0]+dir[0]*w,H[1]+dir[1]*w],cr=(O[0]-H[0])*(leaf[1]-H[1])-(O[1]-H[1])*(leaf[0]-H[0]);e+=ln27(H,leaf,.35)+`<path d="M ${f1(O[0])} ${f1(O[1])} A ${f1(w)} ${f1(w)} 0 0 ${cr>0?1:0} ${f1(leaf[0])} ${f1(leaf[1])}" fill="none" stroke="#000" stroke-width=".13" stroke-dasharray="1 .6"/><path d="M ${f1(H[0])} ${f1(H[1])} L ${f1(O[0])} ${f1(O[1])} A ${f1(w)} ${f1(w)} 0 0 ${cr>0?1:0} ${f1(leaf[0])} ${f1(leaf[1])} Z" fill="transparent"/>`}
+   const hp=[A,B,[B[0]+inn[0]*4,B[1]+inn[1]*4],[A[0]+inn[0]*4,A[1]+inn[1]*4]];s+=`<g ${ED(...key.split('|'))}>${e}<polygon points="${hp.map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="transparent" stroke="transparent" stroke-width="2"/></g>`}
+  radsOf(r).forEach((rd,ri)=>{if(num(rd.wall)!==wi+1)return;const t0=num(rd.offset)/L,t1=(num(rd.offset)+num(rd.w))/L,A=S(seg.at(t0)),B=S(seg.at(t1)),d=Math.max(1.4,.09*k),nd=num(rd.niche)*k,base=nd>0?-nd+.3:.5;let e='';
+   if(nd>0){const a2=S(seg.at(Math.max(0,t0-.03/L))),b2=S(seg.at(Math.min(1,t1+.03/L)));e+=`<polygon points="${[a2,b2,[b2[0]+out[0]*nd,b2[1]+out[1]*nd],[a2[0]+out[0]*nd,a2[1]+out[1]*nd]].map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="#fff" stroke="#000" stroke-width=".3"/>`;for(const q of[a2,b2])e+=`<path d="M ${f1(q[0]+inn[0]*.9)} ${f1(q[1]+inn[1]*.9)} L ${f1(q[0])} ${f1(q[1])} L ${f1(q[0]+out[0]*.9)} ${f1(q[1]+out[1]*.9)}" fill="none" stroke="#000" stroke-width=".35"/>`}
+   e+=`<polygon points="${[A,B,[B[0]+inn[0]*d,B[1]+inn[1]*d],[A[0]+inn[0]*d,A[1]+inn[1]*d]].map(q=>f1(q[0]+inn[0]*base)+','+f1(q[1]+inn[1]*base)).join(' ')}" fill="#fff" stroke="#000" stroke-width=".25"/>`+tx27((A[0]+B[0])/2+inn[0]*(d+2.6+Math.max(0,base)),(A[1]+B[1])/2+inn[1]*(d+2.6+Math.max(0,base))+.8,'рад.'+(nd>0?' в нише':''),{s:1.9});
+   for(const side of(typeof pipes28==='function'?pipes28(rd):[])){const tt=side==='a'?Math.max(0,t0-.06/L):Math.min(1,t1+.06/L),c=S(seg.at(tt));e+=`<circle cx="${f1(c[0]+inn[0]*.9)}" cy="${f1(c[1]+inn[1]*.9)}" r=".7" fill="#fff" stroke="#000" stroke-width=".25"/>`+tx27(c[0]+inn[0]*3.2,c[1]+inn[1]*3.2+.6,'Ст',{s:1.6})}
+   s+=`<g ${ED('rad',ri)}>${e}<polygon points="${[A,B,[B[0]+inn[0]*5,B[1]+inn[1]*5],[A[0]+inn[0]*5,A[1]+inn[1]*5]].map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="transparent"/></g>`});
+  (typeof acsOf==='function'?acsOf(r):[]).forEach((ac,ai)=>{if(num(ac.wall)!==wi+1)return;const t0=num(ac.offset)/L,t1=(num(ac.offset)+num(ac.w))/L,A=S(seg.at(t0)),B=S(seg.at(t1)),d=Math.max(2,.2*k),P4=[A,B,[B[0]+inn[0]*d,B[1]+inn[1]*d],[A[0]+inn[0]*d,A[1]+inn[1]*d]];
+   s+=`<g ${ED('ac',ai)}><polygon points="${P4.map(q=>f1(q[0]+inn[0]*.3)+','+f1(q[1]+inn[1]*.3)).join(' ')}" fill="#fff" stroke="#000" stroke-width=".25" stroke-dasharray="1.2 .6"/>`+tx27((A[0]+B[0])/2+inn[0]*(d/2+.3),(A[1]+B[1])/2+inn[1]*(d/2+.3)+.7,'К',{s:2,b:1})+`</g>`});
   /* chain dimensions inside the room, overall dimension further in */
   if(opt.dims!==false){const cuts=[0];if(!seg.curve)for(const x of ops){cuts.push(x.off,x.off+x.w)}for(const rd of radsOf(r).filter(x=>num(x.wall)===wi+1&&!seg.curve&&opt.radDims))cuts.push(num(rd.offset),num(rd.offset)+num(rd.w));cuts.push(L);
    const C=[...new Set(cuts.map(v=>Math.round(v*1000)))].sort((x,y)=>x-y);
@@ -1645,7 +1674,7 @@ function roomDrawing27(r,G,M,k,opt={}){const g=geo(r),segs=g.segments,sign=g.sig
    else dims+=dim27(a,b,inn,opt.d1||5,String(mm(L)),{s:(opt.fs||2.2)+.2})}
   if(opt.wallNo){const m=S(seg.at(.5)),q=[m[0]+out[0]*4.5,m[1]+out[1]*4.5];s+=`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="2.1" fill="#fff" stroke="#000" stroke-width=".2"/>`+tx27(q[0],q[1]+.85,String(wi+1),{s:2.3})}});
  (r.points||[]).forEach((pt,i)=>{const d=ELECTRICAL[pt.type];if(!d)return;const q0=pointLocal(r,pt);if(!q0)return;let q=S(q0);if(d.wall){const seg=segs[num(pt.wall)-1];if(seg){const n=inward(seg,Math.min(1,num(pt.offset)/(seg.length||1)));q=[q[0]+n[0]*1.6,q[1]+n[1]*1.6]}}
-  s+=(pt.type==='socket'||pt.type==='socket2'||pt.type==='socket_power'?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1" fill="#fff" stroke="#000" stroke-width=".25"/>`:/switch/.test(pt.type)?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r=".8" fill="#000"/>`:d.wall?`<rect x="${f1(q[0]-.9)}" y="${f1(q[1]-.9)}" width="1.8" height="1.8" fill="#fff" stroke="#000" stroke-width=".25"/>`:`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1.4" fill="#fff" stroke="#000" stroke-width=".25"/>`+ln27([q[0]-1,q[1]-1],[q[0]+1,q[1]+1],.2)+ln27([q[0]-1,q[1]+1],[q[0]+1,q[1]-1],.2))+(opt.tags?tx27(q[0]+1.6,q[1]-1.2,pointTag(r,i),{s:1.7,a:'start'}):'')});
+  s+=`<g ${ED('pt',i)}><circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="3" fill="transparent"/>`+(/^socket/.test(pt.type)?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1" fill="#fff" stroke="#000" stroke-width=".25"/>`:/switch/.test(pt.type)?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r=".8" fill="#000"/>`:d.wall?`<rect x="${f1(q[0]-.9)}" y="${f1(q[1]-.9)}" width="1.8" height="1.8" fill="#fff" stroke="#000" stroke-width=".25"/>`:`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1.4" fill="#fff" stroke="#000" stroke-width=".25"/>`+ln27([q[0]-1,q[1]-1],[q[0]+1,q[1]+1],.2)+ln27([q[0]-1,q[1]+1],[q[0]+1,q[1]-1],.2))+(opt.tags?tx27(q[0]+1.6,q[1]-1.2,pointTag(r,i),{s:1.7,a:'start'}):'')+'</g>'});
  const c=roomCentroid(poly);s+=tx27(c[0],c[1]-1.5,r.name,{s:opt.big?3.6:3,b:1})+tx27(c[0],c[1]+2.6,fmt(g.floor,2)+' м²'+(num(r.h)?'  h='+mm(num(r.h)):''),{s:opt.big?2.8:2.4});
  return s+dims}
 function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const Gs=rooms.map(r=>({r,G:roomGlobal(p,r)}));let pts=[];Gs.forEach(({r,G})=>geo(r).segments.forEach(seg=>sampleSeg27(seg,seg.length*4).forEach(q=>pts.push(G(q)))));
@@ -1669,14 +1698,15 @@ function elevDrawing27(r,wi,x0,y0,k){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=
  s+=tx27(x0+w/2,y0-6,'Развёртка стены '+(wi+1)+' (угол '+c.left+' — угол '+c.right+')',{s:2.8,b:1});
  const xs=[0,L],dn=[1,0];
  for(const o of(r.ops||[]).filter(o=>num(o.wall)===wi+1)){const a=opAt(r,o);if(!a)continue;const sill=o.type==='door'?0:o.sill!=null?num(o.sill):.85,x=X(a.off,a.w),y=Y(sill+num(o.h)),ww=a.w*k,hh=num(o.h)*k;
-  s+=`<rect x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" fill="#fff" stroke="#000" stroke-width=".35"/>`;
-  if(o.type==='window')s+=ln27([x,y],[x+ww,y+hh],.1,'#666')+ln27([x+ww,y],[x,y+hh],.1,'#666');else s+=ln27([x,y+hh],[x+ww/2,y],.13,'#666','1 .6')+ln27([x+ww/2,y],[x+ww,y+hh],.13,'#666','1 .6');
+  const eblk=o.grp&&(r.ops||[]).filter(z=>z.grp===o.grp).length>1;s+=`<g data-ed="${r.id}|${eblk?'blk|'+o.grp:'op|'+(r.ops||[]).indexOf(o)}|e"><rect x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" fill="#fff" stroke="#000" stroke-width=".35"/>`;
+  if(o.type==='window')s+=ln27([x,y],[x+ww,y+hh],.1,'#666')+ln27([x+ww,y],[x,y+hh],.1,'#666');else{const hl=(o.hinge==='b')!==lis,hx=hl?x+ww:x,ox2=hl?x:x+ww;s+=ln27([ox2,y],[hx,y+hh/2],.13,'#666','1 .6')+ln27([hx,y+hh/2],[ox2,y+hh],.13,'#666','1 .6')+tx27(x+ww/2,y+hh-1.5,o.swing==='out'?'наружу':'внутрь',{s:1.6,c:'#555'})}s+='</g>';
   s+=tx27(x+ww/2,y+hh/2,(o.type==='door'?'Д ':'О ')+mm(a.w)+'×'+mm(num(o.h)),{s:2});
   if(o.type==='window'){s+=dim27([x+ww,Y(0)],[x+ww,Y(sill)],[1,0],3,String(mm(sill)),{s:1.9,gap:.5})}
   s+=dim27([x,y],[x,y+hh],[-1,0],2.5,String(mm(num(o.h))),{s:1.9,gap:.3});
   const o0=lis?a.off:L-a.off-a.w;xs.push(o0,o0+a.w)}
- for(const rd of radsOf(r).filter(x=>num(x.wall)===wi+1)){const x=X(num(rd.offset),num(rd.w)),y=Y(num(rd.y)+num(rd.h)),ww=num(rd.w)*k,hh=num(rd.h)*k;s+=`<rect x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" fill="#fff" stroke="#000" stroke-width=".3"/>`;for(let i=1;i<Math.round(num(rd.w)/.1);i++)s+=ln27([x+i*.1*k,y+.4],[x+i*.1*k,y+hh-.4],.08);s+=tx27(x+ww/2,y-1.2,'рад. '+mm(num(rd.w))+'×'+mm(num(rd.h))+', низ '+mm(num(rd.y)),{s:1.8});const o0=lis?num(rd.offset):L-num(rd.offset)-num(rd.w);xs.push(o0,o0+num(rd.w))}
- const pts=[];(r.points||[]).forEach((pt,i)=>{const d=ELECTRICAL[pt.type];if(!d||!d.wall||num(pt.wall)!==wi+1)return;const x=X(num(pt.offset)),y=Y(num(pt.height));s+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="1" fill="#fff" stroke="#000" stroke-width=".25"/>`+tx27(x,y-1.8,pointTag(r,i)+' h'+mm(num(pt.height)),{s:1.7});pts.push(x)});
+ for(const rd of radsOf(r).filter(x=>num(x.wall)===wi+1)){const x=X(num(rd.offset),num(rd.w)),y=Y(num(rd.y)+num(rd.h)),ww=num(rd.w)*k,hh=num(rd.h)*k;s+=`<g data-ed="${r.id}|rad|${radsOf(r).indexOf(rd)}|e"><rect x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" fill="transparent"/></g><rect pointer-events="none" x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" fill="#fff" stroke="#000" stroke-width=".3"/>`;for(let i=1;i<Math.round(num(rd.w)/.1);i++)s+=ln27([x+i*.1*k,y+.4],[x+i*.1*k,y+hh-.4],.08);s+=tx27(x+ww/2,y-1.2,'рад. '+mm(num(rd.w))+'×'+mm(num(rd.h))+', низ '+mm(num(rd.y))+(num(rd.niche)>0?', в нише':''),{s:1.8});for(const side of(typeof pipes28==='function'?pipes28(rd):[])){const px=X(side==='a'?num(rd.offset)-.06:num(rd.offset)+num(rd.w)+.06);s+=`<rect x="${f1(px-.4)}" y="${f1(Y(H))}" width=".8" height="${f1(H*k)}" fill="#eee" stroke="#000" stroke-width=".15"/>`+tx27(px+1.2,Y(H/2),'стояк',{s:1.5,a:'start',rot:-90})}if(num(rd.niche)>0)s+=`<rect x="${f1(x-.03*k)}" y="${f1(y-.05*k)}" width="${f1(ww+.06*k)}" height="${f1(hh+.1*k)}" fill="none" stroke="#000" stroke-width=".25" stroke-dasharray="1 .5"/>`;const o0=lis?num(rd.offset):L-num(rd.offset)-num(rd.w);xs.push(o0,o0+num(rd.w))}
+ for(const ac of(typeof acsOf==='function'?acsOf(r):[]).filter(x=>num(x.wall)===wi+1)){const x=X(num(ac.offset),num(ac.w)),y=Y(num(ac.y)+num(ac.h)),ww=num(ac.w)*k,hh=num(ac.h)*k;s+=`<rect x="${f1(x)}" y="${f1(y)}" width="${f1(ww)}" height="${f1(hh)}" rx=".8" fill="#fff" stroke="#000" stroke-width=".3"/>`+tx27(x+ww/2,y+hh/2+.7,'кондиционер '+mm(num(ac.w))+'×'+mm(num(ac.h)),{s:1.6})+tx27(x+ww/2,y-1.2,'низ '+mm(num(ac.y)),{s:1.6});const o0=lis?num(ac.offset):L-num(ac.offset)-num(ac.w);xs.push(o0,o0+num(ac.w))}
+ const pts=[];(r.points||[]).forEach((pt,i)=>{const d=ELECTRICAL[pt.type];if(!d||!d.wall||num(pt.wall)!==wi+1)return;const x=X(num(pt.offset)),y=Y(num(pt.height));s+=`<g data-ed="${r.id}|pt|${i}|e"><circle cx="${f1(x)}" cy="${f1(y)}" r="2.5" fill="transparent"/><circle cx="${f1(x)}" cy="${f1(y)}" r="1" fill="#fff" stroke="#000" stroke-width=".25"/>`+tx27(x,y-1.8,pointTag(r,i)+' h'+mm(num(pt.height)),{s:1.7})+'</g>';pts.push(x)});
  /* bottom dimension chains */
  const C=[...new Set(xs.map(v=>Math.round(v*1000)))].sort((a,b)=>a-b);if(C.length>2)for(let i=0;i<C.length-1;i++){if(C[i+1]-C[i]<1)continue;s+=dim27([x0+C[i]/1000*k,y0+h],[x0+C[i+1]/1000*k,y0+h],[0,1],4,String(C[i+1]-C[i]),{s:1.9,gap:.5})}
  s+=dim27([x0,y0+h],[x0+w,y0+h],[0,1],C.length>2?9:4,String(mm(L)),{s:2.2,gap:.5});
@@ -1753,8 +1783,8 @@ async function mount3d27(p){const cv=document.getElementById('c3d27');if(!cv)ret
  if(V3){V3.stop();V3=null}const W=cv.clientWidth,H=cv.clientHeight,ren=new T.WebGLRenderer({canvas:cv,antialias:true});ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1));ren.setSize(W,H,false);ren.setClearColor(0xeef1f4);
  const sc=new T.Scene();sc.add(new T.HemisphereLight(0xffffff,0x8a8a8a,.85));const dl=new T.DirectionalLight(0xffffff,.55);dl.position.set(6,12,4);sc.add(dl);
  const grp=new T.Group();sc.add(grp);const box=build3d27(T,p,grp);const cx=(box[0]+box[2])/2,cz=(box[1]+box[3])/2,span=Math.max(box[2]-box[0],box[3]-box[1],3);
- const cam=new T.PerspectiveCamera(50,W/H,.05,200);const st={th:.75,ph:.95,r:span*1.35,tx:cx,ty:0,tz:cz,fp:false};
- const view=UI.v3view||'iso';if(view==='top'){st.ph=.02;st.r=span*1.25}if(view==='in'){st.fp=true;const r0=p.rooms.find(r=>geo(r).closed);const G=roomGlobal(p,r0),c=roomCentroid(geo(r0).contour.slice(0,-1).map(G));st.tx=c[0];st.tz=c[1];st.ty=1.55;st.r=.01;st.ph=1.45}
+ const cam=new T.PerspectiveCamera(50,W/H,.05,200);const fitK=1/Math.max(.45,Math.min(1,W/H)),st={th:.75,ph:.95,r:span*1.35*fitK,tx:cx,ty:0,tz:cz,fp:false};
+ const view=UI.v3view||'iso';if(view==='top'){st.ph=.02;st.r=span*1.25*fitK}if(view==='in'){st.fp=true;const r0=p.rooms.find(r=>geo(r).closed);const G=roomGlobal(p,r0),c=roomCentroid(geo(r0).contour.slice(0,-1).map(G));st.tx=c[0];st.tz=c[1];st.ty=1.55;st.r=.01;st.ph=1.45}
  const place=()=>{const r=st.r;cam.position.set(st.tx+r*Math.sin(st.ph)*Math.sin(st.th),st.ty+r*Math.cos(st.ph),st.tz+r*Math.sin(st.ph)*Math.cos(st.th));cam.lookAt(st.tx,st.ty,st.tz)};
  if(st.fp){cam.position.set(st.tx,1.55,st.tz)}place();
  const ptrs=new Map();let raf=0,dirty=true;cv.style.touchAction='none';
@@ -1837,10 +1867,384 @@ document.addEventListener('input',e=>{const el=e.target;if(el.dataset.d5!=='day'
 const oldValidate27=validateBackup;
 validateBackup=function(data){oldValidate27(data);for(const p of data.projects||[])for(const r of p.rooms||[]){if(r.rads!=null&&!Array.isArray(r.rads))throw Error('Повреждены радиаторы');for(const x of r.rads||[])if(!(num(x.wall)>=1&&num(x.w)>=0&&num(x.h)>=0))throw Error('Повреждены радиаторы');if(r.photos!=null&&!Array.isArray(r.photos))throw Error('Повреждены фото')}};
 
-window.__test={allSheets27,plan5d27,wallItems27,toStart27,corners27,leftIsStart27,plOpen27,plSave27,radsOf,DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},fenceCalc,fenceCSV,geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
+/* ===================== Version 2.8: step-by-step room, drag-and-drop editor everywhere, doors with hinge/swing, AC, risers, ceiling heights ===================== */
 
-render();
+/* ---------- new item types ---------- */
+Object.assign(ELECTRICAL,{socket3:{name:'Розетка тройная',code:'Р3',wall:true,height:.3},socket4:{name:'Розетка четверная',code:'Р4',wall:true,height:.3}});
+EL_GROUPS[0][1].splice(2,0,'socket3','socket4');
+const acsOf=r=>(r.acs=Array.isArray(r.acs)?r.acs:[]);
+const hasBle28=()=>!!(window.Ble||window.Ble2||navigator.bluetooth);
+const SOCK28=[['socket','1'],['socket2','2'],['socket3','3'],['socket4','4']];
+const CAT28={
+ window:{n:'Окна',one:'Окно',i:'🪟'},balcony:{n:'Балконный блок',one:'Балконный блок',i:'🚪'},door:{n:'Двери',one:'Дверь',i:'🚪'},
+ radiator:{n:'Радиаторы',one:'Радиатор',i:'♨️'},socket:{n:'Розетки',one:'Розетка',i:'🔌',types:['socket','socket2','socket3','socket4','socket_power','lan','tv','output']},
+ switch:{n:'Выключатели',one:'Выключатель',i:'🔘',types:['switch','switch_pass']},light:{n:'Свет',one:'Светильник',i:'💡',types:['chandelier','light','spot','walllamp']},
+ ac:{n:'Кондиционер',one:'Кондиционер',i:'❄️'}};
+const typeCat28=t=>Object.keys(CAT28).find(k=>(CAT28[k].types||[]).includes(t))||'other';
+
+/* ---------- unified item access: src = op | blk | rad | ac | pt ---------- */
+function blkOps28(r,g){return(r.ops||[]).filter(o=>o.grp===g)}
+function items28(r){const out=[],seen=new Set();
+ (r.ops||[]).forEach((o,i)=>{if(o.grp&&blkOps28(r,o.grp).length>1){if(seen.has(o.grp))return;seen.add(o.grp);out.push({src:'blk',i:o.grp,cat:'balcony'});return}out.push({src:'op',i,cat:o.type==='door'?'door':'window'})});
+ radsOf(r).forEach((x,i)=>out.push({src:'rad',i,cat:'radiator'}));acsOf(r).forEach((x,i)=>out.push({src:'ac',i,cat:'ac'}));
+ (r.points||[]).forEach((pt,i)=>{if(ELECTRICAL[pt.type])out.push({src:'pt',i,cat:typeCat28(pt.type)})});return out}
+function obj28(r,src,i){return src==='op'?(r.ops||[])[i]:src==='rad'?radsOf(r)[i]:src==='ac'?acsOf(r)[i]:src==='pt'?(r.points||[])[i]:src==='blk'?(blkOps28(r,i).length?{grp:i}:null):null}
+const isWall28=(r,src,i)=>src!=='pt'||!!(ELECTRICAL[((r.points||[])[i]||{}).type]||{}).wall;
+/* position along a wall: off = near edge from wall start, w = width (0 for points: off is the centre) */
+function pos28(r,src,i){const o=obj28(r,src,i);if(!o)return null;
+ if(src==='blk'){const ms=blkOps28(r,i),off=Math.min(...ms.map(m=>num(m.offset))),end=Math.max(...ms.map(m=>num(m.offset)+num(m.w)));return{wall:num(ms[0].wall),off,w:end-off}}
+ if(src==='op'){const a=opAt(r,o);return{wall:num(o.wall),off:a?a.off:num(o.offset),w:num(o.w)}}
+ if(src==='pt')return ELECTRICAL[o.type].wall?{wall:num(o.wall),off:num(o.offset),w:0}:{x:num(o.x),y:num(o.y)};
+ return{wall:num(o.wall),off:num(o.offset),w:num(o.w)}}
+function setPos28(r,src,i,wall,off){const o=obj28(r,src,i);if(!o)return;off=r3(off);
+ if(src==='blk'){const p=pos28(r,src,i),d=off-p.off;blkOps28(r,i).forEach(m=>{m.wall=wall;m.offset=r3(num(m.offset)+d)});return}
+ o.wall=wall;o.offset=off}
+const lr28=(r,wall,off,w)=>{const L=wlen(r,wall-1),lis=leftIsStart27(r),fl=lis?off:L-off-w;return{L,fl,fr:L-w-fl,lis}};
+const offFromLeft28=(r,wall,d,w)=>{const L=wlen(r,wall-1);return leftIsStart27(r)?d:L-d-w};
+const hingeAB28=(r,side)=>(side==='left')===leftIsStart27(r)?'a':'b';
+const hingeSide28=(r,ab)=>(ab!=='b')===leftIsStart27(r)?'left':'right';
+function name28(r,src,i){const o=obj28(r,src,i);if(!o)return'';if(src==='blk')return'Балконный блок';if(src==='op')return o.type==='door'?'Дверь':'Окно';if(src==='rad')return'Радиатор';if(src==='ac')return'Кондиционер';return ELECTRICAL[o.type].name}
+function tag28(r,src,i){if(src==='pt')return pointTag(r,i);const L=items28(r).filter(x=>x.src===src&&(src!=='op'||x.cat===(obj28(r,src,i).type==='door'?'door':'window')));const n=L.findIndex(x=>x.i===i)+1;return(src==='op'?(obj28(r,src,i).type==='door'?'Д':'О'):src==='blk'?'ББ':src==='rad'?'Р':'К')+n}
+
+/* ---------- ceiling heights: corners + middle ---------- */
+function hFields28(r){const n=r.walls.length;return[...Array.from({length:n},(_,k)=>['c'+(k+1),'Угол '+(k+1)]),['mid','Центр']]}
+function hApply28(r){const H=r.hpts||{},v=Object.values(H).map(Number).filter(x=>x>0);if(v.length)r.h=r3(v.reduce((a,b)=>a+b,0)/v.length)}
+function hStat28(r){const v=Object.values(r.hpts||{}).map(Number).filter(x=>x>0);if(!v.length)return null;const mn=Math.min(...v),mx=Math.max(...v);return{n:v.length,mn,mx,d:mx-mn}}
+
+/* ---------- geometry helpers in room-local metres ---------- */
+function onWall28(r,wall,d){const s=geo(r).segments[wall-1];if(!s)return null;const L=s.length||1,t=Math.max(0,Math.min(1,d/L));return{q:s.at(t),tg:s.tangent(t),inn:inwardN(r,s,t),s,L}}
+function wallLine28(r,wall){const s=geo(r).segments[wall-1];if(!s)return null;const a=s.at(0),b=s.at(1),L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,u=[(b[0]-a[0])/L,(b[1]-a[1])/L],n=inwardN(r,s,.5);return{a,u,n}}
+const dWall28=(r,wall,q)=>{const l=wallLine28(r,wall);return l?(q[0]-l.a[0])*l.n[0]+(q[1]-l.a[1])*l.n[1]:0};
+function nearWalls28(r,q){const n=r.walls.length,ds=Array.from({length:n},(_,k)=>({w:k+1,d:Math.abs(dWall28(r,k+1,q))})).sort((a,b)=>a.d-b.d);const w1=ds[0];if(!w1)return[];const l1=wallLine28(r,w1.w);
+ const w2=ds.slice(1).find(x=>{const l=wallLine28(r,x.w);return Math.abs(l.u[0]*l1.u[1]-l.u[1]*l1.u[0])>.5});return w2?[w1.w,w2.w]:[w1.w]}
+/* point at distance d1 from wall w1 and d2 from wall w2 (inside) */
+function solve28(r,w1,d1,w2,d2){const A=wallLine28(r,w1),B=wallLine28(r,w2);if(!A||!B)return null;const pa=[A.a[0]+A.n[0]*d1,A.a[1]+A.n[1]*d1],pb=[B.a[0]+B.n[0]*d2,B.a[1]+B.n[1]*d2],den=A.u[0]*B.u[1]-A.u[1]*B.u[0];if(Math.abs(den)<1e-6)return null;
+ const t=((pb[0]-pa[0])*B.u[1]-(pb[1]-pa[1])*B.u[0])/den;return[pa[0]+A.u[0]*t,pa[1]+A.u[1]*t]}
+function centroid28(r){return roomCentroid(geo(r).contour.slice(0,-1))}
+
+/* ---------- drawing of all items (screen plans: room editor and apartment plan) ---------- */
+/* T: local metres → svg units; s: svg units per metre; o.u: base unit; o.rid; o.sel={src,i}; o.hit */
+function itemsSVG28(r,T,s,o={}){const u=o.u||1,isSel=(src,i)=>o.sel&&o.sel.src===src&&String(o.sel.i)===String(i),ed=(src,i)=>o.hit?` data-ed="${o.rid}|${src}|${i}"`:'';let out='';const F=q=>f1(q[0])+','+f1(q[1]);
+ const L=(a,b,c,w,x='')=>`<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="${c}" stroke-width="${w}" ${x}/>`;
+ const band=(wall,off,w,depth,src,i)=>{const a=onWall28(r,wall,off),b=onWall28(r,wall,off+w);if(!a||!b)return'';const A=T(a.q),B=T(b.q),n=a.inn,d=Math.max(14*u,depth*s),Ai=T([a.q[0]+n[0]*d/s,a.q[1]+n[1]*d/s]),Bi=T([b.q[0]+n[0]*d/s,b.q[1]+n[1]*d/s]);return o.hit?`<polygon points="${F(A)} ${F(B)} ${F(Bi)} ${F(Ai)}" fill="transparent" stroke="transparent" stroke-width="${10*u}"${ed(src,i)} class="hit28"/>`:''};
+ /* openings */
+ (r.ops||[]).forEach((op,i)=>{const a=opAt(r,op);if(!a)return;const blk=op.grp&&blkOps28(r,op.grp).length>1,src=blk?'blk':'op',key=blk?op.grp:i,sel=isSel(src,key),A0=onWall28(r,num(op.wall),a.off),B0=onWall28(r,num(op.wall),a.off+a.w);if(!A0||!B0)return;
+  const A=T(A0.q),B=T(B0.q),mid=onWall28(r,num(op.wall),a.off+a.w/2),n=mid.inn,ns=(()=>{const p0=T(mid.q),p1=T([mid.q[0]+n[0],mid.q[1]+n[1]]),l=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])||1;return[(p1[0]-p0[0])/l,(p1[1]-p0[1])/l]})();
+  let g=L(A,B,'#fff',9*u,'stroke-linecap="butt"');const col=sel?'#e0620d':op.type==='door'?'#d96920':'#238ab6';
+  if(op.type==='window'){for(const v of[-2.2,2.2])g+=L([A[0]+ns[0]*v*u,A[1]+ns[1]*v*u],[B[0]+ns[0]*v*u,B[1]+ns[1]*v*u],col,(sel?2.2:1.6)*u);g+=L([A[0]-ns[0]*4*u,A[1]-ns[1]*4*u],[A[0]+ns[0]*4*u,A[1]+ns[1]*4*u],col,1.6*u)+L([B[0]-ns[0]*4*u,B[1]-ns[1]*4*u],[B[0]+ns[0]*4*u,B[1]+ns[1]*4*u],col,1.6*u)}
+  else{const hb=op.hinge==='b',H=hb?B:A,Oj=hb?A:B,w=Math.hypot(B[0]-A[0],B[1]-A[1]),dir=op.swing==='out'?[-ns[0],-ns[1]]:ns,E=[H[0]+dir[0]*w,H[1]+dir[1]*w];
+   const cr=(Oj[0]-H[0])*(E[1]-H[1])-(Oj[1]-H[1])*(E[0]-H[0]),sw=cr>0?1:0;
+   g+=`<path d="M ${F(Oj)} A ${f1(w)} ${f1(w)} 0 0 ${sw} ${F(E)}" fill="none" stroke="${col}" stroke-width="${1.1*u}" stroke-dasharray="${4*u} ${3*u}"/>`;
+   if(sel){const ang=cr>0?90:-90;g+=`<line x1="${f1(H[0])}" y1="${f1(H[1])}" x2="${f1(Oj[0])}" y2="${f1(Oj[1])}" stroke="${col}" stroke-width="${3*u}" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" values="0 ${F(H).replace(',',' ')};${ang} ${F(H).replace(',',' ')};${ang} ${F(H).replace(',',' ')};0 ${F(H).replace(',',' ')}" keyTimes="0;.4;.75;1" dur="2.6s" repeatCount="indefinite"/></line>`}
+   else g+=L(H,E,col,2.2*u,'stroke-linecap="round"');g+=`<circle cx="${f1(H[0])}" cy="${f1(H[1])}" r="${2.4*u}" fill="${col}"/>`}
+  out+=`<g class="it28${sel?' sel':''}">${g}</g>`});
+ /* group hit areas (one per opening / block) */
+ if(o.hit)items28(r).forEach(it=>{if(it.src==='op'||it.src==='blk'){const p=pos28(r,it.src,it.i);if(p)out+=band(p.wall,p.off,p.w,.5,it.src,it.i)}});
+ /* radiators: body inside, riser pipes, niche with corner beads */
+ radsOf(r).forEach((rd,i)=>{const wall=num(rd.wall),off=num(rd.offset),w=num(rd.w),a=onWall28(r,wall,off),b=onWall28(r,wall,off+w);if(!a||!b)return;const sel=isSel('rad',i),col=sel?'#e0620d':'#c2410c',n=a.inn,dep=Math.max(5*u,.09*s)/s,gap=num(rd.niche)>0?0:3*u/s;
+  const P=(q,k)=>T([q[0]+n[0]*k,q[1]+n[1]*k]);let g='';
+  if(num(rd.niche)>0){const nd=num(rd.niche),e=.03;const a2=onWall28(r,wall,off-e),b2=onWall28(r,wall,off+w+e);g+=`<polygon points="${F(P(a2.q,0))} ${F(P(b2.q,0))} ${F(P(b2.q,-nd))} ${F(P(a2.q,-nd))}" fill="#fff" stroke="${col}" stroke-width="${1*u}" stroke-dasharray="${3*u} ${2*u}"/>`;
+   for(const q of[a2.q,b2.q]){const c=P(q,0);g+=`<circle cx="${f1(c[0])}" cy="${f1(c[1])}" r="${2*u}" fill="${col}"/>`}}
+  const base=num(rd.niche)>0?-num(rd.niche)+.02:gap;g+=`<polygon points="${F(P(a.q,base))} ${F(P(b.q,base))} ${F(P(b.q,base+dep))} ${F(P(a.q,base+dep))}" fill="#fff" stroke="${col}" stroke-width="${(sel?2.2:1.4)*u}"/>`;
+  for(const side of pipes28(rd)){const at=side==='a'?onWall28(r,wall,off-.06):onWall28(r,wall,off+w+.06);if(!at)continue;const c=P(at.q,.05);g+=`<circle cx="${f1(c[0])}" cy="${f1(c[1])}" r="${Math.max(3*u,.025*s)}" fill="#fde2d4" stroke="${col}" stroke-width="${1.2*u}"/>`}
+  out+=`<g class="it28${sel?' sel':''}">${g}</g>`+band(wall,off,w,.25,'rad',i)});
+ /* air conditioners (indoor unit) */
+ acsOf(r).forEach((ac,i)=>{const wall=num(ac.wall),off=num(ac.offset),w=num(ac.w),a=onWall28(r,wall,off),b=onWall28(r,wall,off+w);if(!a||!b)return;const sel=isSel('ac',i),col=sel?'#e0620d':'#0369a1',n=a.inn,dep=Math.max(7*u,.2*s)/s,P=(q,k)=>T([q[0]+n[0]*k,q[1]+n[1]*k]),m=onWall28(r,wall,off+w/2),c=P(m.q,dep/2);
+  out+=`<g class="it28${sel?' sel':''}"><polygon points="${F(P(a.q,.01))} ${F(P(b.q,.01))} ${F(P(b.q,.01+dep))} ${F(P(a.q,.01+dep))}" fill="#e0f2fe" stroke="${col}" stroke-width="${(sel?2.2:1.4)*u}"/><text x="${f1(c[0])}" y="${f1(c[1])}" font-size="${9*u}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${col}">❄</text></g>`+band(wall,off,w,.3,'ac',i)});
+ /* electrical points */
+ (r.points||[]).forEach((pt,i)=>{const d=ELECTRICAL[pt.type];if(!d)return;const sel=isSel('pt',i);let q=pointLocal(r,pt);if(!q)return;let c=T(q);
+  if(d.wall){const w=onWall28(r,num(pt.wall),num(pt.offset));if(w){const p1=T([q[0]+w.inn[0],q[1]+w.inn[1]]),l=Math.hypot(p1[0]-c[0],p1[1]-c[1])||1;c=[c[0]+(p1[0]-c[0])/l*9*u,c[1]+(p1[1]-c[1])/l*9*u]}}
+  const col=sel?'#e0620d':/socket|lan|tv|output/.test(pt.type)?'#2465b7':/switch/.test(pt.type)?'#0f766e':'#9b6008',R0=(d.wall?7.5:9)*u;
+  let g=`<circle cx="${f1(c[0])}" cy="${f1(c[1])}" r="${R0}" fill="${d.wall?'#fff':'#fff7cc'}" stroke="${col}" stroke-width="${(sel?2.4:1.5)*u}"/>`;
+  if(!d.wall)g+=L([c[0]-R0*.7,c[1]-R0*.7],[c[0]+R0*.7,c[1]+R0*.7],col,.9*u)+L([c[0]-R0*.7,c[1]+R0*.7],[c[0]+R0*.7,c[1]-R0*.7],col,.9*u);
+  else g+=`<text x="${f1(c[0])}" y="${f1(c[1]+.4*u)}" font-size="${(d.code.length>2?5:6.5)*u}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#123">${esc(d.code)}</text>`;
+  out+=`<g class="it28${sel?' sel':''}">${g}${o.hit?`<circle cx="${f1(c[0])}" cy="${f1(c[1])}" r="${Math.max(16*u,R0+6*u)}" fill="transparent"${ed('pt',i)} class="hit28"/>`:''}</g>`});
+ return out}
+function pipes28(rd){const p=rd.pipe||'';return p==='both'?['a','b']:p==='a'||p==='b'?[p]:[]}
+
+/* dimension overlay for the selected item: distances to the left and right corners (or to two walls) */
+function selDims28(r,T,s,sel,u=1){const p=pos28(r,sel.src,sel.i);if(!p)return'';const lab=(x,y,t)=>`<text x="${f1(x)}" y="${f1(y)}" font-size="${12*u}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#e0620d" paint-order="stroke" stroke="#fff" stroke-width="${4*u}">${t}</text>`;
+ const ln=(a,b,dash)=>`<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#e0620d" stroke-width="${1.6*u}"${dash?` stroke-dasharray="${3*u} ${3*u}"`:''}/>`;let out='';
+ if(p.x!=null){const q=[p.x,p.y];for(const w of nearWalls28(r,q)){const l=wallLine28(r,w),d=dWall28(r,w,q),f=[q[0]-l.n[0]*d,q[1]-l.n[1]*d],A=T(q),B=T(f);out+=ln(A,B,1)+lab((A[0]+B[0])/2,(A[1]+B[1])/2,mm(Math.abs(d)))}return'<g pointer-events="none">'+out+'</g>'}
+ const {L,fl,fr,lis}=lr28(r,p.wall,p.off,p.w),seg=geo(r).segments[p.wall-1];if(!seg)return'';const k=22*u/s;
+ const at=d=>{const w=onWall28(r,p.wall,d);return T([w.q[0]+w.inn[0]*k,w.q[1]+w.inn[1]*k])};
+ const c0=lis?0:L,e0=lis?p.off:p.off+p.w,e1=lis?p.off+p.w:p.off,c1=lis?L:0;
+ const A=at(c0),B=at(e0),C=at(e1),D=at(c1);out+=ln(A,B)+ln(C,D);for(const q of[A,B,C,D])out+=`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="${2.2*u}" fill="#e0620d"/>`;
+ out+=lab((A[0]+B[0])/2,(A[1]+B[1])/2,'⬅ '+mm(fl))+lab((C[0]+D[0])/2,(C[1]+D[1])/2,mm(fr)+' ➡');return'<g pointer-events="none">'+out+'</g>'}
+
+/* ---------- the room plan editor (screen) ---------- */
+const VIEWS28={};
+function peSVG28(r,opt={}){const W=600,H=440;if(!r.walls.length)return'<div class="card" style="text-align:center;padding:26px 12px"><div style="font-size:30px">📐</div><b>План появится после первой стены</b><p class="small muted" style="margin:4px 0 0">Замерьте стену дальномером или введите длину ниже</p></div>';const P=planPrims(r,W,H,46),g=geo(r),sel=opt.sel;
+ let s=`<svg class="pe28" data-view="room" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="План помещения">`;
+ VIEWS28.room={T:{[r.id]:P.T},s:P.s,redraw:svg=>{const R2=RM();if(R2)svg.innerHTML=peInner28(R2,planPrims(R2,W,H,46),opt)}};
+ return s+peInner28(r,P,opt)+'</svg>'}
+function peInner28(r,P,opt){const g=geo(r),sel=opt.sel;let s='';
+ if(P.closed)s+=`<path d="${pathData(P.contour)} Z" fill="${FLOORC(r)}" opacity=".45"/>`;
+ for(const w of P.walls){const on=opt.wall===w.i+1;s+=`<path d="${pathData(w.path)}" data-wall28="${w.i+1}" fill="none" stroke="${wallColor(r)}" stroke-width="8" stroke-linecap="round" style="cursor:pointer"/>`+(on?`<path d="${pathData(w.path)}" fill="none" stroke="#e0620d" stroke-width="3" stroke-dasharray="8 5" pointer-events="none"/>`:'')+`<path d="${pathData(w.path)}" data-wall28="${w.i+1}" fill="none" stroke="transparent" stroke-width="22"/>`;
+  const x=w.mid[0]+w.nx*24,y=w.mid[1]+w.ny*24;s+=`<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" paint-order="stroke" stroke="var(--surface,#fff)" stroke-width="4" fill="currentColor">${fmt(w.len,2)}</text>`;
+  const ix=w.mid[0]-w.nx*16,iy=w.mid[1]-w.ny*16;s+=`<circle cx="${f1(ix)}" cy="${f1(iy)}" r="9" fill="${on?'#e0620d':'var(--acc)'}" data-wall28="${w.i+1}"/><text x="${f1(ix)}" y="${f1(iy)}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="700" fill="var(--acc-ink,#fff)" pointer-events="none">${w.i+1}</text>`}
+ /* corner numbers (corner k = start of wall k) */
+ if(P.closed&&opt.corners!==false){const c=roomCentroid(P.contour.slice(0,-1));P.sp.slice(0,r.walls.length).forEach((q,k)=>{const dx=q[0]-c[0],dy=q[1]-c[1],l=Math.hypot(dx,dy)||1,x=q[0]+dx/l*14,y=q[1]+dy/l*14;s+=`<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#777">у${k+1}</text>`})}
+ s+=itemsSVG28(r,P.T,P.s,{u:1,rid:r.id,sel,hit:opt.hit!==false});
+ if(sel)s+=selDims28(r,P.T,P.s,sel,1);
+ if(!P.closed&&r.walls.length){const rr=P.heading*Math.PI/180,e=P.end;s+=`<circle cx="${e[0]}" cy="${e[1]}" r="6" fill="var(--acc)"/><line x1="${e[0]}" y1="${e[1]}" x2="${e[0]+Math.cos(rr)*26}" y2="${e[1]+Math.sin(rr)*26}" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4 3"/>`}
+ if(P.sp[0])s+=`<circle cx="${P.sp[0][0]}" cy="${P.sp[0][1]}" r="5" fill="var(--ok,#2a9d5c)"/>`;
+ return s}
+
+/* ---------- generic drag engine: works on any svg[data-view] whose rooms are registered in VIEWS28[view].T ---------- */
+function affInv28(T){const o=T([0,0]),x=T([1,0]),y=T([0,1]),a=x[0]-o[0],b=y[0]-o[0],c=x[1]-o[1],d=y[1]-o[1],det=a*d-b*c||1e-9;return q=>{const X=q[0]-o[0],Y=q[1]-o[1];return[(d*X-b*Y)/det,(-c*X+a*Y)/det]}}
+const D28={on:false};
+function roomById28(rid){const p=P();return p&&p.rooms.find(x=>x.id===rid)}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('svg[data-view] [data-ed]');if(!el)return;const svg=el.ownerSVGElement||el.closest("svg"),view=svg.dataset.view,[rid,src,si,flag]=el.dataset.ed.split("|"),r=roomById28(rid);if(!r)return;
+ const i=src==="blk"?si:num(si),V=VIEWS28[view],T=!flag&&V&&V.T&&V.T[rid];e.preventDefault();e.stopPropagation();try{svg.setPointerCapture(e.pointerId)}catch(x){}
+ Object.assign(D28,{on:true,id:e.pointerId,svg,view,rid,src,i,r,T,inv:T?affInv28(T):null,x0:e.clientX,y0:e.clientY,moved:false,orig:JSON.stringify({ops:r.ops,rads:r.rads,acs:r.acs,points:r.points})})},true);
+document.addEventListener('pointermove',e=>{if(!D28.on||e.pointerId!==D28.id)return;if(!D28.moved&&Math.hypot(e.clientX-D28.x0,e.clientY-D28.y0)<6)return;if(!D28.inv)return;D28.moved=true;e.preventDefault();
+ const q0=svgXY(D28.svg,e),q=D28.inv([q0.x,q0.y]),{r,src,i}=D28;
+ if(!isWall28(r,src,i)){const x=Math.round(q[0]*100)/100,y=Math.round(q[1]*100)/100;if(!pointInside23(r,[x,y]))return;const o=obj28(r,src,i);o.x=x;o.y=y}
+ else{const sn=wallSnap(r,q);if(!sn)return;const p=pos28(r,src,i),L=wlen(r,sn.wall-1);if(p.w>L+.001)return;let off=sn.t*L-p.w/2;off=Math.round(Math.max(0,Math.min(L-p.w,off))*100)/100;setPos28(r,src,i,sn.wall,off)}
+ UI.sel28={rid:r.id,src,i};const V=VIEWS28[D28.view];if(V&&V.redraw)V.redraw(D28.svg);
+ const p=pos28(r,src,i);if(p.x==null){const z=lr28(r,p.wall,p.off,p.w);tip28('Стена '+p.wall+': ⬅ '+mm(z.fl)+' мм · '+mm(z.fr)+' мм ➡')}else{tip28(nearWalls28(r,[p.x,p.y]).map(w=>'до стены '+w+': '+mm(Math.abs(dWall28(r,w,[p.x,p.y])))).join(' · '))}},{passive:false});
+function tip28(t){let el=document.getElementById('tip28');if(!el){el=document.createElement('div');el.id='tip28';document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(tip28.h);tip28.h=setTimeout(()=>el.hidden=true,1600)}
+function end28(e){if(!D28.on||e.pointerId!==D28.id)return;const d={...D28};D28.on=false;D28.sup=true;setTimeout(()=>D28.sup=false,350);
+ if(e.type==='pointercancel'&&d.moved){const o=JSON.parse(d.orig);Object.assign(d.r,o);render();return}
+ if(d.moved){const bad=overlap28(d.r);if(bad)toast(bad);save()}UI.sel28={rid:d.rid,src:d.src,i:d.i};UI.peAct=null;if(d.view!=='room')UI.peSheet=true;render()}
+document.addEventListener('pointerup',end28,true);document.addEventListener('pointercancel',end28,true);
+document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('svg[data-view] [data-ed]'))e.preventDefault()},{passive:false,capture:true});
+document.addEventListener('click',e=>{if(D28.sup&&e.target.closest&&e.target.closest('svg[data-view]')){e.stopPropagation();e.preventDefault()}},true);
+/* tap on a wall in the room editor chooses the wall for new items */
+document.addEventListener('click',e=>{const w=e.target.closest&&e.target.closest('svg.pe28 [data-wall28]');if(!w)return;e.stopPropagation();UI.peWall=num(w.dataset.wall28);UI.sel28=null;render();toast('Выбрана стена '+UI.peWall+' — новые элементы встанут на неё')},true);
+function overlap28(r){for(let w=1;w<=r.walls.length;w++){const xs=items28(r).filter(x=>x.src==='op'||x.src==='blk').map(x=>pos28(r,x.src,x.i)).filter(p=>p&&p.wall===w).sort((a,b)=>a.off-b.off);for(let k=1;k<xs.length;k++)if(xs[k].off<xs[k-1].off+xs[k-1].w-.005)return'Внимание: проёмы на стене '+w+' пересекаются'}return''}
+
+/* ---------- adding items ---------- */
+function defWall28(r,cat){const n=r.walls.length;if(UI.peWall>=1&&UI.peWall<=n)return UI.peWall;let best=1,bl=0;for(let k=1;k<=n;k++){const L=wlen(r,k-1),busy=(r.ops||[]).some(o=>num(o.wall)===k);const sc=L-(busy&&/window|door|balcony/.test(cat)?100:0);if(sc>bl){bl=sc;best=k}}return best}
+function freeOff28(r,wall,w){const L=wlen(r,wall-1),busy=items28(r).filter(x=>x.src==='op'||x.src==='blk').map(x=>pos28(r,x.src,x.i)).filter(p=>p&&p.wall===wall).sort((a,b)=>a.off-b.off);let c=(L-w)/2;
+ const hit=o=>busy.some(b=>Math.min(o+w,b.off+b.w)-Math.max(o,b.off)>.001);if(!hit(c))return c;let best=null;for(let o=0;o<=L-w+1e-9;o+=.05)if(!hit(o)&&(best==null||Math.abs(o-c)<Math.abs(best-c)))best=o;return best==null?c:best}
+function add28(cat,type){const r=RM();if(!r)return;if(!geo(r).closed){toast('Сначала замкните контур помещения');return}const H=num(r.h)||2.7;let wall=defWall28(r,cat),sel=null;const L=()=>wlen(r,wall-1);
+ if(cat==='window'||cat==='door'){const w=cat==='door'?.8:1.2;if(L()<w)wall=defWall28(r,'');const op={type:cat,wall,w,h:cat==='door'?2:1.4,offset:r3(freeOff28(r,wall,w))};if(cat==='window')op.sill=.85;else{op.hinge=hingeAB28(r,'left');op.swing='in'}(r.ops=r.ops||[]).push(op);sel={src:'op',i:r.ops.length-1}}
+ else if(cat==='balcony'){const dw=.7,ww=.9,off=r3(freeOff28(r,wall,dw+ww)),grp=uid(),lis=leftIsStart27(r);const door={type:'door',wall,w:dw,h:2.1,grp,blk:1,hinge:hingeAB28(r,'left'),swing:'in'},win={type:'window',wall,w:ww,h:1.4,sill:.7,grp,blk:1};
+  if(lis){door.offset=off;win.offset=r3(off+dw)}else{win.offset=off;door.offset=r3(off+ww)}(r.ops=r.ops||[]).push(door,win);sel={src:'blk',i:grp}}
+ else if(cat==='radiator'){const win=(r.ops||[]).find(o=>o.type==='window'&&num(o.wall)===wall&&!o.grp)||(r.ops||[]).find(o=>o.type==='window'&&!o.grp);if(win)wall=num(win.wall);const w=.8,a=win&&opAt(r,win),off=a?a.off+a.w/2-w/2:(L()-w)/2;radsOf(r).push({id:uid(),wall,offset:r3(Math.max(0,Math.min(L()-w,off))),w,h:.5,y:.1,pipe:'',niche:0});sel={src:'rad',i:r.rads.length-1}}
+ else if(cat==='ac'){const w=.8;acsOf(r).push({id:uid(),wall,offset:r3((L()-w)/2),w,h:.3,y:r3(Math.max(0,H-.15-.3))});sel={src:'ac',i:r.acs.length-1}}
+ else{const t=type||CAT28[cat].types[0],d=ELECTRICAL[t],pt={id:uid(),type:t,label:'',height:d.height??H};
+  if(d.wall){pt.wall=wall;pt.offset=r3(Math.min(L(),offFromLeft28(r,wall,.3,0)));pt.height=Math.min(pt.height,H)}else{const c=centroid28(r);pt.x=r3(c[0]);pt.y=r3(c[1])}
+  (r.points=r.points||[]).push(pt);sel={src:'pt',i:r.points.length-1}}
+ UI.sel28={rid:r.id,...sel};UI.peAct=firstAct28(r,UI.sel28);save();render();toast('Добавлено: '+name28(r,sel.src,sel.i).toLowerCase()+'. Перетащите на плане или введите размеры')}
+function del28(r,sel){if(sel.src==='blk')r.ops=r.ops.filter(o=>o.grp!==sel.i);else if(sel.src==='op')r.ops.splice(sel.i,1);else if(sel.src==='rad')r.rads.splice(sel.i,1);else if(sel.src==='ac')r.acs.splice(sel.i,1);else r.points.splice(sel.i,1);UI.sel28=null;save();render();toast('Удалено')}
+
+/* ---------- item panel: distances from the corners, sizes, door hinge / swing ---------- */
+function fields28(r,sel){const o=obj28(r,sel.src,sel.i);if(!o)return[];if(sel.src==='pt'&&!ELECTRICAL[o.type].wall)return[['d1','до стены'],['d2','до стены']];
+ const base=[['fl','⬅ от левого угла'],['fr','от правого угла ➡']];
+ if(sel.src==='op')return o.type==='door'?[...base,['w','ширина проёма'],['h','высота проёма']]:[...base,['w','ширина окна'],['h','высота окна'],['y','от пола до подоконника']];
+ if(sel.src==='blk')return[...base,['dw','ширина двери'],['dh','высота двери'],['ww','ширина окна'],['wh','высота окна'],['y','подоконник от пола']];
+ if(sel.src==='rad')return[...base,['w','длина'],['h','высота'],['y','от пола до низа'],...(num(o.niche)>0?[['nd','глубина ниши']]:[])];
+ if(sel.src==='ac')return[...base,['w','ширина блока'],['h','высота блока'],['y','от пола до низа']];
+ return[...base,['y','от пола до центра']]}
+const firstAct28=(r,sel)=>hasBle28()?(fields28(r,sel)[0]||[])[0]||null:null;
+function val28(r,sel,k){const o=obj28(r,sel.src,sel.i);if(!o)return null;const p=pos28(r,sel.src,sel.i);
+ if(k==='fl'||k==='fr'){const z=lr28(r,p.wall,p.off,p.w);return k==='fl'?z.fl:z.fr}
+ if(k==='d1'||k==='d2'){const ws=sel.w||(sel.w=nearWalls28(r,[p.x,p.y]));const w=ws[k==='d1'?0:1];return w?Math.abs(dWall28(r,w,[p.x,p.y])):null}
+ if(sel.src==='blk'){const ms=blkOps28(r,sel.i),d=ms.find(m=>m.type==='door'),w=ms.find(m=>m.type==='window');return{dw:d&&d.w,dh:d&&d.h,ww:w&&w.w,wh:w&&w.h,y:w&&(w.sill??0)}[k]}
+ if(sel.src==='op')return k==='y'?num(o.sill??.85):num(o[k]);if(sel.src==='rad'&&k==='nd')return num(o.niche);if(sel.src==='pt')return k==='y'?num(o.height):null;return num(o[k])}
+function set28(r,sel,k,v){const o=obj28(r,sel.src,sel.i);if(!o||!(v>=0)||v>1000){toast('Введите число в метрах');return false}const H=num(r.h)||2.7;v=r3(v);
+ if(k==='d1'||k==='d2'){const ws=sel.w||(sel.w=nearWalls28(r,[o.x,o.y]));if(ws.length<2){toast('Нет второй стены для привязки');return false}const d1=k==='d1'?v:val28(r,sel,'d1'),d2=k==='d2'?v:val28(r,sel,'d2'),q=solve28(r,ws[0],d1,ws[1],d2);if(!q||!pointInside23(r,q)){toast('Точка выходит за пределы помещения');return false}o.x=r3(q[0]);o.y=r3(q[1]);return true}
+ const p=pos28(r,sel.src,sel.i);
+ if(k==='fl'||k==='fr'){const z=lr28(r,p.wall,p.off,p.w),fl=k==='fl'?v:z.L-p.w-v;if(fl<-.001||fl+p.w>z.L+.001){toast('Не помещается: стена '+p.wall+' — '+mm(z.L)+' мм');return false}setPos28(r,sel.src,sel.i,p.wall,offFromLeft28(r,p.wall,Math.max(0,fl),p.w));return true}
+ if(k==='y'){if(sel.src==='pt'){if(v>H+.001){toast('Выше потолка ('+mm(H)+' мм)');return false}o.height=v;return true}if(sel.src==='blk'){const w=blkOps28(r,sel.i).find(m=>m.type==='window');if(w)w.sill=v;return true}if(sel.src==='op'){o.sill=v;return true}o.y=v;return true}
+ if(sel.src==='blk'){const ms=blkOps28(r,sel.i),d=ms.find(m=>m.type==='door'),w=ms.find(m=>m.type==='window'),fl=lr28(r,p.wall,p.off,p.w).fl;if(k==='dh')d.h=v;else if(k==='wh')w.h=v;else{if(!(v>0))return false;(k==='dw'?d:w).w=v;layoutBlk28(r,sel.i,fl)}return true}
+ if(k==='nd'){o.niche=v;return true}
+ if(k==='w'){if(!(v>0)){toast('Ширина должна быть больше нуля');return false}const z=lr28(r,p.wall,p.off,p.w),L=z.L;if(v>L+.001){toast('Шире стены ('+mm(L)+' мм)');return false}o.w=v;const fl=Math.min(z.fl,L-v);setPos28(r,sel.src,sel.i,p.wall,offFromLeft28(r,p.wall,fl,v));return true}
+ if(k==='h'){if(!(v>0))return false;o.h=v;return true}return false}
+/* balcony block: rebuild member offsets keeping the left edge and the door side */
+function layoutBlk28(r,g,fl){const ms=blkOps28(r,g),d=ms.find(m=>m.type==='door'),w=ms.find(m=>m.type==='window'),wall=num(d.wall),total=num(d.w)+num(w.w),off=offFromLeft28(r,wall,fl,total),lis=leftIsStart27(r),doorLeft=blkDoorSide28(r,g)==='left';
+ const first=(doorLeft===lis)?d:w,second=first===d?w:d;first.offset=r3(off);second.offset=r3(off+num(first.w))}
+function blkDoorSide28(r,g){const ms=blkOps28(r,g),d=ms.find(m=>m.type==='door'),w=ms.find(m=>m.type==='window');if(!d||!w)return'left';const dStart=num(d.offset)<num(w.offset);return dStart===leftIsStart27(r)?'left':'right'}
+function wallMove28(r,sel,wall){const p=pos28(r,sel.src,sel.i);if(!p||p.x!=null)return;const L=wlen(r,wall-1);if(p.w>L+.001){toast('Не помещается на стене '+wall+' ('+mm(L)+' мм)');return}const z=lr28(r,p.wall,p.off,p.w),fl=Math.min(z.fl,L-p.w);setPos28(r,sel.src,sel.i,wall,offFromLeft28(r,wall,fl,p.w));if(sel.src==='blk'||sel.src==='op')for(const m of sel.src==='blk'?blkOps28(r,sel.i):[obj28(r,sel.src,sel.i)])if(m.type==='door'&&m.hinge){/* keep the visual side */}}
+function panel28(r,sel,asSheet){const o=obj28(r,sel.src,sel.i);if(!o){UI.sel28=null;return''}const p=pos28(r,sel.src,sel.i),ble=hasBle28(),act=UI.peAct;
+ const inp=(k,lab)=>{const v=val28(r,sel,k),on=act===k;return`<label class="f pl-f ${on?'on':''}"><span>${lab}, мм</span><span class="row" style="gap:6px;flex-wrap:nowrap"><input inputmode="numeric" data-pe="${k}" value="${v!=null?mm(v):''}" placeholder="${on?'← замер':''}">${ble?`<button type="button" class="btn ${on?'':'sec'} sm" data-a="peact" data-k="${k}" aria-label="Замер дальномером">📏</button>`:''}</span></label>`};
+ let h=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">${CAT28[catOf28(r,sel)]?.i||'•'} ${esc(name28(r,sel.src,sel.i))} <span class="small muted">${esc(tag28(r,sel.src,sel.i))}</span></h3><button class="icon" data-a="peclose" aria-label="Закрыть">×</button></div>`;
+ if(sel.src==='pt'){const cat=typeCat28(o.type),T=cat==='socket'?SOCK28.map(([t,n])=>[t,n+'-я']).concat([['socket_power','силовая'],['lan','интернет'],['tv','ТВ'],['output','вывод']]):(CAT28[cat]?.types||[]).map(t=>[t,ELECTRICAL[t].name]);
+  if(T.length>1)h+=`<div class="chips" style="margin-top:8px">${cat==='socket'?'<span class="small muted" style="align-self:center">Постов:</span>':''}${T.map(([t,n])=>`<button class="chip" data-a="petype" data-t="${t}" aria-pressed="${o.type===t}">${esc(n)}</button>`).join('')}</div>`}
+ if(p.x==null){const c=corners27(r,p.wall-1);h+=`<div class="small muted" style="margin:10px 0 4px">Стена (нажмите, чтобы перенести)</div><div class="chips">${r.walls.map((w,k)=>`<button class="chip" data-a="pewall" data-i="${k+1}" aria-pressed="${p.wall===k+1}">${k+1}</button>`).join('')}</div>
+  <p class="small" style="margin:8px 0 2px">Стоя в комнате лицом к стене ${p.wall}: слева угол ${c.left}, справа угол ${c.right}. Меряйте от любого — второе посчитается само.</p>`}
+ else{const ws=sel.w||(sel.w=nearWalls28(r,[p.x,p.y]));h+=`<p class="small" style="margin:8px 0 2px">Расстояние от центра до стен ${ws.join(' и ')}. Перетащите точку на плане или введите размеры.</p>`}
+ const F=fields28(r,sel);h+=`<div class="grid2">${F.map(([k,n])=>inp(k,k==='d1'||k==='d2'?n+' '+((sel.w||[])[k==='d1'?0:1]||''):n)).join('')}</div>`;
+ if(p.x!=null)h+=`<div class="row" style="margin-top:6px"><button class="btn sec" data-a="pecenter">По центру комнаты</button></div>`;
+ const door=sel.src==='op'&&o.type==='door'?o:sel.src==='blk'?blkOps28(r,sel.i).find(m=>m.type==='door'):null;
+ if(sel.src==='blk'){const ds=blkDoorSide28(r,sel.i);h+=`<div class="small muted" style="margin:10px 0 4px">Дверь в блоке</div><div class="chips"><button class="chip" data-a="peblk" data-v="left" aria-pressed="${ds==='left'}">⬅ дверь слева</button><button class="chip" data-a="peblk" data-v="right" aria-pressed="${ds==='right'}">дверь справа ➡</button></div>`}
+ if(door){const hs=hingeSide28(r,door.hinge||'a'),sw=door.swing==='out'?'out':'in';h+=`<div class="small muted" style="margin:10px 0 4px">Петли (стоя в комнате лицом к двери)</div><div class="chips"><button class="chip" data-a="pehinge" data-v="left" aria-pressed="${hs==='left'}">⬅ петли слева</button><button class="chip" data-a="pehinge" data-v="right" aria-pressed="${hs==='right'}">петли справа ➡</button></div>
+  <div class="small muted" style="margin:8px 0 4px">Открывается</div><div class="chips"><button class="chip" data-a="peswing" data-v="in" aria-pressed="${sw==='in'}">внутрь комнаты</button><button class="chip" data-a="peswing" data-v="out" aria-pressed="${sw==='out'}">наружу</button><button class="chip" data-a="peflip">↻ поменять</button></div>
+  <p class="small muted" style="margin:6px 0 0">На плане створка анимирована — видно, куда она открывается.</p>`}
+ if(sel.src==='rad'){const pp=o.pipe||'',lis=leftIsStart27(r),L='a',Rr='b',left=lis?'a':'b',right=lis?'b':'a';h+=`<div class="small muted" style="margin:10px 0 4px">Труба (стояк) от пола до потолка</div><div class="chips"><button class="chip" data-a="pepipe" data-v="" aria-pressed="${!pp}">нет</button><button class="chip" data-a="pepipe" data-v="${left}" aria-pressed="${pp===left}">⬅ слева</button><button class="chip" data-a="pepipe" data-v="${right}" aria-pressed="${pp===right}">справа ➡</button><button class="chip" data-a="pepipe" data-v="both" aria-pressed="${pp==='both'}">с двух сторон</button></div>
+  <div class="small muted" style="margin:8px 0 4px">Радиатор в нише стены</div><div class="chips"><button class="chip" data-a="peniche" data-v="0" aria-pressed="${!(num(o.niche)>0)}">нет</button><button class="chip" data-a="peniche" data-v="1" aria-pressed="${num(o.niche)>0}">в нише — нужны уголки</button></div>`}
+ h+=`<div class="row" style="margin-top:12px"><button class="btn grow" data-a="peclose">Готово</button><button class="btn ghost danger" data-a="pedel">Удалить</button></div>`;
+ return asSheet?`<div class="pl-back" data-a="peclose"></div><div class="pl-sheet pe-sheet" role="dialog">${h}</div>`:`<div class="card pe-panel" id="pe28">${h}</div>`}
+function catOf28(r,sel){return(items28(r).find(x=>x.src===sel.src&&String(x.i)===String(sel.i))||{}).cat}
+
+/* ---------- step-by-step room screen ---------- */
+const STEPS28=[['walls','Стены','📐'],['height','Высота','↕️'],['window','Окна','🪟'],['balcony','Балкон. блок','🚪'],['door','Двери','🚪'],['radiator','Радиаторы','♨️'],['socket','Розетки','🔌'],['switch','Выключатели','🔘'],['light','Свет','💡'],['ac','Кондиционер','❄️'],['photo','Фото','📷'],['done','Готово','✅']];
+const HINT28={walls:'Обойдите комнату по часовой стрелке: замер стены → поворот → следующая стена. Когда вернётесь к началу — «Замкнуть».',
+ height:'Высоту меряйте в каждом углу и в центре — так видно перепад потолка. Средняя высота пойдёт в расчёты.',
+ window:'Нажмите «+ Окно», затем перетащите его на нужную стену или введите расстояние от угла.',balcony:'Балконный блок — дверь и окно в одном проёме. Выберите, с какой стороны дверь и куда она открывается.',
+ door:'Поставьте дверь, выберите сторону петель и направление открывания — створка анимирована на плане.',radiator:'Радиатор встаёт под окно. Отметьте трубу-стояк от пола до потолка или нишу (нужны уголки).',
+ socket:'Выберите 1-, 2-, 3- или 4-постовую розетку, интернет или ТВ. Отступ — от угла до центра, высота — от пола до центра.',switch:'Выключатель: отступ от угла и высота от пола.',
+ light:'Люстра и потолочные светильники ставятся по центру — перетащите точку, рядом видно расстояние до стен. Бра — на стену.',ac:'Внутренний блок кондиционера: отступ от угла, ширина и высота от пола.',photo:'Снимите каждую стену — фото привяжется к стене и появится в 3D.',done:''};
+function stepCount28(r,k){if(k==='walls')return r.walls.length;if(k==='height')return(hStat28(r)||{}).n||0;if(k==='photo')return(r.photos||[]).length;if(CAT28[k])return items28(r).filter(x=>x.cat===k).length;return 0}
+function vWizard28(){const p=P(),r=RM();if(!r)return vProject();const g=geo(r),step=UI.step28&&STEPS28.some(s=>s[0]===UI.step28)?UI.step28:(g.closed?'height':'walls');UI.step28=step;if(step==='walls')UI.target='wall';
+ let h=bar(r.name,'<button class="icon" data-a="delroom" aria-label="Удалить помещение">🗑</button>');
+ h+=`<div class="steps28" role="tablist">${STEPS28.map(([k,n,ic],j)=>{const c=stepCount28(r,k),dis=k!=='walls'&&!g.closed;return`<button class="st28 ${k===step?'on':''}" data-a="step28" data-k="${k}" ${dis?'disabled':''}><span>${ic}</span><b>${j+1}. ${n}</b>${c?`<i>${c}</i>`:''}</button>`}).join('')}</div>`;
+ const sel=UI.sel28&&UI.sel28.rid===r.id&&obj28(r,UI.sel28.src,UI.sel28.i)?UI.sel28:null;if(!sel)UI.sel28=null;
+ h+=`<div class="pe-wrap">${peSVG28(r,{sel,wall:UI.peWall})}</div>`;
+ h+=bleCard();
+ const hint=HINT28[step];if(hint&&!sel)h+=`<p class="small muted hint28">${hint}</p>`;
+ if(sel)h+=panel28(r,sel,false);
+ else if(step==='walls')h+=wallsCard28(r);
+ else if(step==='height')h+=heightCard28(r);
+ else if(step==='photo')h+=photosCard27(r);
+ else if(step==='done')h+=doneCard28(p,r);
+ else h+=catCard28(r,step);
+ const i=STEPS28.findIndex(s=>s[0]===step),prev=STEPS28[i-1],next=STEPS28[i+1];
+ setTimeout(fillPh27,0);
+ return h+foot(`${prev?`<button class="btn sec" data-a="step28" data-k="${prev[0]}">← ${prev[1]}</button>`:'<button class="btn sec" data-a="back">К объекту</button>'}${next?`<button class="btn" data-a="step28" data-k="${next[0]}" ${!g.closed&&step==='walls'?'disabled':''}>${next[1]} →</button>`:'<button class="btn" data-a="back">К объекту</button>'}`)}
+function wallsCard28(r){const turnChips=[[90,'↱ Вправо 90°'],[-90,'↰ Влево 90°'],[0,'↑ Прямо'],['c','Угол…']],g=geo(r);
+ return`<div class="card">${r.closed?`<p class="ok28">✓ Контур замкнут: ${fmt(g.floor,2)} м², периметр ${fmt(g.perim,2)} м. Переходите к высоте.</p>`:`<div class="small muted">Поворот перед следующей стеной</div><div class="chips" style="margin-top:6px">${turnChips.map(([k,n])=>`<button class="chip" data-a="turn" data-t="${k}" aria-pressed="${k==='c'?![90,-90,0].includes(UI.turn):UI.turn===k}">${n}</button>`).join('')}</div>
+ ${![90,-90,0].includes(UI.turn)?`<label class="f" style="margin-top:8px">Угол поворота, ° (вправо +, влево −)<input inputmode="decimal" id="ang" value="${UI.turn}"></label>`:''}
+ <div class="row" style="margin-top:10px"><input class="grow" id="wlen" inputmode="decimal" placeholder="Длина стены ${r.walls.length+1}, м"><button class="btn" data-a="addwall">+ Стена</button></div>
+ <label class="row small muted" style="margin-top:8px"><input type="checkbox" data-a="auto" ${UI.auto?'checked':''} style="width:22px;min-height:22px"> Замер с дальномера сразу добавляет стену</label>`}
+ <div class="row" style="justify-content:space-between;margin-top:12px"><b>Стены (${r.walls.length})</b><div class="row"><button class="btn ghost" data-a="undo" ${r.walls.length?'':'disabled'}>Отменить</button><button class="btn sec" data-a="close" ${r.walls.length>=2&&!r.closed?'':'disabled'}>Замкнуть</button></div></div>
+ ${!r.closed&&r.walls.length>=3?`<div class="warn" style="margin-top:8px">До начала ${fmt(g.gap,3)} м. «Замкнуть» достроит последнюю стену.</div>`:''}
+ <div class="walls" style="margin-top:8px">${r.walls.map((w,i)=>`<div class="w"><span class="num">${i+1}</span><input inputmode="decimal" data-f="w.${i}.len" value="${fmt(w.len,3)}" aria-label="Длина стены ${i+1}"><input inputmode="decimal" data-f="w.${i}.t" value="${i?w.t:'—'}" ${i?'':'disabled'} aria-label="Поворот перед стеной ${i+1}"><button class="icon" data-a="delwall" data-i="${i}" aria-label="Удалить стену">×</button></div>`).join('')}</div>
+ ${r.walls.length?'<p class="small muted" style="margin:4px 0 0">Слева длина, м; справа поворот перед стеной, °.</p>':''}
+ <details style="margin-top:8px"><summary>Быстро: прямоугольная комната</summary><div class="row" style="margin-top:6px"><input id="ra" inputmode="decimal" placeholder="Длина, м"><input id="rb" inputmode="decimal" placeholder="Ширина, м"><button class="btn sec" data-a="rect">ОК</button></div></details>
+ <details style="margin-top:6px"><summary>Изогнутая стена</summary>${curveTools23(r).replace('<div class="card" id="curveTools"><h3>Изогнутая стена</h3>','<div>')}</details></div>`}
+function heightCard28(r){const F=hFields28(r),H=r.hpts||{},act=UI.hAct||F[0][0],ble=hasBle28(),st=hStat28(r);
+ return`<div class="card"><h3>Высота потолка</h3><div class="grid3">${F.map(([k,n])=>`<label class="f pl-f ${act===k&&ble?'on':''}"><span>${n}, мм</span><span class="row" style="gap:6px;flex-wrap:nowrap"><input inputmode="numeric" data-hp="${k}" value="${H[k]?mm(H[k]):''}">${ble?`<button type="button" class="btn ${act===k?'':'sec'} sm" data-a="hact" data-k="${k}" aria-label="Замер">📏</button>`:''}</span></label>`).join('')}</div>
+ ${st?`<div class="stat" style="margin-top:10px"><div><b>${mm(num(r.h))}</b><span>средняя, мм</span></div><div><b>${mm(st.mn)}</b><span>минимум</span></div><div><b>${mm(st.mx)}</b><span>максимум</span></div><div><b class="${st.d>.01?'bad28':''}">${mm(st.d)}</b><span>перепад, мм</span></div></div>${st.d>.01?'<p class="warn" style="margin-top:8px">Перепад больше 10 мм — учтите при натяжном потолке и выравнивании.</p>':''}`:`<p class="small muted">Сейчас в расчётах: ${mm(num(r.h)||2.7)} мм.</p>`}
+ <p class="small muted" style="margin:6px 0 0">Номера углов — на плане (у1, у2…). Угол N — начало стены N.</p></div>`}
+function catCard28(r,cat){const C=CAT28[cat],its=items28(r).filter(x=>x.cat===cat);let add='';
+ if(cat==='socket')add=`<div class="pl-grid">${SOCK28.map(([t,n])=>`<button class="pl-btn" data-a="add28" data-k="socket" data-t="${t}"><span>🔌</span>${n}-постовая</button>`).join('')}<button class="pl-btn" data-a="add28" data-k="socket" data-t="socket_power"><span>⚡</span>Силовая</button><button class="pl-btn" data-a="add28" data-k="socket" data-t="lan"><span>🌐</span>Интернет</button><button class="pl-btn" data-a="add28" data-k="socket" data-t="tv"><span>📺</span>ТВ</button></div>`;
+ else if(cat==='switch')add=`<div class="pl-grid"><button class="pl-btn" data-a="add28" data-k="switch" data-t="switch"><span>🔘</span>Выключатель</button><button class="pl-btn" data-a="add28" data-k="switch" data-t="switch_pass"><span>🔁</span>Проходной</button></div>`;
+ else if(cat==='light')add=`<div class="pl-grid"><button class="pl-btn" data-a="add28" data-k="light" data-t="chandelier"><span>💡</span>Люстра</button><button class="pl-btn" data-a="add28" data-k="light" data-t="light"><span>⭕</span>Светильник</button><button class="pl-btn" data-a="add28" data-k="light" data-t="spot"><span>•</span>Спот</button><button class="pl-btn" data-a="add28" data-k="light" data-t="walllamp"><span>🕯️</span>Бра</button></div>`;
+ else add=`<button class="btn wide" data-a="add28" data-k="${cat}">+ ${C.one}</button>`;
+ return`<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">${C.i} ${C.n}</h3>${UI.peWall?`<span class="small muted">стена ${UI.peWall}</span>`:''}</div>
+ <p class="small muted" style="margin:6px 0">${UI.peWall?'Новый элемент встанет на стену '+UI.peWall+'. ':'Нажмите на стену на плане, чтобы выбрать её. '}</p>${add}
+ ${its.length?`<table class="t27" style="margin-top:10px">${its.map(it=>{const p=pos28(r,it.src,it.i),d=p.x==null?lr28(r,p.wall,p.off,p.w):null;return`<tr data-a="pesel" data-src="${it.src}" data-i="${it.i}" style="cursor:pointer"><td><b>${esc(tag28(r,it.src,it.i))} ${esc(name28(r,it.src,it.i))}</b><br><span class="small muted">${d?'стена '+p.wall+' · ⬅ '+mm(d.fl)+' · '+mm(d.fr)+' ➡':nearWalls28(r,[p.x,p.y]).map(w=>'до ст. '+w+' '+mm(Math.abs(dWall28(r,w,[p.x,p.y])))).join(' · ')}</span></td><td><button class="icon" data-a="pesel" data-src="${it.src}" data-i="${it.i}" aria-label="Изменить">✎</button></td></tr>`}).join('')}</table>`:`<p class="small muted" style="margin:8px 0 0">${cat==='balcony'||cat==='ac'?'Если нет — просто нажмите «Далее».':'Пока нет.'}</p>`}</div>`}
+function doneCard28(p,r){const g=geo(r),its=items28(r),cnt=k=>its.filter(x=>x.cat===k).length,st=hStat28(r);
+ return`<div class="card"><h3>${esc(r.name)}: замер готов</h3><div class="stat"><div><b>${fmt(g.floor,2)}</b><span>пол, м²</span></div><div><b>${fmt(g.perim,2)}</b><span>периметр, м</span></div><div><b>${mm(num(r.h))}</b><span>высота${st&&st.d>.005?' (перепад '+mm(st.d)+')':''}</span></div><div><b>${fmt(g.wall,2)}</b><span>стены, м²</span></div></div>
+ <p class="small" style="margin:10px 0 0">Окон ${cnt('window')} · дверей ${cnt('door')} · балконных блоков ${cnt('balcony')} · радиаторов ${cnt('radiator')} · розеток ${cnt('socket')} · выключателей ${cnt('switch')} · светильников ${cnt('light')} · кондиционеров ${cnt('ac')}</p></div>
+ <details class="card"><summary><b>Комментарий к помещению</b>${r.comment?' ✓':''}</summary><textarea data-f="r.comment" style="margin-top:8px" placeholder="Пожелания клиента, особенности">${esc(r.comment||'')}</textarea></details>
+ <div class="card"><button class="btn wide" data-a="roomfull">Отделка и смета помещения →</button><button class="btn sec wide" style="margin-top:8px" data-a="pdfshare">PDF клиенту</button></div>`}
+
+/* old detailed screen stays available («Отделка и смета») */
+const oldVRoom28=vRoom;
+vRoom=function(){const r=RM();if(!r)return oldVRoom28();if(UI.roomFull||UI.forceFull){const h=oldVRoom28();return h.replace(/(<div class="bar">[\s\S]*?<\/div>)/,'$1<div class="card" style="padding:10px"><button class="btn sec wide" data-a="roomwiz">← Пошаговый замер</button></div>')}return vWizard28()};
+
+/* ---------- apartment plan: same items, draggable ---------- */
+apartmentSVG=function(p){const m=apartmentPrims(p,420,420),sel=UI.sel28;let out='<svg class="apartment" id="apt" data-view="apt" viewBox="0 0 420 420" data-scale="'+m.scale+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Общий план">';const T={};
+ for(const q of m.rooms){const pp=q.screen,c=outlineCenter23(pp);T[q.r.id]=q.T;
+  out+='<g data-room="'+q.r.id+'"><path d="'+pathData(pp)+' Z" fill="'+(q.r.wc||'#f5e8d4')+'" stroke="'+(UI.layoutRoom===q.r.id?'#e0620d':'#333')+'" stroke-width="2"/>';
+  q.walls.forEach(w=>out+='<text x="'+w.mid[0]+'" y="'+(w.mid[1]-6)+'" text-anchor="middle" font-size="10" fill="#222" paint-order="stroke" stroke="white" stroke-width="3">'+fmt(w.length,2)+'</text>');
+  out+='<text x="'+c[0]+'" y="'+c[1]+'" font-size="13" fill="#222" text-anchor="middle" paint-order="stroke" stroke="white" stroke-width="3" pointer-events="none">'+esc(q.r.name)+'</text></g>';
+  out+=itemsSVG28(q.r,q.T,m.scale,{u:.6,rid:q.r.id,hit:true,sel:sel&&sel.rid===q.r.id?sel:null});if(sel&&sel.rid===q.r.id&&obj28(q.r,sel.src,sel.i))out+=selDims28(q.r,q.T,m.scale,sel,.7)}
+ VIEWS28.apt={T,redraw:svg=>{const pp=P();if(!pp)return;const v=typeof hasFloors==='function'&&hasFloors(pp)?floorView(pp,aptFloor(pp)):pp;const s=apartmentSVG(v);svg.innerHTML=s.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'')}};
+ return out+'</svg>'};
+
+/* ---------- drawing sheets: tap or drag any element ---------- */
+let REG28=null;
+const oldSheetPlan28=sheetPlan27;sheetPlan27=function(p,n,N){REG28={};const s=oldSheetPlan28(p,n,N);s.reg=REG28;REG28=null;return s};
+const oldSheetsRoom28=sheetsRoom27;sheetsRoom27=function(p,r,n0,N){REG28={};const out=oldSheetsRoom28(p,r,n0,N);const reg=REG28;REG28=null;out.forEach((s,i)=>s.reg=i?{}:reg);return out};
+const oldVDraw28=vDraw27;vDraw27=function(p){let h=oldVDraw28(p);const sh=allSheets27(p),cur=sh[Math.min(UI.sheetI||0,sh.length-1)];VIEWS28.sheet={T:cur.reg||{},redraw:svg=>{const pp=P(),s=allSheets27(pp)[Math.min(UI.sheetI||0,sh.length-1)];svg.innerHTML=s.svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'')}};
+ h=h.replace('<div class="sheetbox"><svg ','<div class="sheetbox"><svg data-view="sheet" ');
+ return h.replace('<p class="small muted">Формат А3','<p class="small"><b>Нажмите на дверь, окно, радиатор или розетку на листе</b> — можно поменять сторону петель и открывание, расстояние от угла, высоту; на плане элементы можно перетаскивать.</p><p class="small muted">Формат А3')};
+
+/* project screen: editing sheet over «Чертёж» and «План» */
+const oldVProject28=vProject;
+vProject=function(){let h=oldVProject28();const p=P(),sel=UI.sel28;if(p&&sel&&UI.peSheet&&(R.tab==='draw'||R.tab==='plan')){const r=p.rooms.find(x=>x.id===sel.rid);if(r&&obj28(r,sel.src,sel.i))h+=panel28(r,sel,true);else UI.sel28=null}return h};
+
+/* ---------- actions ---------- */
+function selRoom28(){const p=P(),s=UI.sel28;return s&&p?p.rooms.find(x=>x.id===s.rid):null}
+const oldAction28=handleUpgradeAction23;
+handleUpgradeAction23=function(action,button,room){const r=selRoom28(),sel=UI.sel28;
+ const A={
+  step28:()=>{UI.step28=button.dataset.k;UI.sel28=null;UI.peAct=null;if(UI.step28==='height'){const rr=RM();UI.hAct=hFields28(rr).find(([k])=>!(rr.hpts||{})[k])?.[0]||'c1'}render();window.scrollTo(0,0)},
+  add28:()=>add28(button.dataset.k,button.dataset.t),
+  pesel:()=>{const rr=RM();UI.sel28={rid:rr.id,src:button.dataset.src,i:button.dataset.src==='blk'?button.dataset.i:num(button.dataset.i)};UI.peAct=firstAct28(rr,UI.sel28);render();document.querySelector('.pe-wrap')?.scrollIntoView({behavior:'smooth',block:'start'})},
+  peclose:()=>{UI.sel28=null;UI.peAct=null;UI.peSheet=false;render()},
+  pedel:()=>{if(r&&sel){if(!button.dataset.sure){button.dataset.sure=1;button.textContent='Точно удалить?';return}del28(r,sel);UI.peSheet=false}},
+  peact:()=>{UI.peAct=button.dataset.k;render();toast('Сделайте замер дальномером — значение запишется сюда')},
+  pewall:()=>{if(r&&sel){wallMove28(r,sel,num(button.dataset.i));save();render()}},
+  petype:()=>{const o=r&&obj28(r,sel.src,sel.i);if(!o)return;const nt=button.dataset.t,was=!!ELECTRICAL[o.type].wall,now=!!ELECTRICAL[nt].wall;
+   if(was&&!now){const c=centroid28(r);o.x=r3(c[0]);o.y=r3(c[1]);delete o.wall;delete o.offset;o.height=num(r.h)||2.7}
+   else if(!was&&now){const sn=wallSnap(r,[num(o.x),num(o.y)]);o.wall=sn.wall;o.offset=r3(sn.t*wlen(r,sn.wall-1));delete o.x;delete o.y;o.height=Math.min(ELECTRICAL[nt].height??1.5,num(r.h)||2.7)}
+   o.type=nt;sel.w=null;UI.peAct=null;save();render()},
+  pehinge:()=>{const o=r&&doorOf28(r,sel);if(o){o.hinge=hingeAB28(r,button.dataset.v);save();render()}},
+  peswing:()=>{const o=r&&doorOf28(r,sel);if(o){o.swing=button.dataset.v;save();render()}},
+  peflip:()=>{const o=r&&doorOf28(r,sel);if(o){o.swing=o.swing==='out'?'in':'out';save();render()}},
+  peblk:()=>{if(r&&sel&&sel.src==='blk'){const p=pos28(r,'blk',sel.i),fl=lr28(r,p.wall,p.off,p.w).fl,ms=blkOps28(r,sel.i),d=ms.find(m=>m.type==='door'),w=ms.find(m=>m.type==='window');const want=button.dataset.v,lis=leftIsStart27(r),doorFirst=(want==='left')===lis,first=doorFirst?d:w,second=doorFirst?w:d,off=offFromLeft28(r,p.wall,fl,p.w);first.offset=r3(off);second.offset=r3(off+num(first.w));save();render()}},
+  pepipe:()=>{const o=r&&obj28(r,sel.src,sel.i);if(o){o.pipe=button.dataset.v;save();render()}},
+  peniche:()=>{const o=r&&obj28(r,sel.src,sel.i);if(o){o.niche=button.dataset.v==='1'?(num(o.niche)||.1):0;save();render()}},
+  pecenter:()=>{const o=r&&obj28(r,sel.src,sel.i);if(o){const c=centroid28(r);o.x=r3(c[0]);o.y=r3(c[1]);sel.w=null;save();render()}},
+  hact:()=>{UI.hAct=button.dataset.k;render();toast('Направьте дальномер в потолок и сделайте замер')},
+  roomfull:()=>{UI.roomFull=true;render();window.scrollTo(0,0)},roomwiz:()=>{UI.roomFull=false;render();window.scrollTo(0,0)}
+ };
+ if(A[action]){A[action]();return true}return oldAction28(action,button,room)};
+function doorOf28(r,sel){if(!sel)return null;if(sel.src==='blk')return blkOps28(r,sel.i).find(m=>m.type==='door');const o=obj28(r,sel.src,sel.i);return o&&o.type==='door'?o:null}
+const oldChange28=handleUpgradeChange23;
+handleUpgradeChange23=function(event){const el=event.target;
+ if(el.dataset.pe){const r=selRoom28(),sel=UI.sel28;if(!r||!sel)return true;const raw=el.value.trim();if(raw===''){render();return true}const v=num(raw)/1000;if(set28(r,sel,el.dataset.pe,v)){save();const F=fields28(r,sel).map(f=>f[0]),k=F.indexOf(el.dataset.pe);if(UI.peAct===el.dataset.pe&&F[k+1])UI.peAct=F[k+1]}render();return true}
+ if(el.dataset.hp){const r=RM();if(!r)return true;const raw=el.value.trim();r.hpts=r.hpts||{};if(raw==='')delete r.hpts[el.dataset.hp];else{const v=num(raw)/1000;if(!(v>.5&&v<20)){toast('Высота в миллиметрах, например 2700');render();return true}r.hpts[el.dataset.hp]=r3(v)}hApply28(r);save();render();return true}
+ return oldChange28(event)};
+
+/* ---------- rangefinder: active field of the step ---------- */
+const oldOnMeasure28=onMeasure;
+onMeasure=function(v){if(R.view==='room'&&!UI.roomFull&&RM()){const r=RM();
+ if(UI.step28==='height'){const F=hFields28(r),k=UI.hAct||F[0][0];r.hpts=r.hpts||{};r.hpts[k]=r3(v);hApply28(r);const i=F.findIndex(f=>f[0]===k),nx=F.slice(i+1).find(f=>!r.hpts[f[0]])||F[i+1];UI.hAct=nx?nx[0]:k;UI.last=v;save();render();toast((F[i]||[,''])[1]+': '+mm(v)+' мм');return}
+ const sel=UI.sel28;if(sel&&UI.peAct&&sel.rid===r.id){UI.last=v;const k=UI.peAct;if(set28(r,sel,k,v)){const F=fields28(r,sel).map(f=>f[0]),i=F.indexOf(k);UI.peAct=F[i+1]||null;save();toast(((fields28(r,sel).find(f=>f[0]===k)||[])[1]||'Замер')+': '+mm(v)+' мм')}render();return}
+ if(UI.step28&&UI.step28!=='walls'){UI.last=v;render();toast('Замер '+mm(v)+' мм — выберите поле с 📏');return}}
+ if(R.view==='project'&&UI.sel28&&UI.peAct&&UI.peSheet){const r=selRoom28();if(r&&set28(r,UI.sel28,UI.peAct,v)){const F=fields28(r,UI.sel28).map(f=>f[0]),i=F.indexOf(UI.peAct);UI.peAct=F[i+1]||null;save()}UI.last=v;render();return}
+ return oldOnMeasure28(v)};
+
+/* when entering a room — start with the right step */
+const oldRoomAct28=handleUpgradeAction23;
+handleUpgradeAction23=function(action,button,room){if(action==='room'||action==='addroom'){UI.step28=null;UI.sel28=null;UI.roomFull=false;UI.peWall=null}if(action==='tab'){UI.sel28=null;UI.peSheet=false}return oldRoomAct28(action,button,room)};
+
+/* ---------- 3D: air conditioners and riser pipes ---------- */
+const oldBuild3d28=build3d27;
+build3d27=function(T,p,grp){const bx=oldBuild3d28(T,p,grp);const mat=c=>new T.MeshLambertMaterial({color:c});
+ for(const r of p.rooms.filter(r=>geo(r).closed)){const G=roomGlobal(p,r),H=num(r.h)||2.7,g=geo(r);
+  const place=(wall,d,inward,y,w,h,dep,color)=>{const at=onWall28(r,wall,d);if(!at)return;const q=[at.q[0]+at.inn[0]*inward,at.q[1]+at.inn[1]*inward],Pq=G(q),A=G(at.s.at(0)),B=G(at.s.at(1));const m=new T.Mesh(new T.BoxGeometry(w,h,dep),mat(color));m.position.set(Pq[0],y+h/2,Pq[1]);m.rotation.y=-Math.atan2(B[1]-A[1],B[0]-A[0]);grp.add(m)};
+  for(const ac of acsOf(r))place(num(ac.wall),num(ac.offset)+num(ac.w)/2,.11,num(ac.y),num(ac.w),num(ac.h),.2,0xf4f8fb);
+  for(const rd of radsOf(r))for(const side of pipes28(rd)){const at=onWall28(r,num(rd.wall),side==='a'?num(rd.offset)-.06:num(rd.offset)+num(rd.w)+.06);if(!at)continue;const q=[at.q[0]+at.inn[0]*.05,at.q[1]+at.inn[1]*.05],Pq=G(q),m=new T.Mesh(new T.CylinderGeometry(.016,.016,H,10),mat(0xdddddd));m.position.set(Pq[0],H/2,Pq[1]);grp.add(m)}}
+ return bx};
+
+/* ---------- validation of new fields ---------- */
+const oldValidate28=validateBackup;
+validateBackup=function(data){oldValidate28(data);for(const p of data.projects||[])for(const r of p.rooms||[]){
+ if(r.acs!=null&&(!Array.isArray(r.acs)||r.acs.some(x=>!(num(x.wall)>=1&&num(x.w)>=0&&num(x.h)>=0))))throw Error('Повреждены кондиционеры');
+ if(r.hpts!=null&&(typeof r.hpts!=='object'||Array.isArray(r.hpts)||Object.values(r.hpts).some(v=>!(typeof v==='number'&&v>=0&&v<100))))throw Error('Повреждены высоты потолка');
+ for(const o of r.ops||[]){if(o.hinge!=null&&!['a','b'].includes(o.hinge))throw Error('Повреждена дверь');if(o.swing!=null&&!['in','out'].includes(o.swing))throw Error('Повреждена дверь')}}};
+
+function sha256js(ascii){/* fallback for non-secure contexts (file:// on old WebViews) */const r=(v,a)=>(v>>>a)|(v<<(32-a)),mp=Math.pow,maxWord=mp(2,32);let res='',words=[],bytes=unescape(encodeURIComponent(ascii)),bl=bytes.length*8,hash=[],k=[],pc=0,ic={};
+ for(let c=2;pc<64;c++){if(!ic[c]){for(let i=0;i<313;i+=c)ic[i]=c;hash[pc]=(mp(c,.5)*maxWord)|0;k[pc++]=(mp(c,1/3)*maxWord)|0}}
+ bytes+='\x80';while(bytes.length%64-56)bytes+='\x00';for(let i=0;i<bytes.length;i++){const j=bytes.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=((bl/maxWord)|0);words[words.length]=bl;
+ hash=hash.slice(0,8);for(let j=0;j<words.length;){const w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];const t1=hash[7]+(r(e,6)^r(e,11)^r(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(r(w15,7)^r(w15,18)^(w15>>>3))+w[i-7]+(r(w2,17)^r(w2,19)^(w2>>>10)))|0);const t2=(r(a,2)^r(a,13)^r(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}for(let i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0}
+ for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;res+=(b<16?'0':'')+b.toString(16)}return res}
+
+/* ---------- web access code (Android uses its own activation screen) ---------- */
+const GATE28={salt:'zamer-web-v1|',hash:'322e7e44d50396905b786e1b78e03220da398867b761e3d5524dface0dae9337'};
+async function sha28(s){try{if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}return sha256js(s)}
+function gate28(){let ok=false;try{ok=localStorage.getItem('zs:gate')===GATE28.hash}catch(e){}
+ if(NATIVE||window.Access||ok){render();return}
+ app.innerHTML=`<div class="gate28"><div class="card"><div style="font-size:42px;text-align:center">📐</div><h2 style="text-align:center;margin:6px 0">Замер и смета</h2><p class="small muted" style="text-align:center">Введите код доступа</p>
+ <input id="g28" type="password" inputmode="numeric" autocomplete="off" maxlength="12" style="text-align:center;font-size:22px;letter-spacing:6px" aria-label="Код доступа"><button class="btn wide" id="g28b" style="margin-top:10px">Войти</button><p id="g28e" class="small" style="color:#c0392b;text-align:center;min-height:1.2em"></p></div></div>`;
+ const go28=async()=>{const v=document.getElementById('g28').value.trim();if(!v)return;const h=await sha28(GATE28.salt+v);if(h===GATE28.hash){try{localStorage.setItem('zs:gate',h)}catch(e){}render()}else{document.getElementById('g28e').textContent='Неверный код';document.getElementById('g28').value=''}};
+ document.getElementById('g28b').onclick=go28;document.getElementById('g28').onkeydown=e=>{if(e.key==='Enter')go28()};setTimeout(()=>document.getElementById('g28')?.focus(),50)}
+
+window.__test={items28,pos28,set28,val28,add28,lr28,hApply28,hFields28,peSVG28,itemsSVG28,solve28,nearWalls28,fields28,obj28,offFromLeft28,hingeAB28,hingeSide28,blkDoorSide28,VIEWS28,acsOf,UI,R,allSheets27,plan5d27,wallItems27,toStart27,corners27,leftIsStart27,plOpen27,plSave27,radsOf,DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},fenceCalc,fenceCSV,geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
+
+gate28();
 </script>
 <input type="file" id="ph27in" accept="image/*" hidden>
-<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{})</script></body>
+<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{})</script>
+<script src="/sotka/hub.js" defer></script>
+</body>
 </html>

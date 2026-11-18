@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Мои проекты</title>
+<meta name="theme-color" content="#1f2937">
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#16181b;--mut:#6b7280;--line:#e5e7eb;--acc:#e0620d}
+@media (prefers-color-scheme:dark){:root{--bg:#121315;--card:#1d1f22;--ink:#eceae6;--mut:#9aa0a6;--line:#2e3135}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 120px}h1{font-size:26px;margin:4px 0 2px}p.lead{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.h{display:flex;gap:10px;align-items:center}.h b{font-size:28px}.h h2{font-size:17px;margin:0}.h small{display:block;color:var(--mut);font-size:12px}
+.r{display:flex;gap:8px;flex-wrap:wrap}a.b,button.b{border:0;border-radius:10px;padding:9px 13px;background:var(--acc);color:#fff;font:600 14px system-ui;text-decoration:none;cursor:pointer}
+.b.s{background:transparent;color:var(--ink);border:1px solid var(--line)!important}
+textarea{width:100%;min-height:92px;border:1px solid var(--line);background:transparent;color:inherit;border-radius:12px;padding:9px;font:14px system-ui;resize:vertical}
+.m{color:var(--mut);font-size:12px}.tools{margin-top:22px}
+</style></head><body><main>
+<h1>Мои проекты</h1><p class="lead">Быстрый переход между приложениями и заметки, что улучшить. Кнопка ⇄ есть на каждой странице.</p>
+<div class="grid" id="g"></div>
+<div class="c tools"><h2 style="margin:0;font-size:17px">Перенос заметок на другое устройство</h2><p class="m" style="margin:0">Заметки хранятся в этом браузере. Скопируйте их и вставьте на телефоне или компьютере.</p>
+<div class="r"><button class="b s" id="cp">Скопировать все заметки</button><button class="b s" id="dl">Скачать файл</button><button class="b s" id="pi">Вставить заметки</button></div>
+<textarea id="imp" hidden placeholder="Вставьте сюда скопированный текст и нажмите «Загрузить»"></textarea><div class="r" id="impr" hidden><button class="b" id="ld">Загрузить</button></div><p class="m" id="msg"></p></div>
+</main>
+<script src="../hub.js"></script>
+<script>
+(function(){var P=window.HUB_PROJECTS,LS=window.HUB_NOTES,B='https://ivkri1234567890-eng.github.io',g=document.getElementById('g');
+ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+ function draw(){var n=LS.get();g.innerHTML=P.map(function(p){var x=n[p.k]||{};return'<div class="c"><div class="h"><b>'+p.i+'</b><div><h2>'+esc(p.n)+'</h2><small>'+esc(B.replace('https://','')+p.u)+'</small></div></div>'+
+  '<div class="r"><a class="b" href="'+B+p.u+'">Открыть</a>'+(p.apk?'<a class="b s" href="'+B+p.apk+'">Android (APK)</a>':'')+'</div>'+
+  '<textarea data-k="'+p.k+'" placeholder="Что улучшить, что доделать…">'+esc(x.t||'')+'</textarea><span class="m" data-s="'+p.k+'">'+(x.ts?'Сохранено '+new Date(x.ts).toLocaleString('ru-RU'):'')+'</span></div>'}).join('')}
+ draw();var tm={};g.addEventListener('input',function(e){var k=e.target.dataset.k;if(!k)return;clearTimeout(tm[k]);tm[k]=setTimeout(function(){var o=LS.get();o[k]={t:e.target.value,ts:Date.now()};LS.set(o);var s=g.querySelector('[data-s="'+k+'"]');if(s)s.textContent='Сохранено '+new Date().toLocaleTimeString('ru-RU')},300)});
+ function text(){var n=LS.get();return P.filter(function(p){return n[p.k]&&n[p.k].t&&n[p.k].t.trim()}).map(function(p){return'## '+p.n+'\n'+n[p.k].t.trim()}).join('\n\n')+'\n\n<!--hub:'+btoa(unescape(encodeURIComponent(JSON.stringify(n))))+'-->'}
+ var msg=document.getElementById('msg');
+ document.getElementById('cp').onclick=function(){var t=text();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){msg.textContent='Скопировано'},function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();msg.textContent='Скопировано'})};
+ document.getElementById('dl').onclick=function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text()],{type:'text/markdown'}));a.download='заметки-проекты.md';a.click()};
+ document.getElementById('pi').onclick=function(){document.getElementById('imp').hidden=false;document.getElementById('impr').hidden=false};
+ document.getElementById('ld').onclick=function(){var t=document.getElementById('imp').value,m=t.match(/<!--hub:([A-Za-z0-9+/=]+)-->/);if(!m){msg.textContent='Не нашёл заметок в тексте — скопируйте целиком';return}
+  try{var src=JSON.parse(decodeURIComponent(escape(atob(m[1])))),o=LS.get(),n=0;Object.keys(src).forEach(function(k){var a=o[k],b=src[k];if(!b||!b.t)return;if(!a||!a.t||!a.t.trim()){o[k]=b;n++}else if(a.t.indexOf(b.t)<0){o[k]={t:a.t.trim()+'\n\n'+b.t.trim(),ts:Date.now()};n++}});LS.set(o);draw();msg.textContent='Загружено: '+n}catch(e){msg.textContent='Ошибка: '+e.message}};
+})();
+</script>
+</body></html>

@@ -525,5 +525,6 @@ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceW
 (async()=>{await licRead();if(LIC.mode==='trial'&&!LIC.start)LIC.mode=null;S.view=licOk()?'home':LIC.mode==='trial'?'locked':'login';if(LIC.mode)await licWrite();render();if(licOk())updateNorms(false);setInterval(()=>{if(LIC.mode){licWrite();if(!licOk()&&!['locked','login'].includes(S.view)){S.view='locked';render()}}},36e5)})();
 window.__pr={get LIC(){return LIC},DB,S,checklist,evaluate,normOf,defects,stats,totalArea,newInspection,render,cmpVer,diffNorms,get NORMS(){return NORMS},rfValue};
 </script>
+<script src="/sotka/hub.js" defer></script>
 </body>
 </html>
