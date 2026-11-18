@@ -221,7 +221,13 @@ function learn(sample,sources){
     // форматы чисел колонок — по тексту ячеек образца
     rc.fmt={};
     for(const c of rc.cols){const rows=tb.rows.filter(x=>x.kind==='data');const nums=rows.filter(x=>typeof (sh.grid[x.r]||[])[c.c]==='number').length;if(nums<0.6*rows.length)continue;const f=inferFmt(rows.map(x=>(sh.texts[x.r]||[])[c.c]));if(f)rc.fmt[c.c]=f;}
-    rc.docTable=sh.docTable;
+    rc.docTable=sh.docTable;if(sh.ref)rc.ref=sh.ref;
+    // значения колонок, которые не удалось пересчитать: сохраняем по строке, чтобы не стирать
+    const dimC=rc.cols.filter(c=>c.role==='dim').map(c=>c.c);
+    rc.keepVals={};
+    for(const c of rc.cols){if(c.role!=='blank')continue;const m={};let any=false;
+     for(const x of tb.rows){const v=(sh.grid[x.r]||[])[c.c];if(v==null)continue;const k=x.kind==='data'?dimC.map(d=>R.vkey((sh.grid[x.r]||[])[d])).join(R.SEP):'#'+x.kind;m[k]=v instanceof R.DV?v.toString():v;any=true;}
+     if(any)rc.keepVals[c.c]=m;}
     sheets.push(rc);
     if(!seed&&rc.quality.q>=0.8&&(rc.filters.length||rc.period))seed=rc;
     break; // одна таблица отчёта на таблицу Word
@@ -231,7 +237,8 @@ function learn(sample,sources){
  const tp=L.periodFromText(ctxText.concat([doc.name]));
  let sp=sheets.find(s=>s.samplePeriod!=null);
  const samplePeriod=sp?sp.samplePeriod:tp?tp.ym:null;
- const report={kind:'docx',sheets,samplePeriod,templateName:sample.name,templateKind:'docx',compare:true,created:Date.now(),skipped:[]};
+ const kind=doc.kind==='pptx'?'pptx':'docx';
+ const report={kind,sheets,samplePeriod,templateName:sample.name,templateKind:kind,compare:true,created:Date.now(),skipped:[]};
  // числа в тексте
  const results=sheets.map(rc=>{try{return L.applySheet(rc,sources,{period:rc.period?rc.samplePeriod:null});}catch(e){return null;}});
  const facts=tableFacts(report,results);
@@ -264,9 +271,9 @@ function learn(sample,sources){
  const where=norm(ctxText.concat([doc.name]).join(' | '));
  for(const rc of sheets)for(const f of rc.filters)if(f.op==='keep'&&f.keys.length===1&&!splits.some(s=>s.src===f.src)&&window.ObrazecCore.nameForms(f.labels[0]).some(x=>x.length>=3&&new RegExp('(^|[^\\p{L}\\p{N}])'+norm(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^\\p{L}\\p{N}])','u').test(where)))splits.push({src:f.src,key:f.keys[0],label:f.labels[0]});
  report.splits=splits;report.split=null;
- const nm=sample.name.replace(/\.docx$/i,'');
+ const nm=sample.name.replace(/\.(docx|pptx)$/i,'');
  let base=nm.replace(/[_\s-]*(за\s*)?(январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр)[а-я]*([_\s-]*\d{4})?/gi,'').replace(/[_\s-]*20\d\d$/,'').replace(/_/g,' ').trim();
- if(splits[0]){for(const f of window.ObrazecCore.nameForms(splits[0].label))base=base.split(f).join(' ');base=base.replace(/[_\s—-]+/g,' ').trim();if(base.length<3)base='Документ по «'+splits[0].src.replace(/\s*\(справочник.*$/,'')+'»';}
+ if(splits[0]){for(const f of window.ObrazecCore.nameForms(splits[0].label))base=base.split(f).join(' ');base=base.replace(/[_\s—-]+/g,' ').trim();if(base.length<3)base=(kind==='pptx'?'Презентация по «':'Документ по «')+splits[0].src.replace(/\s*\(справочник.*$/,'')+'»';}
  report.name=base||nm;
  report.id='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  if(!sheets.length&&!tokens.some(t=>t.fact))throw Error('Не удалось связать документ с исходниками: в таблицах и тексте не нашлось чисел, которые получаются из этих данных. Проверьте, что исходники за период документа.');
@@ -410,5 +417,6 @@ async function generate(report,template,tables,opt){
 }
 function pairsFor(a,b){const A=window.ObrazecCore.nameForms(a),B=window.ObrazecCore.nameForms(b);return A.map((x,i)=>({from:x,to:B[Math.min(i,B.length-1)]||b}));}
 
-window.ObrazecWord={readDocx,learn,generate,factText,tokensOf,inferFmt,fmtNum};
+window.ObrazecWord={readDocx,learn,generate,factText,tokensOf,inferFmt,fmtNum,
+ _:{topLevel,esc,unesc,parseVal,display,nounAfter,cat,caseAs,mainTableOf,dateColName,sourceFacts,tableFacts,factKey,computeFacts,strip,factValue,pairsFor}};
 })();

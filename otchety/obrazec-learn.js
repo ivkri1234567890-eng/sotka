@@ -113,8 +113,12 @@ function fit(T,rep,dims,meas,mode,base){
  for(const F of T.cols){
   if(F.type==='empty')continue;
   const d=F.keys.size+(F.filled<n?1:0);
-  if(d<2||d>60)continue;
-  if(F.type==='number'&&!F.virt&&F.keys.size>12)continue;
+  if(d>60||F.type==='number'&&!F.virt&&F.keys.size>12||F.type==='date'&&!F.virt){
+   // много разных значений: проверяем только правило «без пустых»
+   if(F.filled<n&&F.filled>0&&!F.virt){const k=rowKeys(F),vi=new Int16Array(n);for(let i=0;i<n;i++)vi[i]=k[i]?1:0;fcols.push({F,vi,vals:['','\u0002заполнено']});}
+   continue;
+  }
+  if(d<2)continue;
   const k=rowKeys(F),idx=new Map(),vi=new Int16Array(n),vals=[];
   for(let i=0;i<n;i++){let x=idx.get(k[i]);if(x==null){x=vals.length;idx.set(k[i],x);vals.push(k[i]);}vi[i]=x;}
   fcols.push({F,vi,vals});
@@ -380,8 +384,9 @@ function learnSheet(book,sheet,tb,sources,seed){
  // фильтры
  const filters=[];let period=null;
  const byCol=new Map();for(const o of F.ops){if(!byCol.has(o.col))byCol.set(o.col,[]);byCol.get(o.col).push(o);}
- for(const [ci] of byCol){
+ for(const [ci,ops] of byCol){
   const col=T.cols[ci],k=rowKeys(col);
+  if(ops.every(o=>o.key===''||o.key==='\u0002заполнено')){filters.push({src:col.name,op:'exclude',keys:[''],labels:['(пусто)'],known:null});continue;}
   const kept=new Set(),all=new Map();
   for(let i=0;i<T.n;i++){all.set(k[i],col.vals[i]);if(F.inc[i])kept.add(k[i]);}
   if(col.virt&&col.virt.kind==='month'){

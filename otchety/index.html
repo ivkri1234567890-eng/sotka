@@ -204,7 +204,7 @@ main.wide{max-width:1240px}
 </div>
 <div class="panel">
  <h2>Файлы</h2>
- <div class="drop" id="obDrop">Перетащите сюда образец и исходники — или выберите<input type="file" id="obFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip,.docx"><small>Можно всё сразу. Программа сама определит, где образец, а где исходники прошлого и нового периода. Образцом может быть и заполненный документ Word (.docx) — тогда программа сделает такие же документы по строкам таблицы.</small></div>
+ <div class="drop" id="obDrop">Перетащите сюда образец и исходники — или выберите<input type="file" id="obFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip,.docx,.pptx"><small>Образец — готовый отчёт Excel, документ Word или презентация PowerPoint за прошлый период; исходники — Excel/CSV. Можно всё сразу. Программа сама определит, где образец, а где исходники прошлого и нового периода. Образцом может быть и заполненный документ Word (.docx) — тогда программа сделает такие же документы по строкам таблицы.</small></div>
  <div id="obMatch" class="banner" hidden></div>
  <ul id="obList" class="files"></ul>
  <p id="obStatus" class="status" role="status" aria-live="polite"></p>
@@ -260,6 +260,7 @@ main.wide{max-width:1240px}
  <div id="obFilesOut" class="flist"></div>
  <div class="preview" id="obPreview"></div>
  <button type="button" id="obSave">Скачать</button>
+ <button type="button" id="obDeck" class="secondary">Скачать презентацию (PowerPoint)</button><p id="obDeckSt" class="status" role="status"></p>
  <label style="margin-top:14px">Сообщение получателям<textarea id="obMsg"></textarea></label>
  <div class="tiles" style="grid-template-columns:1fr 1fr"><button type="button" id="obTg" class="secondary" style="margin:0">Отправить в Telegram</button><button type="button" id="obMail" class="secondary" style="margin:0">Отправить на почту</button></div>
  <p id="obSendStatus" class="status" role="status" aria-live="polite"></p>
@@ -307,6 +308,7 @@ main.wide{max-width:1240px}
  <li>Проверки: пустые значения, новые значения, которых не было в фильтре, справочник без нужных строк.</li>
  <li>Запоминает отчёт: в следующий раз достаточно загрузить новые исходники. Отчёт можно передать коллеге файлом .json.</li>
  <li>Объединение файлов одной формы: отчёты филиалов складываются по строкам, списки менеджеров ставятся друг под другом; итоги пересчитываются, лист «Сверка» показывает строки и суммы каждого файла.</li>
+ <li>Презентация по образцу: загрузите прошлую презентацию (.pptx) и Excel — пересчитаются таблицы, диаграммы (вместе с данными внутри) и числа в тексте слайдов, месяцы сдвинутся. К любому отчёту из Excel или Word — кнопка «Скачать презентацию».</li>
  <li>Справка Word за период: загрузите прошлую справку или служебную записку и исходники — программа пересчитает таблицы и числа в тексте («продано 12 автомобилей на сумму …», «с начала года …»), согласует слова с числами и сдвинет месяцы и даты.</li>
  <li>Документы Word по образцу: загрузите заполненный акт, письмо или договор и таблицу — программа найдёт, что откуда взято (ФИО и инициалы, суммы, суммы прописью, даты, таблица-список с итогом), и сделает такие же документы для нужных строк, плюс общий файл для печати и реестр.</li>
  <li>Отправляет готовое в Telegram и на почту, без интернета — ставит в очередь. Кнопка отправки появляется и у других отчётов центра после скачивания.</li>
@@ -364,7 +366,7 @@ main.wide{max-width:1240px}
 </section>
 
 </main>
-<script src="jszip.min.js?v=202611152100"></script><script src="xml-js.min.js?v=202611152100"></script><script src="engine.js?v=202611152100"></script><script src="xlsx.full.min.js?v=202611152100"></script><script src="gibdd-model.js?v=202611152100"></script><script src="gibdd-engine.js?v=202611152100"></script>
+<script src="jszip.min.js?v=202611181930"></script><script src="xml-js.min.js?v=202611181930"></script><script src="engine.js?v=202611181930"></script><script src="xlsx.full.min.js?v=202611181930"></script><script src="gibdd-model.js?v=202611181930"></script><script src="gibdd-engine.js?v=202611181930"></script>
 <script>
 const el=id=>document.getElementById(id);
 const cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -401,11 +403,11 @@ el('save').onclick=()=>{
 };
 </script>
 
-<script src="meeting.js?v=202611152100"></script><script src="meeting-ui.js?v=202611152100"></script>
+<script src="meeting.js?v=202611181930"></script><script src="meeting-ui.js?v=202611181930"></script>
 
-<script src="opisi-blank.js?v=202611152100"></script><script src="opisi-engine.js?v=202611152100"></script><script src="gibdd-ui.js?v=202611152100"></script>
-<script src="opisi-ui.js?v=202611152100"></script><script src="batch.js?v=202611152100"></script>
-<script src="send.js?v=202611152100"></script><script src="obrazec-read.js?v=202611152100"></script><script src="obrazec-learn.js?v=202611152100"></script><script src="obrazec-write.js?v=202611152100"></script><script src="obrazec-core.js?v=202611152100"></script><script src="obrazec-doc.js?v=202611152100"></script><script src="obrazec-word.js?v=202611152100"></script><script src="obrazec-merge.js?v=202611152100"></script><script src="obrazec-ui.js?v=202611152100"></script><script src="pptxgen.min.js?v=202611152100"></script><script src="sales-engine.js?v=202611152100"></script><script src="sales-ppt.js?v=202611152100"></script><script src="sales-ui.js?v=202611152100"></script>
+<script src="opisi-blank.js?v=202611181930"></script><script src="opisi-engine.js?v=202611181930"></script><script src="gibdd-ui.js?v=202611181930"></script>
+<script src="opisi-ui.js?v=202611181930"></script><script src="batch.js?v=202611181930"></script>
+<script src="send.js?v=202611181930"></script><script src="obrazec-read.js?v=202611181930"></script><script src="obrazec-learn.js?v=202611181930"></script><script src="obrazec-write.js?v=202611181930"></script><script src="obrazec-core.js?v=202611181930"></script><script src="obrazec-doc.js?v=202611181930"></script><script src="obrazec-word.js?v=202611181930"></script><script src="obrazec-pptx.js?v=202611181930"></script><script src="obrazec-merge.js?v=202611181930"></script><script src="obrazec-ui.js?v=202611181930"></script><script src="pptxgen.min.js?v=202611181930"></script><script src="sales-engine.js?v=202611181930"></script><script src="sales-ppt.js?v=202611181930"></script><script src="sales-ui.js?v=202611181930"></script><script src="obrazec-deck.js?v=202611181930"></script>
 <script>
 (()=>{
  const HASH='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5', app=el('app'), gate=el('gate');

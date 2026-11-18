@@ -13,6 +13,7 @@ def inline(m):
 
 def build(android=False):
     h = src
+    h = re.sub(r'<script src="/sotka/[^"]+"[^>]*></script>', '', h)  # общие скрипты сайта (переключатель проектов) — не нужны офлайн
     h = re.sub(r'<script src="([^"]+)"></script>', inline, h)
     h = re.sub(r"<script>if\('serviceWorker'[\s\S]*?</script>", '', h)
     h = re.sub(r'<button id="skladMode"[^>]*>.*?</button>', '', h)

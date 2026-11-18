@@ -1,9 +1,12 @@
 /* «По образцу»: интерфейс вкладки. */
 (function(){
 'use strict';
-const R=window.ObrazecRead,L=window.ObrazecLearn,C=window.ObrazecCore,S=window.ReportSend,Dc=window.ObrazecDoc,Wd=window.ObrazecWord;
+const R=window.ObrazecRead,L=window.ObrazecLearn,C=window.ObrazecCore,S=window.ReportSend,Dc=window.ObrazecDoc,Wd=window.ObrazecWord,Pp=window.ObrazecPptx,Dk=window.ObrazecDeck;
+const PPTX_T='application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const isDoc=x=>x.kind==='docx'||x.kind==='pptx';
+const genOf=k=>k==='docx'?Wd.generate:k==='pptx'?Pp.generate:C.generate;
 const DOCX_T='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const typeOf=n=>/\.docx$/i.test(n)?DOCX_T:/\.zip$/i.test(n)?'application/zip':XLSX_T;
+const typeOf=n=>/\.docx$/i.test(n)?DOCX_T:/\.pptx$/i.test(n)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':/\.zip$/i.test(n)?'application/zip':XLSX_T;
 const $=id=>document.getElementById(id);
 const XLSX_T='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const MON=R.MON,cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -27,7 +30,7 @@ async function addFiles(list){
   try{
    if(/\.zip$/i.test(f.name)){
     const z=await JSZip.loadAsync(await f.arrayBuffer());
-    for(const e of Object.values(z.files)){if(e.dir||!/\.(xlsx|xlsm|xls|csv|docx)$/i.test(e.name)||/(^|\/)(~\$|__MACOSX)/.test(e.name))continue;await addOne(e.name.split('/').pop(),await e.async('arraybuffer'),f.lastModified);}
+    for(const e of Object.values(z.files)){if(e.dir||!/\.(xlsx|xlsm|xls|csv|docx|pptx)$/i.test(e.name)||/(^|\/)(~\$|__MACOSX)/.test(e.name))continue;await addOne(e.name.split('/').pop(),await e.async('arraybuffer'),f.lastModified);}
    }else await addOne(f.name,await f.arrayBuffer(),f.lastModified);
   }catch(e){$('obStatus').textContent='«'+f.name+'»: '+(e.message||e);return;}
  }
@@ -35,17 +38,17 @@ async function addFiles(list){
 }
 async function addOne(name,buf,lm){
  items=items.filter(x=>x.name!==name);
- if(/\.docx$/i.test(name)){items.push({id:Math.random().toString(36).slice(2),name,kind:'docx',bytes:new Uint8Array(buf),book:{kind:'docx',sheets:[]},tables:[],lastModified:lm||0,role:'sample',manual:false,why:'документ Word — образец'});return;}
+ if(/\.(docx|pptx)$/i.test(name)){const k=/\.pptx$/i.test(name)?'pptx':'docx';items.push({id:Math.random().toString(36).slice(2),name,kind:k,bytes:new Uint8Array(buf),book:{kind:k,sheets:[]},tables:[],lastModified:lm||0,role:'sample',manual:false,why:k==='pptx'?'презентация — образец':'документ Word — образец'});return;}
  const book=R.readBook(name,buf);
  await new Promise(r=>setTimeout(r));
  const tables=R.tablesOf(book);
  items.push({id:Math.random().toString(36).slice(2),name,book,tables,lastModified:lm||0,role:null,manual:false});
 }
 function reclassify(){
- const xs=items.filter(x=>x.kind!=='docx');
+ const xs=items.filter(x=>!isDoc(x));
  const cl=C.classify(xs,report&&report.saved?[report]:saved);
  cl.roles.forEach((r,i)=>{if(!xs[i].manual){xs[i].role=r.role;xs[i].why=r.why;}});
- if(items.some(x=>x.kind==='docx'&&x.role==='sample'))for(const x of xs)if(x.role==='sample'&&!x.manual){x.role='both';x.why='исходник';}
+ if(items.some(x=>isDoc(x)&&x.role==='sample'))for(const x of xs)if(x.role==='sample'&&!x.manual){x.role='both';x.why='исходник';}
  const m=$('obMatch');
  if(cl.report&&!items.some(x=>x.role==='sample')){
   const rep=saved.find(r=>r.id===cl.report.id)||report;
@@ -63,7 +66,7 @@ function renderFiles(){
   const d=document.createElement('div');const b=document.createElement('b');b.textContent=it.name;
   const sm=document.createElement('small');
   const t=it.tables.slice().sort((a,b)=>b.n-a.n)[0];
-  sm.textContent=it.kind==='docx'?'документ Word'+(it.why?' · '+it.why:''):t?(it.tables.length>1?it.tables.length+' таблиц, ':'')+'строк: '+t.n+', колонок: '+t.cols.filter(c=>!c.virt).length+(it.why?' · '+it.why:''):'таблица не найдена';
+  sm.textContent=isDoc(it)?(it.kind==='pptx'?'презентация PowerPoint':'документ Word')+(it.why?' · '+it.why:''):t?(it.tables.length>1?it.tables.length+' таблиц, ':'')+'строк: '+t.n+', колонок: '+t.cols.filter(c=>!c.virt).length+(it.why?' · '+it.why:''):'таблица не найдена';
   d.append(b,sm);
   const sel=document.createElement('select');sel.setAttribute('aria-label','Роль файла');
   for(const [v,l] of ROLES)sel.add(new Option(l,v));sel.value=it.role||'skip';
@@ -93,6 +96,19 @@ $('obLearn').onclick=async()=>{
  let src=tablesBy(['old','both']);if(!src.length)src=tablesBy(['new']);
  $('obLearn').disabled=true;$('obStatus').textContent='Разбираю образец…';
  await new Promise(r=>setTimeout(r,30));
+ if(sample.kind==='pptx'){
+  try{
+   const t0=Date.now();
+   const clean=x=>Object.assign({},x,{cols:x.cols.filter(c=>!c.virt||c.virt.kind!=='lookup')});
+   const book=await Pp.readPptx(sample.name,sample.bytes);
+   report=Pp.learn({name:sample.name,book},src.map(clean));altReport=null;template=sample.bytes;dirty=true;
+   const q=report.sheets.reduce((a,x)=>({ok:a.ok+x.quality.ok,c:a.c+x.quality.cells}),{ok:0,c:0});
+   $('obStatus').textContent='Готово за '+((Date.now()-t0)/1000).toFixed(1)+' с. Презентация: слайдов '+book.parts.length+', таблиц и диаграмм пересчитаю '+report.sheets.length+' из '+book.sheets.length+(q.c?' (совпало '+q.ok+' из '+q.c+')':'')+', чисел в тексте: '+report.tokens.filter(t=>t.fact).length+' из '+report.tokens.length+'.';
+   showAlt();renderRecipe();$('obRecipe').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){$('obStatus').textContent=e.message||String(e);console.error(e);}
+  finally{$('obLearn').disabled=false;}
+  return;
+ }
  if(sample.kind==='docx'){
   try{
    const t0=Date.now();
@@ -180,7 +196,7 @@ function renderRecipe(){
  const box=$('obSheets');box.replaceChildren();
  for(const rc of report.sheets){
   const p=document.createElement('div');p.style.marginTop='14px';
-  const h=document.createElement('h2');h.textContent=report.kind==='docx'?'Таблица '+(rc.docTable+1)+' в документе':'Лист «'+rc.sheet+'»'+(rc.block?', таблица '+rc.block+' (колонки '+XLSX.utils.encode_col(rc.c0)+'–'+XLSX.utils.encode_col(rc.c1)+')':'');p.append(h);
+  const h=document.createElement('h2');h.textContent=report.kind==='pptx'?rc.sheet:report.kind==='docx'?'Таблица '+(rc.docTable+1)+' в документе':'Лист «'+rc.sheet+'»'+(rc.block?', таблица '+rc.block+' (колонки '+XLSX.utils.encode_col(rc.c0)+'–'+XLSX.utils.encode_col(rc.c1)+')':'');p.append(h);
   const q=rc.quality;
   const info=document.createElement('p');info.className='status';
   const lines=[];
@@ -213,7 +229,7 @@ function renderRecipe(){
   for(const n of rc.notes){const w=document.createElement('p');w.className='warn';w.textContent=n;p.append(w);}
   box.append(p);
  }
- if(report.kind==='docx'){
+ if(report.kind==='docx'||report.kind==='pptx'){
   const p=document.createElement('div');p.style.marginTop='14px';
   const h=document.createElement('h2');h.textContent='Числа в тексте';p.append(h);
   if(!report.tokens.length){const t=document.createElement('p');t.className='tip';t.textContent='В тексте нет чисел для пересчёта — поменяются месяцы, даты и таблицы.';p.append(t);}
@@ -233,7 +249,7 @@ function renderRecipe(){
   }
   box.append(p);
  }
- $('obCompare').closest('label').hidden=report.kind==='docx';
+ $('obCompare').closest('label').hidden=report.kind==='docx'||report.kind==='pptx';
  // разбивка
  const sp=report.splits[0];
  $('obSplitBox').hidden=!sp;
@@ -279,7 +295,7 @@ $('obRun').onclick=async()=>{
   if(!template)template=await store.tpl(report.id);
   if(!template)throw Error('Не найден файл образца для этого отчёта — загрузите образец заново.');
   const ym=R.ymOf(+$('obYear').value,+$('obMonth').value);
-  const files=await (report.kind==='docx'?Wd.generate:C.generate)(report,template,tables,{period:ym,prev:report.prevMap||{}});
+  const files=await genOf(report.kind)(report,template,tables,{period:ym,prev:report.prevMap||{}});
   if(!files.length)throw Error('Ничего не получилось собрать: по условиям образца нет строк.');
   result={files,period:ym};
   // запоминаем отчёт и снимок для следующего сравнения
@@ -321,6 +337,7 @@ function renderResult(){
   const btn=document.createElement('button');btn.type='button';btn.className='mini secondary';btn.textContent='Скачать';btn.onclick=()=>save([f]);r.append(d,btn);fl.append(r);
  }
  $('obSave').textContent=files.length>1?'Скачать все файлы (ZIP)':'Скачать «'+f0.name+'»';
+ $('obDeck').hidden=report.kind==='pptx';$('obDeckSt').textContent='';
  preview(f0);
  $('obMsg').value=C.summary(report,files,period);
  $('obSendStatus').textContent='';
@@ -349,6 +366,11 @@ async function packed(files){
 }
 async function save(files){const p=await packed(files);p.type=typeOf(p.name);window.sendBarOff=true;try{saveFile(p.name,p.bytes,p.type);}finally{window.sendBarOff=false;}}
 $('obSave').onclick=()=>result&&save(result.files);
+$('obDeck').onclick=async()=>{
+ if(!result)return;const b=$('obDeck');b.disabled=true;$('obDeckSt').textContent='Готовлю презентацию…';
+ try{const bytes=await window.ObrazecDeck.build(report,result.files,result.period);const nm=(report.name+(result.period!=null?' — '+R.ymLabel(result.period):'')+'.pptx').replace(/[\\/:*?"<>|]+/g,' ');saveFile(nm,bytes,PPTX_T);$('obDeckSt').textContent='';}
+ catch(e){$('obDeckSt').textContent=e.message||String(e);console.error(e);}finally{b.disabled=false;}
+};
 async function sendNow(channels){
  const s=S.get();
  const st=$('obSendStatus');
@@ -609,7 +631,7 @@ $('fdRun').onclick=async()=>{
   try{
    const tpl=await store.tpl(rep.id);const tables=its.flatMap(x=>x.tables.map(t=>Object.assign({},t,{cols:t.cols.filter(c=>!c.virt||c.virt.kind!=='lookup')})));
    const lm=L.latestMonth(rep.sheets[0]||{period:null,main:rep.main},tables);const ym=lm?lm.ym:(rep.lastPeriod!=null?rep.lastPeriod+1:null);
-   const files=await (rep.kind==='docx'?Wd.generate:C.generate)(rep,tpl,tables,{period:ym,prev:rep.prevMap||{}});
+   const files=await genOf(rep.kind)(rep,tpl,tables,{period:ym,prev:rep.prevMap||{}});
    const dir=await ho.getDirectoryHandle(safe(rep.name),{create:true});
    for(const f of files)await writeTo(dir,f.name,f.bytes);
    rep.prevMap=rep.prevMap||{};for(const f of files)if(f.snapshot&&rep.sheets[0])rep.prevMap[(f.split?f.split.key:'')+'|'+rep.sheets[0].sheet]=f.snapshot;

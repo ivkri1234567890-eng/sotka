@@ -217,6 +217,12 @@ function addVirtual(t){
   for(let j=0;j<t.n;j++){const v=col.vals[j];if(v instanceof DV){const lab=MON[v.m-1]+' '+v.y;mv[j]=lab;yv[j]=v.y;mk.set(norm(lab),(mk.get(norm(lab))||0)+1);yk.set('n:'+v.y,(yk.get('n:'+v.y)||0)+1);}else{mv[j]=null;yv[j]=null;}}
   t.cols.push({i:t.cols.length,c:-1,name:col.name+' · месяц',type:'text',vals:mv,keys:mk,filled:col.filled,virt:{kind:'month',base:col.name}});
   t.cols.push({i:t.cols.length,c:-1,name:col.name+' · год',type:'number',vals:yv,keys:yk,filled:col.filled,virt:{kind:'year',base:col.name}});
+  // подписи месяцев на осях графиков: «Янв», «январь»
+  const SH=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const sv=new Array(t.n),sk=new Map(),fv=new Array(t.n),fk=new Map();
+  for(let j=0;j<t.n;j++){const v=col.vals[j];if(v instanceof DV){const a=SH[v.m-1],b=MON[v.m-1];sv[j]=a[0].toUpperCase()+a.slice(1);fv[j]=b[0].toUpperCase()+b.slice(1);sk.set(a,(sk.get(a)||0)+1);fk.set(b,(fk.get(b)||0)+1);}else{sv[j]=null;fv[j]=null;}}
+  t.cols.push({i:t.cols.length,c:-1,name:col.name+' · мес.',type:'text',vals:sv,keys:sk,filled:col.filled,virt:{kind:'mshort',base:col.name}});
+  t.cols.push({i:t.cols.length,c:-1,name:col.name+' · название месяца',type:'text',vals:fv,keys:fk,filled:col.filled,virt:{kind:'mname',base:col.name}});
  }
 }
 function monthOfLabel(s){const m=/^(\S+)\s+(\d{4})$/.exec(norm(s));if(!m)return null;const i=MON.indexOf(m[1]);return i<0?null:ymOf(+m[2],i+1);}

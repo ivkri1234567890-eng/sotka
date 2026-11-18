@@ -204,7 +204,7 @@ main.wide{max-width:1240px}
 </div>
 <div class="panel">
  <h2>Файлы</h2>
- <div class="drop" id="obDrop">Перетащите сюда образец и исходники — или выберите<input type="file" id="obFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip,.docx"><small>Можно всё сразу. Программа сама определит, где образец, а где исходники прошлого и нового периода. Образцом может быть и заполненный документ Word (.docx) — тогда программа сделает такие же документы по строкам таблицы.</small></div>
+ <div class="drop" id="obDrop">Перетащите сюда образец и исходники — или выберите<input type="file" id="obFiles" multiple accept=".xlsx,.xlsm,.xls,.csv,.zip,.docx,.pptx"><small>Образец — готовый отчёт Excel, документ Word или презентация PowerPoint за прошлый период; исходники — Excel/CSV. Можно всё сразу. Программа сама определит, где образец, а где исходники прошлого и нового периода. Образцом может быть и заполненный документ Word (.docx) — тогда программа сделает такие же документы по строкам таблицы.</small></div>
  <div id="obMatch" class="banner" hidden></div>
  <ul id="obList" class="files"></ul>
  <p id="obStatus" class="status" role="status" aria-live="polite"></p>
@@ -260,6 +260,7 @@ main.wide{max-width:1240px}
  <div id="obFilesOut" class="flist"></div>
  <div class="preview" id="obPreview"></div>
  <button type="button" id="obSave">Скачать</button>
+ <button type="button" id="obDeck" class="secondary">Скачать презентацию (PowerPoint)</button><p id="obDeckSt" class="status" role="status"></p>
  <label style="margin-top:14px">Сообщение получателям<textarea id="obMsg"></textarea></label>
  <div class="tiles" style="grid-template-columns:1fr 1fr"><button type="button" id="obTg" class="secondary" style="margin:0">Отправить в Telegram</button><button type="button" id="obMail" class="secondary" style="margin:0">Отправить на почту</button></div>
  <p id="obSendStatus" class="status" role="status" aria-live="polite"></p>
@@ -307,6 +308,7 @@ main.wide{max-width:1240px}
  <li>Проверки: пустые значения, новые значения, которых не было в фильтре, справочник без нужных строк.</li>
  <li>Запоминает отчёт: в следующий раз достаточно загрузить новые исходники. Отчёт можно передать коллеге файлом .json.</li>
  <li>Объединение файлов одной формы: отчёты филиалов складываются по строкам, списки менеджеров ставятся друг под другом; итоги пересчитываются, лист «Сверка» показывает строки и суммы каждого файла.</li>
+ <li>Презентация по образцу: загрузите прошлую презентацию (.pptx) и Excel — пересчитаются таблицы, диаграммы (вместе с данными внутри) и числа в тексте слайдов, месяцы сдвинутся. К любому отчёту из Excel или Word — кнопка «Скачать презентацию».</li>
  <li>Справка Word за период: загрузите прошлую справку или служебную записку и исходники — программа пересчитает таблицы и числа в тексте («продано 12 автомобилей на сумму …», «с начала года …»), согласует слова с числами и сдвинет месяцы и даты.</li>
  <li>Документы Word по образцу: загрузите заполненный акт, письмо или договор и таблицу — программа найдёт, что откуда взято (ФИО и инициалы, суммы, суммы прописью, даты, таблица-список с итогом), и сделает такие же документы для нужных строк, плюс общий файл для печати и реестр.</li>
  <li>Отправляет готовое в Telegram и на почту, без интернета — ставит в очередь. Кнопка отправки появляется и у других отчётов центра после скачивания.</li>
@@ -3285,6 +3287,12 @@ function addVirtual(t){
   for(let j=0;j<t.n;j++){const v=col.vals[j];if(v instanceof DV){const lab=MON[v.m-1]+' '+v.y;mv[j]=lab;yv[j]=v.y;mk.set(norm(lab),(mk.get(norm(lab))||0)+1);yk.set('n:'+v.y,(yk.get('n:'+v.y)||0)+1);}else{mv[j]=null;yv[j]=null;}}
   t.cols.push({i:t.cols.length,c:-1,name:col.name+' · месяц',type:'text',vals:mv,keys:mk,filled:col.filled,virt:{kind:'month',base:col.name}});
   t.cols.push({i:t.cols.length,c:-1,name:col.name+' · год',type:'number',vals:yv,keys:yk,filled:col.filled,virt:{kind:'year',base:col.name}});
+  // подписи месяцев на осях графиков: «Янв», «январь»
+  const SH=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const sv=new Array(t.n),sk=new Map(),fv=new Array(t.n),fk=new Map();
+  for(let j=0;j<t.n;j++){const v=col.vals[j];if(v instanceof DV){const a=SH[v.m-1],b=MON[v.m-1];sv[j]=a[0].toUpperCase()+a.slice(1);fv[j]=b[0].toUpperCase()+b.slice(1);sk.set(a,(sk.get(a)||0)+1);fk.set(b,(fk.get(b)||0)+1);}else{sv[j]=null;fv[j]=null;}}
+  t.cols.push({i:t.cols.length,c:-1,name:col.name+' · мес.',type:'text',vals:sv,keys:sk,filled:col.filled,virt:{kind:'mshort',base:col.name}});
+  t.cols.push({i:t.cols.length,c:-1,name:col.name+' · название месяца',type:'text',vals:fv,keys:fk,filled:col.filled,virt:{kind:'mname',base:col.name}});
  }
 }
 function monthOfLabel(s){const m=/^(\S+)\s+(\d{4})$/.exec(norm(s));if(!m)return null;const i=MON.indexOf(m[1]);return i<0?null:ymOf(+m[2],i+1);}
@@ -3408,8 +3416,12 @@ function fit(T,rep,dims,meas,mode,base){
  for(const F of T.cols){
   if(F.type==='empty')continue;
   const d=F.keys.size+(F.filled<n?1:0);
-  if(d<2||d>60)continue;
-  if(F.type==='number'&&!F.virt&&F.keys.size>12)continue;
+  if(d>60||F.type==='number'&&!F.virt&&F.keys.size>12||F.type==='date'&&!F.virt){
+   // много разных значений: проверяем только правило «без пустых»
+   if(F.filled<n&&F.filled>0&&!F.virt){const k=rowKeys(F),vi=new Int16Array(n);for(let i=0;i<n;i++)vi[i]=k[i]?1:0;fcols.push({F,vi,vals:['','\u0002заполнено']});}
+   continue;
+  }
+  if(d<2)continue;
   const k=rowKeys(F),idx=new Map(),vi=new Int16Array(n),vals=[];
   for(let i=0;i<n;i++){let x=idx.get(k[i]);if(x==null){x=vals.length;idx.set(k[i],x);vals.push(k[i]);}vi[i]=x;}
   fcols.push({F,vi,vals});
@@ -3675,8 +3687,9 @@ function learnSheet(book,sheet,tb,sources,seed){
  // фильтры
  const filters=[];let period=null;
  const byCol=new Map();for(const o of F.ops){if(!byCol.has(o.col))byCol.set(o.col,[]);byCol.get(o.col).push(o);}
- for(const [ci] of byCol){
+ for(const [ci,ops] of byCol){
   const col=T.cols[ci],k=rowKeys(col);
+  if(ops.every(o=>o.key===''||o.key==='\u0002заполнено')){filters.push({src:col.name,op:'exclude',keys:[''],labels:['(пусто)'],known:null});continue;}
   const kept=new Set(),all=new Map();
   for(let i=0;i<T.n;i++){all.set(k[i],col.vals[i]);if(F.inc[i])kept.add(k[i]);}
   if(col.virt&&col.virt.kind==='month'){
@@ -5209,7 +5222,13 @@ function learn(sample,sources){
     // форматы чисел колонок — по тексту ячеек образца
     rc.fmt={};
     for(const c of rc.cols){const rows=tb.rows.filter(x=>x.kind==='data');const nums=rows.filter(x=>typeof (sh.grid[x.r]||[])[c.c]==='number').length;if(nums<0.6*rows.length)continue;const f=inferFmt(rows.map(x=>(sh.texts[x.r]||[])[c.c]));if(f)rc.fmt[c.c]=f;}
-    rc.docTable=sh.docTable;
+    rc.docTable=sh.docTable;if(sh.ref)rc.ref=sh.ref;
+    // значения колонок, которые не удалось пересчитать: сохраняем по строке, чтобы не стирать
+    const dimC=rc.cols.filter(c=>c.role==='dim').map(c=>c.c);
+    rc.keepVals={};
+    for(const c of rc.cols){if(c.role!=='blank')continue;const m={};let any=false;
+     for(const x of tb.rows){const v=(sh.grid[x.r]||[])[c.c];if(v==null)continue;const k=x.kind==='data'?dimC.map(d=>R.vkey((sh.grid[x.r]||[])[d])).join(R.SEP):'#'+x.kind;m[k]=v instanceof R.DV?v.toString():v;any=true;}
+     if(any)rc.keepVals[c.c]=m;}
     sheets.push(rc);
     if(!seed&&rc.quality.q>=0.8&&(rc.filters.length||rc.period))seed=rc;
     break; // одна таблица отчёта на таблицу Word
@@ -5219,7 +5238,8 @@ function learn(sample,sources){
  const tp=L.periodFromText(ctxText.concat([doc.name]));
  let sp=sheets.find(s=>s.samplePeriod!=null);
  const samplePeriod=sp?sp.samplePeriod:tp?tp.ym:null;
- const report={kind:'docx',sheets,samplePeriod,templateName:sample.name,templateKind:'docx',compare:true,created:Date.now(),skipped:[]};
+ const kind=doc.kind==='pptx'?'pptx':'docx';
+ const report={kind,sheets,samplePeriod,templateName:sample.name,templateKind:kind,compare:true,created:Date.now(),skipped:[]};
  // числа в тексте
  const results=sheets.map(rc=>{try{return L.applySheet(rc,sources,{period:rc.period?rc.samplePeriod:null});}catch(e){return null;}});
  const facts=tableFacts(report,results);
@@ -5252,9 +5272,9 @@ function learn(sample,sources){
  const where=norm(ctxText.concat([doc.name]).join(' | '));
  for(const rc of sheets)for(const f of rc.filters)if(f.op==='keep'&&f.keys.length===1&&!splits.some(s=>s.src===f.src)&&window.ObrazecCore.nameForms(f.labels[0]).some(x=>x.length>=3&&new RegExp('(^|[^\\p{L}\\p{N}])'+norm(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^\\p{L}\\p{N}])','u').test(where)))splits.push({src:f.src,key:f.keys[0],label:f.labels[0]});
  report.splits=splits;report.split=null;
- const nm=sample.name.replace(/\.docx$/i,'');
+ const nm=sample.name.replace(/\.(docx|pptx)$/i,'');
  let base=nm.replace(/[_\s-]*(за\s*)?(январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр)[а-я]*([_\s-]*\d{4})?/gi,'').replace(/[_\s-]*20\d\d$/,'').replace(/_/g,' ').trim();
- if(splits[0]){for(const f of window.ObrazecCore.nameForms(splits[0].label))base=base.split(f).join(' ');base=base.replace(/[_\s—-]+/g,' ').trim();if(base.length<3)base='Документ по «'+splits[0].src.replace(/\s*\(справочник.*$/,'')+'»';}
+ if(splits[0]){for(const f of window.ObrazecCore.nameForms(splits[0].label))base=base.split(f).join(' ');base=base.replace(/[_\s—-]+/g,' ').trim();if(base.length<3)base=(kind==='pptx'?'Презентация по «':'Документ по «')+splits[0].src.replace(/\s*\(справочник.*$/,'')+'»';}
  report.name=base||nm;
  report.id='r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
  if(!sheets.length&&!tokens.some(t=>t.fact))throw Error('Не удалось связать документ с исходниками: в таблицах и тексте не нашлось чисел, которые получаются из этих данных. Проверьте, что исходники за период документа.');
@@ -5398,7 +5418,284 @@ async function generate(report,template,tables,opt){
 }
 function pairsFor(a,b){const A=window.ObrazecCore.nameForms(a),B=window.ObrazecCore.nameForms(b);return A.map((x,i)=>({from:x,to:B[Math.min(i,B.length-1)]||b}));}
 
-window.ObrazecWord={readDocx,learn,generate,factText,tokensOf,inferFmt,fmtNum};
+window.ObrazecWord={readDocx,learn,generate,factText,tokensOf,inferFmt,fmtNum,
+ _:{topLevel,esc,unesc,parseVal,display,nounAfter,cat,caseAs,mainTableOf,dateColName,sourceFacts,tableFacts,factKey,computeFacts,strip,factValue,pairsFor}};
+})();
+
+</script><script>/* obrazec-pptx.js */
+/* «По образцу» для PowerPoint: прошлая презентация + исходники Excel → новая презентация.
+   Пересчитываются таблицы, диаграммы (данные и встроенная книга) и числа в тексте слайдов;
+   месяцы и даты сдвигаются; оформление, анимация, картинки — как в образце. */
+(function(){
+'use strict';
+const R=window.ObrazecRead,L=window.ObrazecLearn,Wd=window.ObrazecWord,Wr=window.ObrazecWrite;
+const I=Wd._;const {topLevel,esc,unesc,parseVal}=I;
+const {toNum,vkey,DV}=R;
+
+function relsOf(xml,base){
+ const m=new Map();
+ for(const x of xml.matchAll(/<Relationship\b[^>]*>/g)){const id=/Id="([^"]+)"/.exec(x[0]),t=/Target="([^"]+)"/.exec(x[0]);if(id&&t)m.set(id[1],resolve(base,t[1]));}
+ return m;
+}
+function resolve(base,t){if(t.startsWith('/'))return t.slice(1);const parts=base.split('/');parts.pop();for(const seg of t.split('/')){if(seg==='..')parts.pop();else if(seg!=='.')parts.push(seg);}return parts.join('/');}
+function textA(x){
+ let s='';const re=/<a:t>([\s\S]*?)<\/a:t>|<a:t\/>|<a:br\b[^>]*\/>|<\/a:p>/g;let m;
+ while((m=re.exec(x))){if(m[1]!=null)s+=unesc(m[1]);else if(m[0].startsWith('<a:br'))s+='\n';else if(m[0]==='</a:p>')s+='\n';}
+ return s.replace(/\n+$/,'');
+}
+/* ---------- диаграмма: ряды → таблица ---------- */
+function ptsOf(x){const out=[];for(const m of x.matchAll(/<c:pt idx="(\d+)"[^>]*>\s*(?:<c:formatCode>[^<]*<\/c:formatCode>\s*)?<c:v>([\s\S]*?)<\/c:v>/g))out[+m[1]]=unesc(m[2]);return out;}
+function parseChart(cx){
+ const sers=topLevel(cx,'c:ser').map(([a,b])=>{
+  const x=cx.slice(a,b);
+  const tx=/<c:tx>([\s\S]*?)<\/c:tx>/.exec(x);
+  const name=tx?(ptsOf(tx[1])[0]||(/<c:v>([\s\S]*?)<\/c:v>/.exec(tx[1])||[])[1]||''):'';
+  const cat=/<c:(cat|xVal)>([\s\S]*?)<\/c:\1>/.exec(x);const val=/<c:(val|yVal)>([\s\S]*?)<\/c:\1>/.exec(x);
+  return {a,b,name:unesc(name||''),cats:cat?ptsOf(cat[2]):[],vals:val?ptsOf(val[2]).map(v=>v==null?null:+v):[],catNum:cat?/<c:numRef>|<c:numLit>/.test(cat[2]):false};
+ });
+ return sers;
+}
+function chartGrid(sers){
+ const n=Math.max(0,...sers.map(s=>Math.max(s.cats.length,s.vals.length)));
+ const cats=sers[0]?sers[0].cats:[];
+ const head=['Категория'].concat(sers.map((s,i)=>s.name&&s.name.trim()?s.name:'Ряд '+(i+1)));
+ const grid=[head],texts=[head.slice()];
+ for(let i=0;i<n;i++){const c=cats[i]!=null?cats[i]:String(i+1);const row=[parseVal(String(c))];sers.forEach(s=>row.push(s.vals[i]));grid.push(row);texts.push([String(c)].concat(sers.map(s=>s.vals[i]==null?'':String(s.vals[i]))));}
+ return {grid,texts,head};
+}
+
+/** Читает pptx: слайды по порядку, таблицы, диаграммы, абзацы. */
+async function readPptx(name,buffer){
+ const bytes=new Uint8Array(buffer);
+ const zip=await JSZip.loadAsync(bytes);
+ const pres=zip.file('ppt/presentation.xml');if(!pres)throw Error('«'+name+'» — не презентация PowerPoint (.pptx).');
+ const px=await pres.async('string');const prel=relsOf(await zip.file('ppt/_rels/presentation.xml.rels').async('string'),'ppt/presentation.xml');
+ const order=[...px.matchAll(/<p:sldId\b[^>]*r:id="([^"]+)"/g)].map(m=>prel.get(m[1])).filter(Boolean);
+ const parts=[],sheets=[],paras=[];
+ for(let k=0;k<order.length;k++){
+  const path=order[k];const f=zip.file(path);if(!f)continue;
+  const xml=await f.async('string');
+  const rp=path.replace(/slides\/(slide\d+\.xml)$/,'slides/_rels/$1.rels');
+  const rels=zip.file(rp)?relsOf(await zip.file(rp).async('string'),path):new Map();
+  const pi=parts.length;parts.push({path,xml,rels,slide:k+1});
+  const tbls=topLevel(xml,'a:tbl');
+  tbls.forEach(([s,e],j)=>{
+   const tx=xml.slice(s,e);const grid=[],texts=[];
+   topLevel(tx,'a:tr').forEach(([a,b],r)=>{const row=[],tr=[];let col=0;
+    for(const [c0,c1] of topLevel(tx,'a:tc',a,b)){const tc=tx.slice(c0,c1);const span=+((/^<a:tc\b[^>]*gridSpan="(\d+)"/.exec(tc)||[])[1]||1);const cont=/^<a:tc\b[^>]*(hMerge|vMerge)="1"/.test(tc);const t=cont?'':textA(tc);const v=parseVal(t);if(v!=null)row[col]=v;tr[col]=t;col+=span;}
+    grid[r]=row;texts[r]=tr;});
+   sheets.push({name:'Слайд '+(k+1)+', таблица '+(j+1),grid,formulas:[],merges:[],texts,docTable:sheets.length,ref:{kind:'table',part:pi,idx:j}});
+  });
+  // диаграммы
+  let j=0;
+  for(const m of xml.matchAll(/<c:chart\b[^>]*r:id="([^"]+)"/g)){
+   const cp=rels.get(m[1]);if(!cp||!zip.file(cp))continue;
+   const cx=await zip.file(cp).async('string');const sers=parseChart(cx);if(!sers.length)continue;
+   const {grid,texts}=chartGrid(sers);
+   sheets.push({name:'Слайд '+(k+1)+', диаграмма '+(++j),grid,formulas:[],merges:[],texts,docTable:sheets.length,ref:{kind:'chart',part:pi,path:cp,idx:j}});
+  }
+  // абзацы вне таблиц
+  let pos=0;const segs=[];for(const [s,e] of tbls){segs.push([pos,s]);pos=e;}segs.push([pos,xml.length]);
+  for(const [a,b] of segs)for(const [s,e] of topLevel(xml,'a:p',a,b)){const t=textA(xml.slice(s,e));paras.push({part:pi,s,e,text:t});}
+ }
+ return {name,kind:'pptx',bytes,parts,sheets,paras};
+}
+
+/* ---------- запись ---------- */
+function setCellA(tc,text){
+ const open=/^<a:tc\b[^>]*>/.exec(tc)[0];
+ const pr=(/<a:tcPr\b[\s\S]*?(?:\/>|<\/a:tcPr>)/.exec(tc)||[''])[0];
+ const body=(/<a:txBody>([\s\S]*?)<\/a:txBody>/.exec(tc)||['',''])[1];
+ const bp=(/<a:bodyPr\b[\s\S]*?(?:\/>|<\/a:bodyPr>)/.exec(body)||['<a:bodyPr/>'])[0];
+ const ls=(/<a:lstStyle\b[\s\S]*?(?:\/>|<\/a:lstStyle>)/.exec(body)||['<a:lstStyle/>'])[0];
+ const p=(/<a:p>[\s\S]*?<\/a:p>|<a:p\b[\s\S]*?<\/a:p>/.exec(body)||[''])[0];
+ const ppr=(/<a:pPr\b[\s\S]*?(?:\/>|<\/a:pPr>)/.exec(p)||[''])[0];
+ const rpr=(/<a:rPr\b[\s\S]*?(?:\/>|<\/a:rPr>)/.exec(p)||/<a:endParaRPr\b[^>]*?\/>/.exec(p)||[''])[0].replace(/^<a:endParaRPr/,'<a:rPr');
+ const end=(/<a:endParaRPr\b[\s\S]*?(?:\/>|<\/a:endParaRPr>)/.exec(p)||[''])[0];
+ const runs=String(text)===''?'':String(text).split('\n').map((line,i)=>(i?'<a:br>'+rpr+'</a:br>':'')+'<a:r>'+rpr+'<a:t>'+esc(line)+'</a:t></a:r>').join('').replace(/<a:br><a:rPr([^>]*)\/><\/a:br>/g,'<a:br><a:rPr$1/></a:br>');
+ return open+'<a:txBody>'+bp+ls+'<a:p>'+ppr+runs+end+'</a:p></a:txBody>'+pr+'</a:tc>';
+}
+function replaceTextsA(x,fn){return x.replace(/(<a:t>)([\s\S]*?)(<\/a:t>)/g,(m,a,t,b)=>{const u=unesc(t);const n=fn(u);return n===u?m:a+esc(n)+b;});}
+function replaceRangesA(px,ranges){
+ if(!ranges.length)return px;
+ const nodes=[];const re=/(<a:t>)([\s\S]*?)(<\/a:t>)|<a:br\b[^>]*\/>|<a:br\b[^>]*>[\s\S]*?<\/a:br>|<\/a:p>/g;let m,pos=0;
+ while((m=re.exec(px))){if(m[2]!=null){const t=unesc(m[2]);nodes.push({s:m.index,e:m.index+m[0].length,t,from:pos});pos+=t.length;}else pos+=1;}
+ const edits=nodes.map(n=>({n,t:n.t}));
+ for(const r of ranges.slice().sort((a,b)=>b.start-a.start))
+  for(let i=edits.length-1;i>=0;i--){const e=edits[i],a=e.n.from,b=a+e.n.t.length;if(b<=r.start||a>=r.end)continue;const ls=Math.max(0,r.start-a),le=Math.min(e.n.t.length,r.end-a);e.t=e.t.slice(0,ls)+(r.start>=a&&r.start<b?r.text:'')+e.t.slice(le);}
+ let out='',last=0;for(const e of edits){out+=px.slice(last,e.n.s)+'<a:t>'+esc(e.t)+'</a:t>';last=e.n.e;}
+ return out+px.slice(last);
+}
+function cellText(rc,c,v,rowNo){
+ if(c.role==='rownum'&&rowNo)return String(rowNo);
+ return I.display(v,rc.fmt&&rc.fmt[c.c]);
+}
+function keepOf(rc,c,row){
+ const m=rc.keepVals&&rc.keepVals[c.c];if(!m)return null;
+ const dk=rc.cols.filter(x=>x.role==='dim').map(x=>vkey(row.vals[x.c])).join(R.SEP);
+ const v=row.kind==='data'?m[dk]:m['#'+row.kind];return v==null?null:v;
+}
+function rebuildTableA(tx,rc,res,replace){
+ const rows=topLevel(tx,'a:tr');if(!rows.length)return {x:tx,h:null};
+ const head=tx.slice(0,rows[0][0]),tail=tx.slice(rows[rows.length-1][1]);
+ const trs=rows.map(([a,b])=>tx.slice(a,b));
+ const d0=rc.firstRow-1,d1=rc.lastRow-1,tot=rc.totalRow!=null?rc.totalRow-1:null;
+ const tplD=trs[rc.dataStyleRow-1]||trs[d0],tplS=rc.subtotal?trs[rc.subtotal.styleRow-1]||tplD:tplD;
+ const fill=(tr,row,rowNo)=>{
+  const cells=topLevel(tr,'a:tc');let col=0,out='',last=0;
+  for(const [a,b] of cells){const tc=tr.slice(a,b);const span=+((/^<a:tc\b[^>]*gridSpan="(\d+)"/.exec(tc)||[])[1]||1);
+   const c=rc.cols.find(x=>x.c===col);let v=c?row.vals[c.c]:null;if(c&&(v==null||v==='')&&c.role==='blank')v=keepOf(rc,c,row);
+   out+=tr.slice(last,a)+(c?setCellA(tc,cellText(rc,c,v,rowNo)):tc);last=b;col+=span;}
+  return out+tr.slice(last);
+ };
+ const out=[];
+ trs.forEach((tr,i)=>{if(i<d0)out.push(replace?replaceTextsA(tr,replace):tr);});
+ let n=0;
+ const data=res.rows.length?res.rows:[{kind:'data',vals:{[rc.cols[0].c]:'Нет данных за период'}}];
+ for(const r of data){if(r.kind==='data')n++;out.push(fill(r.kind==='sub'?tplS:tplD,r,r.kind==='data'?n:0));}
+ trs.forEach((tr,i)=>{
+  if(i<=d1)return;
+  if(i===tot&&res.totalRow&&rc.total){
+   const vals={};for(const c of rc.cols){const how=rc.total.cols[c.c];if(how==='sum'||how==='formula'&&c.role==='measure'){let s=0;for(const r of res.rows)if(r.kind==='data')s+=toNum(r.vals[c.c])||0;vals[c.c]=s;}}
+   const cells=topLevel(tr,'a:tc');let col=0,o='',last=0;
+   for(const [a,b] of cells){const tc=tr.slice(a,b);const span=+((/^<a:tc\b[^>]*gridSpan="(\d+)"/.exec(tc)||[])[1]||1);
+    o+=tr.slice(last,a)+(vals[col]!=null?setCellA(tc,I.display(vals[col],rc.fmt&&rc.fmt[col])):(replace?replaceTextsA(tc,replace):tc));last=b;col+=span;}
+   out.push(o+tr.slice(last));return;
+  }
+  out.push(replace?replaceTextsA(tr,replace):tr);
+ });
+ // строк стало больше — уменьшаем шрифт и высоту строк, чтобы таблица осталась на слайде
+ if(out.length>trs.length){const k=Math.max(0.55,trs.length/out.length);
+  const kf=Math.max(k,0.6),def=Math.max(900,Math.round(1800*kf));
+  for(let i=0;i<out.length;i++)out[i]=out[i].replace(/^(<a:tr\b[^>]*\bh=")(\d+)/,(m,a,v)=>a+Math.round(+v*k))
+   .replace(/(<a:(?:rPr|endParaRPr|defRPr)\b[^>]*\bsz=")(\d+)/g,(m,a,v)=>a+Math.max(800,Math.round(+v*kf)))
+   .replace(/<a:(rPr|endParaRPr)\b(?![^>]*\bsz=)/g,m=>m+' sz="'+def+'"')
+   .replace(/<a:r><a:t>/g,'<a:r><a:rPr lang="ru-RU" sz="'+def+'"/><a:t>');}
+ const h=out.reduce((a,tr)=>a+(+((/^<a:tr\b[^>]*\bh="(\d+)"/.exec(tr)||[])[1]||0)),0);
+ return {x:head+out.join('')+tail,h,rows:out.length,was:trs.length};
+}
+/** Новые данные диаграммы: категории + ряды; встроенная книга пересобирается. */
+function chartUpdate(cx,rc,res){
+ const sers=parseChart(cx);
+ const rows=res.rows.filter(r=>r.kind==='data');
+ const dimC=rc.cols.filter(c=>c.role==='dim');
+ const catOf=r=>dimC.map(c=>R.display(r.vals[c.c])).join(' ');
+ const cats=rows.map(catOf);
+ const serCols=rc.cols.filter(c=>c.c>=1).sort((a,b)=>a.c-b.c);
+ const vals=serCols.map(c=>rows.map(r=>{let v=r.vals[c.c];if((v==null||v==='')&&c.role==='blank')v=keepOf(rc,c,r);const n=toNum(v);return n==null?null:n;}));
+ const n=cats.length;
+ let sheet='Sheet1';const fm=/<c:f>([\s\S]*?)<\/c:f>/.exec(cx);if(fm){const s=unesc(fm[1]);const mm=/^(?:'((?:[^']|'')+)'|([^!]+))!/.exec(s);if(mm)sheet=(mm[1]||mm[2]).replace(/''/g,"'");}
+ const sq=sheet.replace(/'/g,"''"),pre="'"+sq+"'!";
+ const colL=i=>XLSX.utils.encode_col(i);
+ const catNum=sers[0]&&sers[0].catNum&&cats.every(c=>toNum(c)!=null);
+ const strCache=arr=>'<c:strCache><c:ptCount val="'+arr.length+'"/>'+arr.map((v,i)=>'<c:pt idx="'+i+'"><c:v>'+esc(v)+'</c:v></c:pt>').join('')+'</c:strCache>';
+ const numCache=(arr,code)=>'<c:numCache><c:formatCode>'+(code||'General')+'</c:formatCode><c:ptCount val="'+arr.length+'"/>'+arr.map((v,i)=>v==null?'':'<c:pt idx="'+i+'"><c:v>'+(+(+v).toFixed(10))+'</c:v></c:pt>').join('')+'</c:numCache>';
+ let out='',last=0;
+ sers.forEach((s,k)=>{
+  let x=cx.slice(s.a,s.b);
+  const L1=colL(k+1);
+  const code=(/<c:val>[\s\S]*?<c:formatCode>([\s\S]*?)<\/c:formatCode>/.exec(x)||[])[1];
+  x=x.replace(/<c:(cat|xVal)>[\s\S]*?<\/c:\1>/,(m,t)=>'<c:'+t+'>'+(catNum?'<c:numRef><c:f>'+esc(pre+'$A$2:$A$'+(n+1))+'</c:f>'+numCache(cats.map(Number))+'</c:numRef>':'<c:strRef><c:f>'+esc(pre+'$A$2:$A$'+(n+1))+'</c:f>'+strCache(cats)+'</c:strRef>')+'</c:'+t+'>');
+  x=x.replace(/<c:(val|yVal)>[\s\S]*?<\/c:\1>/,(m,t)=>'<c:'+t+'><c:numRef><c:f>'+esc(pre+'$'+L1+'$2:$'+L1+'$'+(n+1))+'</c:f>'+numCache(vals[k]||[],code)+'</c:numRef></c:'+t+'>');
+  x=x.replace(/(<c:tx>\s*<c:strRef>\s*<c:f>)[\s\S]*?(<\/c:f>)/,(m,a,b)=>a+esc(pre+'$'+L1+'$1')+b);
+  // точечные настройки отдельных точек (цвета, подписи) с прежними номерами убираем, если точек стало меньше
+  x=x.replace(/<c:dPt>[\s\S]*?<\/c:dPt>/g,m=>{const i=+((/<c:idx val="(\d+)"/.exec(m)||[])[1]||0);return i<n?m:'';});
+  out+=cx.slice(last,s.a)+x;last=s.b;
+ });
+ out+=cx.slice(last);
+ const aoa=[[''].concat(sers.map((s,i)=>s.name||'Ряд '+(i+1)))].concat(cats.map((c,i)=>[catNum?Number(c):c].concat(vals.map(v=>v[i]))));
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),sheet.slice(0,31));
+ return {xml:out,book:new Uint8Array(XLSX.write(wb,{type:'array',bookType:'xlsx'})),n,was:Math.max(0,...sers.map(s=>s.vals.length))};
+}
+
+function learn(sample,sources){
+ const rep=Wd.learn({name:sample.name,book:sample.book},sources);
+ rep.kind='pptx';rep.templateKind='pptx';
+ return rep;
+}
+
+async function generate(report,template,tables,opt){
+ opt=opt||{};
+ const doc=await readPptx(report.templateName,template);
+ const rc0=report.sheets[0];
+ const splitVals=report.split&&rc0?L.splitValues(rc0,tables,report.split.src):[null];
+ if(report.split&&!splitVals.length)throw Error('В новых данных нет значений «'+report.split.src+'» для разбивки.');
+ const baseSplit=report.split?report.splits.find(s=>s.src===report.split.src):null;
+ const files=[];
+ for(const sv of splitVals){
+  const issues=[],plan=[],results=[];
+  for(const rc of report.sheets){
+   const r2=Object.assign({},rc,{filters:sv?rc.filters.filter(f=>f.src!==report.split.src):rc.filters});
+   const res=L.applySheet(r2,tables,{period:opt.period,split:sv?{src:report.split.src,key:sv.key}:null});
+   plan.push({rc:r2,res});results.push(res);issues.push(...res.issues);
+  }
+  if(sv&&plan.length&&plan.every(p=>!p.res.rows.length))continue;
+  const sub=sv?{src:report.split.src,key:sv.key}:null;
+  const vals=I.computeFacts(report,tables,opt.period,results,sub);
+  const prevVals=report.tokens.some(t=>t.fact&&t.fact.chg)?I.computeFacts(report,tables,opt.period-1,[],sub):null;
+  const oldP=report.samplePeriod!=null?{from:rc0&&rc0.period?rc0.period.from:report.samplePeriod,to:report.samplePeriod}:null;
+  const newP=opt.period!=null?(rc0?window.ObrazecCore.periodOf(rc0,opt.period):{from:opt.period,to:opt.period}):null;
+  const pairs=sv&&baseSplit?I.pairsFor(baseSplit.label,sv.label):[];
+  const replace=Wr.makeReplacer(oldP,newP,pairs);
+  const z=await JSZip.loadAsync(template);
+  const edits=doc.parts.map(()=>[]);
+  const changed=[];
+  // таблицы
+  report.sheets.forEach((rc,t)=>{
+   if(!rc.ref)return;
+   const part=doc.parts[rc.ref.part];
+   if(rc.ref.kind==='table'){
+    const span=topLevel(part.xml,'a:tbl')[rc.ref.idx];if(!span)return;
+    const r=rebuildTableA(part.xml.slice(span[0],span[1]),rc,plan[t].res,replace);
+    edits[rc.ref.part].push({s:span[0],e:span[1],x:r.x});
+    // высота рамки таблицы
+    const fs=part.xml.lastIndexOf('<p:graphicFrame',span[0]);const xf=part.xml.indexOf('<p:xfrm',fs);
+    if(fs>=0&&xf>=0&&xf<span[0]&&r.h){const em=/<a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(part.xml.slice(xf,span[0]));if(em){const at=xf+em.index;edits[rc.ref.part].push({s:at,e:at+em[0].length,x:'<a:ext cx="'+em[1]+'" cy="'+r.h+'"/>'});}}
+    if(r.rows>r.was)issues.push({level:'info',text:'Таблица на слайде '+part.slide+': строк стало '+(r.rows-1)+' вместо '+(r.was-1)+' — шрифт уменьшен, чтобы таблица поместилась.'});
+   }
+  });
+  // диаграммы
+  for(const [t,rc] of report.sheets.entries()){
+   if(!rc.ref||rc.ref.kind!=='chart')continue;
+   const cx=await z.file(rc.ref.path).async('string');
+   const u=chartUpdate(cx,rc,plan[t].res);
+   z.file(rc.ref.path,u.xml,{createFolders:false});
+   const relp=rc.ref.path.replace(/charts\/(chart[^/]+)$/,'charts/_rels/$1.rels');
+   if(z.file(relp)){const rels=relsOf(await z.file(relp).async('string'),rc.ref.path);for(const [,p] of rels)if(/embeddings\/.*\.xlsx$/i.test(p)&&z.file(p))z.file(p,u.book,{createFolders:false});}
+  }
+  const chartsSkipped=doc.sheets.filter(s=>s.ref.kind==='chart'&&!report.sheets.some(rc=>rc.ref&&rc.ref.kind==='chart'&&rc.ref.path===s.ref.path)).map(s=>s.name);
+  if(chartsSkipped.length)issues.push({level:'warn',text:'Не пересчитаны (данные не нашлись в исходниках, оставлены как в образце): '+chartsSkipped.join('; ')+'.'});
+  // абзацы
+  doc.paras.forEach((p,pi)=>{
+   const part=doc.parts[p.part];const px=part.xml.slice(p.s,p.e);
+   const ranges=[];
+   for(const t of report.tokens.filter(t=>t.p===pi&&t.fact)){
+    const v=I.factValue(t.fact,vals,prevVals);
+    if(v==null){issues.push({level:'warn',text:'Число «'+t.raw+'» на слайде '+part.slide+' не пересчитано: нет данных.'});continue;}
+    let s=Wd.fmtNum(v/t.scale,t.fmt);if(t.pct&&!/%/.test(t.fmt.suf))s+='%';ranges.push({start:t.start,end:t.end,text:s});
+    if(t.noun){const w=t.noun.forms[I.cat(v)];if(w&&w!==t.noun.word.toLowerCase())ranges.push({start:t.noun.start,end:t.noun.end,text:I.caseAs(t.noun.word,w)});}
+   }
+   let nx=replaceRangesA(px,ranges);nx=replaceTextsA(nx,replace);
+   if(nx!==px){edits[p.part].push({s:p.s,e:p.e,x:nx});const nt=textA(nx);if(nt.trim()&&nt!==p.text)changed.push('Слайд '+part.slide+': '+nt.replace(/\n/g,' '));}
+  });
+  doc.parts.forEach((part,i)=>{
+   const es=edits[i].sort((a,b)=>b.s-a.s);if(!es.length)return;
+   let x=part.xml;for(const e of es)x=x.slice(0,e.s)+e.x+x.slice(e.e);z.file(part.path,x,{createFolders:false});
+  });
+  // заметки докладчика — сдвиг месяцев
+  for(const p of Object.keys(z.files))if(/^ppt\/notesSlides\/notesSlide\d+\.xml$/.test(p)){const x=await z.file(p).async('string');z.file(p,replaceTextsA(x,replace),{createFolders:false});}
+  const bytes=await z.generateAsync({type:'uint8array',compression:'DEFLATE'});
+  let name=replace(report.templateName);
+  if(name===report.templateName||files.some(f=>f.name===name)){const tag=[sv&&sv.label,newP&&R.ymLabel(newP.to)].filter(Boolean).join(' — ');name=name.replace(/\.pptx$/i,'')+(tag?' — '+tag:' (новый)')+'.pptx';}
+  name=name.replace(/[\\/:*?"<>|]+/g,' ');
+  const main=plan.find(p=>p.rc.ref&&p.rc.ref.kind==='table')||plan[0];
+  const totals=main?main.rc.cols.filter(c=>c.role==='measure').map(c=>{let s=0;for(const r of main.res.rows)if(r.kind==='data')s+=toNum(r.vals[c.c])||0;return {name:c.name,value:s};}):[];
+  files.push({name,bytes,kind:'pptx',split:sv,rows:main?main.res.rows.filter(r=>r.kind==='data').length:0,totals,cmp:null,issues,plan,text:changed,snapshot:main?L.snapshot(main.rc,main.res,newP?newP.to:null):null});
+ }
+ return files;
+}
+
+window.ObrazecPptx={readPptx,learn,generate};
 })();
 
 </script><script>/* obrazec-merge.js */
@@ -5735,9 +6032,12 @@ window.ObrazecMerge={analyze,build};
 /* «По образцу»: интерфейс вкладки. */
 (function(){
 'use strict';
-const R=window.ObrazecRead,L=window.ObrazecLearn,C=window.ObrazecCore,S=window.ReportSend,Dc=window.ObrazecDoc,Wd=window.ObrazecWord;
+const R=window.ObrazecRead,L=window.ObrazecLearn,C=window.ObrazecCore,S=window.ReportSend,Dc=window.ObrazecDoc,Wd=window.ObrazecWord,Pp=window.ObrazecPptx,Dk=window.ObrazecDeck;
+const PPTX_T='application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const isDoc=x=>x.kind==='docx'||x.kind==='pptx';
+const genOf=k=>k==='docx'?Wd.generate:k==='pptx'?Pp.generate:C.generate;
 const DOCX_T='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const typeOf=n=>/\.docx$/i.test(n)?DOCX_T:/\.zip$/i.test(n)?'application/zip':XLSX_T;
+const typeOf=n=>/\.docx$/i.test(n)?DOCX_T:/\.pptx$/i.test(n)?'application/vnd.openxmlformats-officedocument.presentationml.presentation':/\.zip$/i.test(n)?'application/zip':XLSX_T;
 const $=id=>document.getElementById(id);
 const XLSX_T='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const MON=R.MON,cap=s=>s[0].toUpperCase()+s.slice(1);
@@ -5761,7 +6061,7 @@ async function addFiles(list){
   try{
    if(/\.zip$/i.test(f.name)){
     const z=await JSZip.loadAsync(await f.arrayBuffer());
-    for(const e of Object.values(z.files)){if(e.dir||!/\.(xlsx|xlsm|xls|csv|docx)$/i.test(e.name)||/(^|\/)(~\$|__MACOSX)/.test(e.name))continue;await addOne(e.name.split('/').pop(),await e.async('arraybuffer'),f.lastModified);}
+    for(const e of Object.values(z.files)){if(e.dir||!/\.(xlsx|xlsm|xls|csv|docx|pptx)$/i.test(e.name)||/(^|\/)(~\$|__MACOSX)/.test(e.name))continue;await addOne(e.name.split('/').pop(),await e.async('arraybuffer'),f.lastModified);}
    }else await addOne(f.name,await f.arrayBuffer(),f.lastModified);
   }catch(e){$('obStatus').textContent='«'+f.name+'»: '+(e.message||e);return;}
  }
@@ -5769,17 +6069,17 @@ async function addFiles(list){
 }
 async function addOne(name,buf,lm){
  items=items.filter(x=>x.name!==name);
- if(/\.docx$/i.test(name)){items.push({id:Math.random().toString(36).slice(2),name,kind:'docx',bytes:new Uint8Array(buf),book:{kind:'docx',sheets:[]},tables:[],lastModified:lm||0,role:'sample',manual:false,why:'документ Word — образец'});return;}
+ if(/\.(docx|pptx)$/i.test(name)){const k=/\.pptx$/i.test(name)?'pptx':'docx';items.push({id:Math.random().toString(36).slice(2),name,kind:k,bytes:new Uint8Array(buf),book:{kind:k,sheets:[]},tables:[],lastModified:lm||0,role:'sample',manual:false,why:k==='pptx'?'презентация — образец':'документ Word — образец'});return;}
  const book=R.readBook(name,buf);
  await new Promise(r=>setTimeout(r));
  const tables=R.tablesOf(book);
  items.push({id:Math.random().toString(36).slice(2),name,book,tables,lastModified:lm||0,role:null,manual:false});
 }
 function reclassify(){
- const xs=items.filter(x=>x.kind!=='docx');
+ const xs=items.filter(x=>!isDoc(x));
  const cl=C.classify(xs,report&&report.saved?[report]:saved);
  cl.roles.forEach((r,i)=>{if(!xs[i].manual){xs[i].role=r.role;xs[i].why=r.why;}});
- if(items.some(x=>x.kind==='docx'&&x.role==='sample'))for(const x of xs)if(x.role==='sample'&&!x.manual){x.role='both';x.why='исходник';}
+ if(items.some(x=>isDoc(x)&&x.role==='sample'))for(const x of xs)if(x.role==='sample'&&!x.manual){x.role='both';x.why='исходник';}
  const m=$('obMatch');
  if(cl.report&&!items.some(x=>x.role==='sample')){
   const rep=saved.find(r=>r.id===cl.report.id)||report;
@@ -5797,7 +6097,7 @@ function renderFiles(){
   const d=document.createElement('div');const b=document.createElement('b');b.textContent=it.name;
   const sm=document.createElement('small');
   const t=it.tables.slice().sort((a,b)=>b.n-a.n)[0];
-  sm.textContent=it.kind==='docx'?'документ Word'+(it.why?' · '+it.why:''):t?(it.tables.length>1?it.tables.length+' таблиц, ':'')+'строк: '+t.n+', колонок: '+t.cols.filter(c=>!c.virt).length+(it.why?' · '+it.why:''):'таблица не найдена';
+  sm.textContent=isDoc(it)?(it.kind==='pptx'?'презентация PowerPoint':'документ Word')+(it.why?' · '+it.why:''):t?(it.tables.length>1?it.tables.length+' таблиц, ':'')+'строк: '+t.n+', колонок: '+t.cols.filter(c=>!c.virt).length+(it.why?' · '+it.why:''):'таблица не найдена';
   d.append(b,sm);
   const sel=document.createElement('select');sel.setAttribute('aria-label','Роль файла');
   for(const [v,l] of ROLES)sel.add(new Option(l,v));sel.value=it.role||'skip';
@@ -5827,6 +6127,19 @@ $('obLearn').onclick=async()=>{
  let src=tablesBy(['old','both']);if(!src.length)src=tablesBy(['new']);
  $('obLearn').disabled=true;$('obStatus').textContent='Разбираю образец…';
  await new Promise(r=>setTimeout(r,30));
+ if(sample.kind==='pptx'){
+  try{
+   const t0=Date.now();
+   const clean=x=>Object.assign({},x,{cols:x.cols.filter(c=>!c.virt||c.virt.kind!=='lookup')});
+   const book=await Pp.readPptx(sample.name,sample.bytes);
+   report=Pp.learn({name:sample.name,book},src.map(clean));altReport=null;template=sample.bytes;dirty=true;
+   const q=report.sheets.reduce((a,x)=>({ok:a.ok+x.quality.ok,c:a.c+x.quality.cells}),{ok:0,c:0});
+   $('obStatus').textContent='Готово за '+((Date.now()-t0)/1000).toFixed(1)+' с. Презентация: слайдов '+book.parts.length+', таблиц и диаграмм пересчитаю '+report.sheets.length+' из '+book.sheets.length+(q.c?' (совпало '+q.ok+' из '+q.c+')':'')+', чисел в тексте: '+report.tokens.filter(t=>t.fact).length+' из '+report.tokens.length+'.';
+   showAlt();renderRecipe();$('obRecipe').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){$('obStatus').textContent=e.message||String(e);console.error(e);}
+  finally{$('obLearn').disabled=false;}
+  return;
+ }
  if(sample.kind==='docx'){
   try{
    const t0=Date.now();
@@ -5914,7 +6227,7 @@ function renderRecipe(){
  const box=$('obSheets');box.replaceChildren();
  for(const rc of report.sheets){
   const p=document.createElement('div');p.style.marginTop='14px';
-  const h=document.createElement('h2');h.textContent=report.kind==='docx'?'Таблица '+(rc.docTable+1)+' в документе':'Лист «'+rc.sheet+'»'+(rc.block?', таблица '+rc.block+' (колонки '+XLSX.utils.encode_col(rc.c0)+'–'+XLSX.utils.encode_col(rc.c1)+')':'');p.append(h);
+  const h=document.createElement('h2');h.textContent=report.kind==='pptx'?rc.sheet:report.kind==='docx'?'Таблица '+(rc.docTable+1)+' в документе':'Лист «'+rc.sheet+'»'+(rc.block?', таблица '+rc.block+' (колонки '+XLSX.utils.encode_col(rc.c0)+'–'+XLSX.utils.encode_col(rc.c1)+')':'');p.append(h);
   const q=rc.quality;
   const info=document.createElement('p');info.className='status';
   const lines=[];
@@ -5947,7 +6260,7 @@ function renderRecipe(){
   for(const n of rc.notes){const w=document.createElement('p');w.className='warn';w.textContent=n;p.append(w);}
   box.append(p);
  }
- if(report.kind==='docx'){
+ if(report.kind==='docx'||report.kind==='pptx'){
   const p=document.createElement('div');p.style.marginTop='14px';
   const h=document.createElement('h2');h.textContent='Числа в тексте';p.append(h);
   if(!report.tokens.length){const t=document.createElement('p');t.className='tip';t.textContent='В тексте нет чисел для пересчёта — поменяются месяцы, даты и таблицы.';p.append(t);}
@@ -5967,7 +6280,7 @@ function renderRecipe(){
   }
   box.append(p);
  }
- $('obCompare').closest('label').hidden=report.kind==='docx';
+ $('obCompare').closest('label').hidden=report.kind==='docx'||report.kind==='pptx';
  // разбивка
  const sp=report.splits[0];
  $('obSplitBox').hidden=!sp;
@@ -6013,7 +6326,7 @@ $('obRun').onclick=async()=>{
   if(!template)template=await store.tpl(report.id);
   if(!template)throw Error('Не найден файл образца для этого отчёта — загрузите образец заново.');
   const ym=R.ymOf(+$('obYear').value,+$('obMonth').value);
-  const files=await (report.kind==='docx'?Wd.generate:C.generate)(report,template,tables,{period:ym,prev:report.prevMap||{}});
+  const files=await genOf(report.kind)(report,template,tables,{period:ym,prev:report.prevMap||{}});
   if(!files.length)throw Error('Ничего не получилось собрать: по условиям образца нет строк.');
   result={files,period:ym};
   // запоминаем отчёт и снимок для следующего сравнения
@@ -6055,6 +6368,7 @@ function renderResult(){
   const btn=document.createElement('button');btn.type='button';btn.className='mini secondary';btn.textContent='Скачать';btn.onclick=()=>save([f]);r.append(d,btn);fl.append(r);
  }
  $('obSave').textContent=files.length>1?'Скачать все файлы (ZIP)':'Скачать «'+f0.name+'»';
+ $('obDeck').hidden=report.kind==='pptx';$('obDeckSt').textContent='';
  preview(f0);
  $('obMsg').value=C.summary(report,files,period);
  $('obSendStatus').textContent='';
@@ -6083,6 +6397,11 @@ async function packed(files){
 }
 async function save(files){const p=await packed(files);p.type=typeOf(p.name);window.sendBarOff=true;try{saveFile(p.name,p.bytes,p.type);}finally{window.sendBarOff=false;}}
 $('obSave').onclick=()=>result&&save(result.files);
+$('obDeck').onclick=async()=>{
+ if(!result)return;const b=$('obDeck');b.disabled=true;$('obDeckSt').textContent='Готовлю презентацию…';
+ try{const bytes=await window.ObrazecDeck.build(report,result.files,result.period);const nm=(report.name+(result.period!=null?' — '+R.ymLabel(result.period):'')+'.pptx').replace(/[\\/:*?"<>|]+/g,' ');saveFile(nm,bytes,PPTX_T);$('obDeckSt').textContent='';}
+ catch(e){$('obDeckSt').textContent=e.message||String(e);console.error(e);}finally{b.disabled=false;}
+};
 async function sendNow(channels){
  const s=S.get();
  const st=$('obSendStatus');
@@ -6343,7 +6662,7 @@ $('fdRun').onclick=async()=>{
   try{
    const tpl=await store.tpl(rep.id);const tables=its.flatMap(x=>x.tables.map(t=>Object.assign({},t,{cols:t.cols.filter(c=>!c.virt||c.virt.kind!=='lookup')})));
    const lm=L.latestMonth(rep.sheets[0]||{period:null,main:rep.main},tables);const ym=lm?lm.ym:(rep.lastPeriod!=null?rep.lastPeriod+1:null);
-   const files=await (rep.kind==='docx'?Wd.generate:C.generate)(rep,tpl,tables,{period:ym,prev:rep.prevMap||{}});
+   const files=await genOf(rep.kind)(rep,tpl,tables,{period:ym,prev:rep.prevMap||{}});
    const dir=await ho.getDirectoryHandle(safe(rep.name),{create:true});
    for(const f of files)await writeTo(dir,f.name,f.bytes);
    rep.prevMap=rep.prevMap||{};for(const f of files)if(f.snapshot&&rep.sheets[0])rep.prevMap[(f.split?f.split.key:'')+'|'+rep.sheets[0].sheet]=f.snapshot;
@@ -6860,23 +7179,118 @@ $('sdPpt').onclick=async()=>{
 };
 })();
 
+</script><script>/* obrazec-deck.js */
+/* «По образцу»: презентация PowerPoint из готового отчёта (Excel или Word).
+   Итоги, диаграмма, таблица отчёта по слайдам, изменения к прошлому периоду. Всё — из того же результата, что и файл. */
+(function(){
+'use strict';
+const R=window.ObrazecRead;
+const INK='18233C',MUTED='62758C',VIOLET='6864EE',VIOLET_L='E5E3FF',TEAL='14B8A6',RED='D26373',GREEN='1E7B34',BG='F4F6FB',ALT='EEF0F9';
+const PER=12;
+const fmt=v=>{if(v==null||v==='')return '';if(v instanceof R.DV)return v.toString();if(typeof v==='number'){const r=Math.round(v*100)/100;const neg=r<0;let [a,b]=Math.abs(r).toFixed(Number.isInteger(r)?0:2).split('.');a=a.replace(/\B(?=(\d{3})+(?!\d))/g,' ');return (neg?'−':'')+a+(b?','+b:'');}return String(v);};
+const MONTH_RE=/^(янв|фев|мар|апр|ма[йя]|июн|июл|авг|сен|окт|ноя|дек)/i;
+
+async function build(report,files,period){
+ if(typeof PptxGenJS!=='function')throw Error('Модуль PowerPoint не загружен.');
+ const p=new PptxGenJS();p.defineLayout({name:'WIDE',width:13.333,height:7.5});p.layout='WIDE';
+ p.title=report.name;p.author='Центр отчётов';
+ const per=period!=null?R.ymLabel(period):'';
+ let n=0;
+ const txt=(s,t,x,y,w,h,o)=>s.addText(String(t),Object.assign({x,y,w,h,fontFace:'Arial',fontSize:16,color:INK,margin:0,valign:'top',fit:'shrink'},o||{}));
+ function slide(title,sub){const s=p.addSlide();n++;s.background={color:BG};txt(s,title,.57,.31,12.19,.62,{fontSize:28.5,bold:true});if(sub)txt(s,sub,.6,1.02,12.08,.52,{fontSize:15.75,color:MUTED});
+  txt(s,report.name+(per?'  ·  '+per:''),.6,7.05,10.94,.26,{fontSize:11.25,color:MUTED});txt(s,String(n).padStart(2,'0'),12.19,7.03,.62,.29,{fontSize:13.5,color:MUTED,align:'right'});return s;}
+ function table(s,head,rows,o){
+  o=o||{};
+  const body=[head.map(h=>({text:String(h),options:{bold:true,color:'FFFFFF',fill:{color:INK}}}))].concat(rows.map((r,i)=>r.cells.map(v=>({text:String(v),options:{bold:!!r.bold,color:INK,fill:{color:r.bold?'E3E6F3':i%2?ALT:'FFFFFF'}}}))));
+  const cols=head.length;const w=12.12;
+  s.addTable(body,{x:.6,y:o.y||1.72,w,colW:o.colW||Array(cols).fill(w/cols),fontFace:'Arial',fontSize:o.fs||(cols>6?11:13.5),rowH:.36,valign:'middle',margin:[0,.08,0,.08],border:{type:'solid',pt:1,color:INK},autoPage:false});
+ }
+ const main=f=>f.plan&&f.plan[0];
+ const f0=files[0];
+ // 1. итоги
+ let s=slide(report.name,(per?per+'. ':'')+(files.length>1?'Файлов: '+files.length+'. ':'')+'Строк: '+files.reduce((a,f)=>a+f.rows,0));
+ const tot=f0.totals.slice(0,4);
+ if(files.length===1&&tot.length){
+  tot.forEach((t,i)=>{const x=.5+3.125*i;const hero=i===0;
+   s.addShape(p.ShapeType.roundRect,{x,y:1.82,w:2.95,h:1.9,rectRadius:.08,fill:{color:hero?VIOLET:'FFFFFF'},line:{color:hero?VIOLET:'FFFFFF'}});
+   txt(s,t.name,x+.21,2.0,2.6,.5,{fontSize:15,color:hero?VIOLET_L:MUTED});const v=fmt(t.value);
+   txt(s,v,x+.21,2.5,2.6,.8,{fontSize:v.length>9?24:v.length>6?32:40,bold:true,color:hero?'FFFFFF':INK});
+   const o=f0.cmp&&f0.cmp.tot.find(x=>x.name===t.name);
+   if(o&&o.old){const d=(t.value-o.old)/Math.abs(o.old)*100;txt(s,(d>=0?'+':'')+Math.round(d)+'% к прошлому периоду',x+.21,3.3,2.6,.35,{fontSize:12,color:hero?VIOLET_L:d>=0?GREEN:RED});}
+  });
+  if(f0.cmp){const c=f0.cmp.cnt;txt(s,'К прошлому периоду: новых строк '+c['новая']+', пропало '+c['пропала']+', изменилось '+c['изменилась']+'.',.6,4.1,12,.4,{fontSize:15,color:MUTED});}
+  const iss=[...new Set(f0.issues.filter(i=>i.level!=='info').map(i=>i.text))].slice(0,4);
+  if(iss.length)txt(s,'Проверить: '+iss.join(' '),.6,4.7,12,1.6,{fontSize:13,color:MUTED});
+ }else if(files.length>1){
+  const m=f0.totals.slice(0,3).map(t=>t.name);
+  const rows=files.slice(0,PER).map(f=>({cells:[f.split?f.split.label:f.name,f.rows].concat(m.map(nm=>{const t=f.totals.find(x=>x.name===nm);return t?fmt(t.value):'';}))}));
+  table(s,['Файл','Строк'].concat(m),rows,{y:1.82,colW:[12.12-1.4-1.9*m.length,1.4].concat(Array(m.length).fill(1.9))});
+  if(files.length>PER)txt(s,'…и ещё '+(files.length-PER)+' файлов',.6,6.5,12,.4,{fontSize:13,color:MUTED});
+ }
+ // 2. диаграмма и 3. таблица — по каждому файлу (до 15)
+ for(const f of files.slice(0,15)){
+  const pl=main(f);if(!pl)continue;
+  const {rc,res}=pl;
+  const dims=rc.cols.filter(c=>c.role==='dim'),meas=rc.cols.filter(c=>c.role==='measure');
+  const data=res.rows.filter(r=>r.kind==='data');
+  const lab=f.split?f.split.label:'';
+  if(dims.length&&meas.length&&data.length>1&&rc.mode!=='detail'){
+   const m=meas[0];
+   const labelOf=r=>dims.map(d=>R.display(r.vals[d.c])).join(' · ');
+   const monthly=data.every(r=>MONTH_RE.test(labelOf(r)));
+   const rows=monthly?data:data.slice().sort((a,b)=>(R.toNum(b.vals[m.c])||0)-(R.toNum(a.vals[m.c])||0)).slice(0,10).reverse();
+   s=slide((lab?lab+': ':'')+'«'+m.name+'»',monthly?'По месяцам':'Крупнейшие строки по «'+m.name+'»'+(data.length>10?' — 10 из '+data.length:''));
+   const opts={x:.6,y:1.72,w:12.12,h:5.0,chartColors:[monthly?TEAL:VIOLET],showLegend:false,catAxisLabelFontSize:11,valAxisLabelFontSize:11,catAxisLabelFontFace:'Arial',valAxisLabelFontFace:'Arial',valGridLine:{color:'E3E7F0',size:1},catGridLine:{style:'none'},showValue:true,dataLabelFontSize:11,dataLabelFormatCode:'# ##0',dataLabelPosition:monthly?'t':'outEnd'};
+   if(monthly)Object.assign(opts,{lineSize:3,lineDataSymbol:'circle',lineDataSymbolSize:7});else Object.assign(opts,{barDir:'bar',barGapWidthPct:60});
+   s.addChart(monthly?p.ChartType.line:p.ChartType.bar,[{name:m.name,labels:rows.map(r=>labelOf(r).slice(0,60)),values:rows.map(r=>R.toNum(r.vals[m.c])||0)}],opts);
+  }
+  const cols=rc.cols.filter(c=>c.role!=='formula'&&c.role!=='blank');
+  const all=res.rows.concat(res.totalRow?[Object.assign({},res.totalRow,{vals:Object.assign({[cols[0].c]:'Итого'},res.totalRow.vals)})]:[]);
+  let no=0;
+  const rows=all.map(r=>{if(r.kind==='data')no++;return {bold:r.kind!=='data',cells:cols.map(c=>c.role==='rownum'&&r.kind==='data'?no:fmt(r.vals[c.c]))};});
+  const pages=Math.ceil(rows.length/PER);
+  const widths=(()=>{const w=cols.map(c=>c.role==='measure'||c.role==='rownum'?1:2.2);const sum=w.reduce((a,b)=>a+b,0);return w.map(x=>x/sum*12.12);})();
+  for(let st=0;st<rows.length&&st<PER*8;st+=PER){
+   s=slide((lab?lab+': ':'')+(rc.sheet&&report.kind!=='docx'&&report.kind!=='pptx'?rc.sheet:'Таблица отчёта'),pages>1?'Строки '+(st+1)+'–'+Math.min(st+PER,rows.length)+' из '+rows.length:'');
+   table(s,cols.map(c=>c.name),rows.slice(st,st+PER),{colW:widths});
+  }
+  if(rows.length>PER*8)txt(s,'Полностью таблица — в файле отчёта ('+rows.length+' строк).',.6,6.55,12,.4,{fontSize:13,color:MUTED});
+ }
+ // 4. изменения
+ if(files.length===1&&f0.cmp){
+  const c=f0.cmp;const ch=c.rows.filter(r=>r.st!=='без изменений');
+  if(ch.length){
+   s=slide('Изменения к прошлому периоду','Новых '+c.cnt['новая']+', пропало '+c.cnt['пропала']+', изменилось '+c.cnt['изменилась']);
+   const m=c.meas[0];
+   const rows=ch.slice(0,PER).map(r=>({cells:[r.st,r.l.join(' · ')].concat(m?[fmt(r.old[0]),fmt(r.now[0])]:[])}));
+   table(s,['Что','Строка'].concat(m?[m+' — было',m+' — стало']:[]),rows,{colW:m?[1.9,6.62,1.8,1.8]:[2,10.12]});
+   if(ch.length>PER)txt(s,'Все изменения — на листе «Изменения» файла отчёта.',.6,6.55,12,.4,{fontSize:13,color:MUTED});
+  }
+ }
+ return await p.write({outputType:'uint8array'});
+}
+window.ObrazecDeck={build};
+})();
+
 </script>
 <script>
 (()=>{
- const HASH='1c918023d679a37e1f3338c9029fe54730b3338643dea17773a25e4c67956699', app=el('app'), gate=el('gate');
+ const HASH='12289529ade70f5af2421da0e846bbc2504e603809e2ab3146ea7dcae4d750c5', app=el('app'), gate=el('gate');
+ try{const nv=performance.getEntriesByType('navigation')[0];if(nv&&nv.type==='reload')sessionStorage.removeItem('sotka-gate');}catch(e){}
  const open=()=>{gate.hidden=true;app.hidden=false;};
- try{if(sessionStorage.getItem('dpga-auth')===HASH)open();}catch(e){}
+ try{if(sessionStorage.getItem('sotka-gate')===HASH)open();}catch(e){}
  if(!app.hidden)return;
  el('pw').focus();
  el('gateForm').onsubmit=async e=>{
   e.preventDefault();
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(el('pw').value.trim()));
   const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-  if(hex===HASH){try{sessionStorage.setItem('dpga-auth',HASH);}catch(e){}open();}
+  if(hex===HASH){try{sessionStorage.setItem('sotka-gate',HASH);}catch(e){}open();}
   else{el('pwErr').hidden=false;el('pw').select();}
  };
 })();
 </script>
+
 
 
 </html>
