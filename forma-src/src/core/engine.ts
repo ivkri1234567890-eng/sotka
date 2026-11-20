@@ -13,6 +13,7 @@ import { MODEL_SCHEMA, MODEL_VERSION, hashConfig } from './schema';
 import type { ProductConfig, Part, Hole, ManufacturingModel, Joint, Moving, Check, AssemblyStep, Finish } from './schema';
 import { MATERIALS, BACKS, DRAWER_BOX, isWoodLike } from './materials';
 import { HW } from './hardware';
+import { buildBed } from './bed';
 
 type Ax = 'x' | 'y' | 'z';
 type V3 = [number, number, number];
@@ -38,7 +39,7 @@ export type Derived = {
 export function derive(c: ProductConfig): Derived {
   const t = c.body.thickness, tf = c.fronts.thickness, tb = c.back.thickness, tt = c.top.enabled ? c.top.thickness : 0;
   const inset = c.fronts.mount === 'inset';
-  const baseH = c.base.type === 'wall' ? 0 : c.base.height;
+  const baseH = c.base.type === 'wall' || c.base.type === 'floor' ? 0 : c.base.height;
   const frontAdd = inset ? 0 : tf;
   const backAdd = c.back.mount === 'overlay' ? tb : 0;
   const ovS = c.top.enabled ? c.top.overhangSides : 0, ovF = c.top.enabled ? c.top.overhangFront : 0;
@@ -61,7 +62,7 @@ function local(p: Part, P: V3): V3 { return [P[AX[p.axes[0]]] - p.origin[AX[p.ax
 /** dir — сторона, с которой входит инструмент: '+x' — инструмент со стороны +X. */
 function faceOf(p: Part, sign: '+' | '-'): 'A' | 'B' { return sign === p.faceA ? 'A' : 'B'; }
 
-class Builder {
+export class Builder {
   parts: Part[] = []; joints: Joint[] = []; checks: Check[] = []; moving: Moving[] = [];
   hid = 0; jid = 0;
   constructor(public c: ProductConfig, public d: Derived) {}
@@ -93,12 +94,14 @@ function massOf(p: Part): number {
   if (p.geom === 'leg') return 0.25;
   if (p.geom === 'handle') return 0.06;
   if (p.geom === 'profile') return p.L / 1000 * 0.4;
+  if (p.geom === 'mirror') return p.L * p.W * p.thickness * 1e-9 * 2500;
+  if (p.geom === 'slat') return p.L / 1000 * 0.3;
   const dens = (MATERIALS as any)[p.material]?.density || (BACKS as any)[p.material]?.density || 700;
   return p.L * p.W * p.thickness * 1e-9 * dens;
 }
 
-const EDGE0 = { kind: 'none' as const, t: 0 };
-function edgeFor(c: ProductConfig, mat: string, visible: 'front' | 'side' | 'hidden') {
+export const EDGE0 = { kind: 'none' as const, t: 0 };
+export function edgeFor(c: ProductConfig, mat: string, visible: 'front' | 'side' | 'hidden') {
   if (visible === 'hidden') return EDGE0;
   const m = (MATERIALS as any)[mat];
   if (!m) return EDGE0;
@@ -116,6 +119,7 @@ export function fastenerPositions(len: number, edge = 50, pitch = 300): number[]
 }
 
 export function buildModel(c: ProductConfig): ManufacturingModel {
+  if (c.category === 'bed') return buildBed(c);
   const d = derive(c), B = new Builder(c, d);
   const { t, tf, tb, x0, y0, z0, bodyW, bodyH, bodyD, inset } = d;
   const body = c.body, matB = body.material, fin = body.finish, wood = isWoodLike(fin) || MATERIALS[matB].grainDefault && fin.kind !== 'ral';
@@ -123,8 +127,8 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
   const chk = (level: Check['level'], area: string, msg: string, fix?: string) => B.checks.push({ level, area, msg, fix });
 
   /* ---- базовые проверки размеров ---- */
-  const minW = c.category === 'nightstand' ? 300 : 400, maxW = c.category === 'nightstand' ? 900 : 3000;
-  const minH = c.category === 'nightstand' ? 300 : 1000, maxH = c.category === 'nightstand' ? 900 : 2700;
+  const LIM = { nightstand: [300, 900, 250, 900], wardrobe: [400, 3000, 1000, 2700], dresser: [600, 1800, 150, 950], bed: [0, 9999, 0, 9999] }[c.category];
+  const minW = LIM[0], maxW = LIM[1], minH = LIM[2], maxH = LIM[3];
   if (c.size.width < minW || c.size.width > maxW) chk('error', 'Размеры', `Ширина ${c.size.width} мм вне диапазона ${minW}–${maxW} мм.`, `Укажите ширину от ${minW} до ${maxW} мм.`);
   if (c.size.height < minH || c.size.height > maxH) chk('error', 'Размеры', `Высота ${c.size.height} мм вне диапазона ${minH}–${maxH} мм.`, `Укажите высоту от ${minH} до ${maxH} мм.`);
   if (bodyD < 250 || bodyD > 750) chk('error', 'Размеры', `Глубина корпуса ${r1(bodyD)} мм вне диапазона 250–750 мм.`, 'Измените общую глубину или вынос столешницы.');
@@ -141,7 +145,7 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
   const sideEdges = (front: boolean) => ({
     L1: EDGE0,                                                        // задний край
     L2: edgeFor(c, matB, front ? 'front' : 'side'),                   // передний край
-    W1: edgeFor(c, matB, c.base.type === 'wall' || c.base.type.startsWith('legs') || c.base.type === 'metal-frame' ? 'side' : 'hidden'), // низ
+    W1: edgeFor(c, matB, c.base.type === 'wall' || c.base.type.startsWith('legs') || c.base.type === 'metal-frame' ? 'side' : 'hidden'), // низ (без ножек — на полу, не видно)
     W2: edgeFor(c, matB, c.top.enabled ? 'hidden' : 'side'),          // верх
   });
   const sL = B.add({ id: 'S1', name: 'Боковина левая', role: 'side', group: 'body', geom: 'panel', material: matB, materialName: MATERIALS[matB].name, thickness: t, finish: fin,
@@ -474,6 +478,8 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
     B.joint({ kind: 'weld', title: 'Металлокаркас сварной (изготавливается отдельно)', parts: Array.from({ length: k }, (_, i) => 'M' + (i + 1)), hardware: [{ id: 'frame-glide', qty: 4 }], step: 'base', status: 'unverified', note: 'Сварка и порошковая окраска — по чертежу каркаса, у металлиста' });
     B.joint({ kind: 'screw', title: 'Корпус к каркасу', parts: ['B1', 'M5', 'M6'], hardware: [{ id: 'frame-bolt', qty: 4 + 2 * Math.max(0, Math.ceil((bodyW - 800) / 600)) }], step: 'base-attach', status: 'unverified' });
     if (fh < 100) chk('warn', 'Основание', 'Каркас ниже 100 мм — выбран как подиум.', undefined);
+  } else if (bt === 'floor') {
+    B.joint({ kind: 'glide', title: 'Подпятники на дно (без ножек)', parts: ['B1', 'S1', 'S2'], hardware: [{ id: 'glide', qty: bodyW > 1200 ? 6 : 4 }], step: 'base-attach', status: 'unverified' });
   } else if (bt === 'wall') {
     B.joint({ kind: 'wall', title: 'Крепление к стене', parts: ['BK', 'T1'], hardware: [{ id: 'wall-hanger', qty: 1 }], step: 'install', status: 'unverified' });
     const wb = c.base.wallBase;
@@ -482,9 +488,35 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
     if (wb === 'aerated') chk('warn', 'Подвес', 'Газобетон: нужны специальные дюбели для ячеистого бетона; несущая способность проверяется по их документации.', undefined);
   }
 
+  /* ---- зеркало трюмо ---- */
+  if (c.category === 'dresser' && c.mirror && c.mirror.type !== 'none') addMirror(B, c, d);
+
   /* ---- пересечения и движения ---- */
   collide(B, c);
   return finish(B, c, d);
+}
+
+/** Зеркало: щит из материала корпуса + зеркальное стекло 4 мм на клею со страховочными держателями. */
+function addMirror(B: Builder, c: ProductConfig, d: Derived) {
+  const mr = c.mirror!, t = d.t, mw = Math.min(mr.width, d.W), mh = mr.height, arch = mr.type === 'arch';
+  const onTop = mr.mount === 'top', y0 = onTop ? d.H : d.H + 150, x0 = (d.W - mw) / 2, z0 = 0;
+  const r = arch ? Math.min(mw / 2, mh) : 0, matB = c.body.material, e = edgeFor(c, matB, 'side');
+  const board = B.add({ id: 'MR1', name: 'Щит зеркала', role: 'mirror-board', group: 'mirror', geom: arch ? 'panel-radius' : 'panel', material: matB, materialName: MATERIALS[matB].name, thickness: t, finish: c.body.finish,
+    L: mw, W: mh, edges: { L1: e, L2: e, W1: e, W2: e }, grain: isWoodLike(c.body.finish) ? 'W' : 'none', origin: [x0, y0, z0], axes: ['x', 'y', 'z'], faceA: '+', sheet: true });
+  if (arch) board.ops.push({ id: 'rMR1', type: 'radius', face: 'A', params: { r, corners: 2 }, note: `Верх щита по дуге R${Math.round(r)} — фрезеровка по шаблону` });
+  const gl = B.add({ id: 'MR2', name: 'Зеркало 4 мм (заказ в стекольной мастерской)', role: 'mirror', group: 'mirror', geom: 'mirror', material: 'glass', materialName: 'Зеркало 4 мм, полированная кромка', thickness: 4, finish: null,
+    L: mw - 40, W: mh - 40, edges: { L1: EDGE0, L2: EDGE0, W1: EDGE0, W2: EDGE0 }, grain: 'none', origin: [x0 + 20, y0 + 20, z0 + t], axes: ['x', 'y', 'z'], faceA: '+', sheet: false });
+  if (arch) gl.ops.push({ id: 'rMR2', type: 'radius', face: 'A', params: { r: Math.max(0, r - 20), corners: 2 }, note: 'Резка зеркала по дуге — в стекольной мастерской' });
+  B.joint({ kind: 'glue', title: 'Зеркало на щит: клей и страховочные держатели', parts: ['MR2', 'MR1'], hardware: [{ id: 'mirror-glue', qty: 1 }, { id: 'mirror-clip', qty: 4 }], step: 'mirror', status: 'unverified' });
+  if (onTop) {
+    B.joint({ kind: 'screw', title: 'Щит зеркала к корпусу трюмо', parts: ['MR1', c.top.enabled ? 'TT' : 'T1', 'BK'], hardware: [{ id: 'mirror-bracket', qty: 2 }, { id: 'screw-4x16', qty: 8 }], step: 'mirror', status: 'unverified' });
+    if (mh > 1.2 * mw && mh > 900) B.checks.push({ level: 'warn', area: 'Зеркало', msg: 'Высокое узкое зеркало на столешнице может раскачиваться.', fix: 'Закрепите щит к стене или выберите зеркало на стену.' });
+  } else {
+    B.joint({ kind: 'wall', title: 'Зеркало на стену', parts: ['MR1'], hardware: [{ id: 'wall-hanger', qty: 1 }], step: 'install', status: 'unverified' });
+    if (c.base.wallBase === 'unknown') B.checks.push({ level: 'warn', area: 'Зеркало', msg: 'Не указано основание стены — крепление зеркала не подобрано.', fix: 'Укажите материал стены в разделе «Ручки и основание».' });
+  }
+  if (mw > d.W) B.checks.push({ level: 'error', area: 'Зеркало', msg: 'Зеркало шире трюмо.', fix: `Уменьшите ширину зеркала до ${d.W} мм.` });
+  if (mh < 300) B.checks.push({ level: 'warn', area: 'Зеркало', msg: 'Зеркало ниже 300 мм неудобно.', fix: 'Обычно 600–1000 мм.' });
 }
 
 /** Пересечения: недопустимые коллизии отделяются от предусмотренных сопряжений (паз, касание). */
@@ -510,7 +542,7 @@ function collide(B: Builder, c: ProductConfig) {
     const own = new Set(m.parts);
     if (m.kind === 'drawer') {
       const hit = P.filter(p => !own.has(p.id) && p.role !== 'handle' && !B.moving.some(o => o !== m && o.parts.includes(p.id))).find(p => m.parts.some(id => {
-        const a = partBox(B.get(id)), mv = { min: [a.min[0], a.min[1], a.min[2] + m.travel] as V3, max: [a.max[0], a.max[1], a.max[2] + m.travel] as V3 };
+        const a = partBox(B.get(id)), k = m.axis === 'x' ? 0 : 2, mv = { min: [...a.min] as V3, max: [...a.max] as V3 }; mv.min[k] += m.travel; mv.max[k] += m.travel;
         return ov(mv, partBox(p));
       }));
       if (hit) B.checks.push({ level: 'error', area: 'Движение', msg: `Ящик (${m.front}) при выдвижении задевает «${hit.name}».`, fix: 'Проверьте зазоры и столешницу.' });
@@ -535,7 +567,7 @@ function collide(B: Builder, c: ProductConfig) {
   if (!hb) B.checks.push({ level: 'ok', area: 'Присадка', msg: 'Все отверстия в пределах деталей, глухие отверстия не выходят на лицевую сторону.' });
 }
 
-function finish(B: Builder, c: ProductConfig, d: Derived): ManufacturingModel {
+export function finish(B: Builder, c: ProductConfig, d: Derived, extra: { ghosts?: ManufacturingModel['ghosts']; overall?: ManufacturingModel['overall'] } = {}): ManufacturingModel {
   // спецификация фурнитуры = сумма по соединениям
   const hw = new Map<string, { id: string; qty: number; joints: string[] }>();
   for (const j of B.joints) for (const h of j.hardware) { const e = hw.get(h.id) || { id: h.id, qty: 0, joints: [] }; e.qty = r1(e.qty + h.qty); e.joints.push(j.id); hw.set(h.id, e); }
@@ -551,7 +583,8 @@ function finish(B: Builder, c: ProductConfig, d: Derived): ManufacturingModel {
   const ht = handleProtrusion(c);
   return {
     schema: MODEL_SCHEMA, version: MODEL_VERSION, configHash: hashConfig(c),
-    overall: { width: d.W, height: d.H, depth: d.D, includes: { base: c.base.type !== 'wall', top: c.top.enabled, fronts: !d.inset, handles: ht === 0 }, handleProtrusion: ht },
+    overall: extra.overall || (() => { const mt = c.category === 'dresser' && c.mirror && c.mirror.type !== 'none' && c.mirror.mount === 'top'; return { width: d.W, height: d.H + (mt ? c.mirror!.height : 0), depth: d.D, includes: { base: c.base.type !== 'wall' && c.base.type !== 'floor', top: c.top.enabled, fronts: !d.inset, handles: ht === 0, mirror: mt }, handleProtrusion: ht }; })(),
+    ghosts: extra.ghosts,
     body: { x0: d.x0, y0: d.y0, z0: d.z0, W: d.bodyW, H: d.bodyH, D: d.bodyD, t: d.t },
     parts: B.parts, joints: B.joints, moving: B.moving, checks: B.checks, steps,
     hardware: [...hw.values()], massKg: Math.round(mass * 10) / 10,
@@ -573,6 +606,11 @@ const STEP_ORDER: { key: string; title: string; text: (B: Builder) => string[] }
   { key: 'doors', title: 'Двери', text: () => ['Вставьте петли в чашки фасадов, закрепите ответные планки на боковинах по инструкции производителя.', 'Навесьте двери и отрегулируйте зазоры винтами петель.'] },
   { key: 'shelves', title: 'Полки и штанги', text: () => ['Вставьте полкодержатели и положите полки.', 'Закрепите штангодержатели и установите штангу.'] },
   { key: 'handles', title: 'Ручки', text: () => ['Закрепите ручки винтами изнутри фасадов.'] },
+  { key: 'bed-frame', title: 'Каркас кровати', text: () => ['Положите изголовье лицевой стороной вниз на мягкую поверхность.', 'Присоедините боковые царги к изголовью кроватными стяжками, затем изножье или царгу изножья. Не затягивайте до конца.', 'Выставьте прямые углы (диагонали равны) и затяните стяжки.'] },
+  { key: 'bed-beam', title: 'Центральная балка', text: () => ['Установите центральную балку по оси кровати и закрепите уголками к изголовью и изножью.'] },
+  { key: 'bed-slats', title: 'Основание под матрас', text: () => ['Закрепите латодержатели (или опорные бруски) на внутренней стороне царг и балки на одной высоте.', 'Вставьте ламели или уложите щиты основания.'] },
+  { key: 'bed-drawers', title: 'Выкатные ящики', text: () => ['Соберите короба ящиков, прикрутите колёса к дну и фасад к коробу.'] },
+  { key: 'mirror', title: 'Зеркало', text: () => ['Приклейте зеркало к щиту клеем для зеркал, поставьте страховочные держатели и дайте клею высохнуть по его инструкции.', 'Закрепите щит зеркала кронштейнами к корпусу трюмо.'] },
   { key: 'install', title: 'Установка на стену', text: () => ['Крепление к стене выполняет монтажник после выбора крепежа по основанию стены и массе изделия.'] },
 ];
 

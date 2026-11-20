@@ -1,5 +1,5 @@
 /* «Форма»: офлайн-кэш только для этой папки. Сеть в приоритете — новая версия подхватывается сразу. */
-const C = 'forma-v1';
+const C = 'forma-v2';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x.startsWith('forma-') && x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

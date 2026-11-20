@@ -33,18 +33,20 @@ function matFor(p: Part, c: ProductConfig): THREE.Material {
   if (p.geom === 'handle' || p.geom === 'profile') return new THREE.MeshStandardMaterial({ color: metal(c.handles.color), metalness: 0.8, roughness: 0.35 });
   if (p.geom === 'tube') return new THREE.MeshStandardMaterial({ color: metal(c.base.metalColor), metalness: 0.5, roughness: 0.55 });
   if (p.geom === 'rod') return new THREE.MeshStandardMaterial({ color: '#c8ccd0', metalness: 0.9, roughness: 0.25 });
+  if (p.geom === 'mirror') return new THREE.MeshStandardMaterial({ color: '#c9d6dc', metalness: 0.95, roughness: 0.06, side: THREE.DoubleSide });
+  if (p.geom === 'slat') return new THREE.MeshStandardMaterial({ color: '#e3cfa6', roughness: 0.6 });
   if (p.geom === 'leg') return c.base.type === 'legs-metal' ? new THREE.MeshStandardMaterial({ color: metal(c.base.metalColor), metalness: 0.8, roughness: 0.3 })
     : new THREE.MeshStandardMaterial({ color: '#c9a273', roughness: 0.7 });
   if (!p.finish) { // задние стенки, днища, короба
     const col = p.material === 'hdf' ? '#d9d2c5' : p.material === 'plywood' || p.material === 'plywood-thin' ? '#dcc8a6' : '#efeeea';
     return new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 });
   }
-  const hex = finishHex(p.finish), rough = p.finish.sheen === 'gloss' ? 0.15 : p.finish.sheen === 'satin' ? 0.4 : 0.75;
+  const hex = finishHex(p.finish), rough = p.finish.sheen === 'gloss' ? 0.15 : p.finish.sheen === 'satin' ? 0.4 : 0.75, side = p.geom === 'panel-radius' ? THREE.DoubleSide : THREE.FrontSide;
   if (isWoodLike(p.finish)) {
     const along = p.axes[0] === 'y' ? 'y' : 'x';
-    return new THREE.MeshStandardMaterial({ color: '#ffffff', map: woodTexture(hex, along as any), roughness: Math.max(rough, 0.45) });
+    return new THREE.MeshStandardMaterial({ color: '#ffffff', map: woodTexture(hex, along as any), roughness: Math.max(rough, 0.45), side });
   }
-  return new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0 });
+  return new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0, side });
 }
 
 function geomFor(p: Part): THREE.BufferGeometry {
@@ -57,12 +59,14 @@ function geomFor(p: Part): THREE.BufferGeometry {
     const grp = new THREE.CylinderGeometry(0.006, 0.006, len, 12); if (!vert) grp.rotateZ(Math.PI / 2); grp.translate(0, 0, d / 2 - 0.006);
     return grp;
   }
-  if (p.geom === 'panel-radius') {
-    const r = Math.min((p.ops.find(o => o.type === 'radius')?.params.r || 0) * S, w / 2, d / 2);
-    const sh = new THREE.Shape(); const x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2;
-    sh.moveTo(x0, z0); sh.lineTo(x1, z0); sh.lineTo(x1, z1 - r); sh.quadraticCurveTo(x1, z1, x1 - r, z1); sh.lineTo(x0 + r, z1); sh.quadraticCurveTo(x0, z1, x0, z1 - r); sh.lineTo(x0, z0);
-    const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 10 });
-    g.rotateX(Math.PI / 2); g.translate(0, h / 2, 0); // форма в плоскости XZ, толщина по Y
+  if (p.geom === 'panel-radius' || (p.geom === 'mirror' && p.ops.some(o => o.type === 'radius'))) {
+    // форма в локальных осях детали (L — x, W — y, скругление у кромки L2), затем поворот в мировые оси
+    const L = p.L * S, Wd = p.W * S, T = p.thickness * S, r = Math.min((p.ops.find(o => o.type === 'radius')?.params.r || 0) * S, L / 2, Wd);
+    const sh = new THREE.Shape(), x0 = -L / 2, x1 = L / 2, y0 = -Wd / 2, y1 = Wd / 2;
+    sh.moveTo(x0, y0); sh.lineTo(x1, y0); sh.lineTo(x1, y1 - r); if (r > 0) sh.quadraticCurveTo(x1, y1, x1 - r, y1); sh.lineTo(x0 + r, y1); if (r > 0) sh.quadraticCurveTo(x0, y1, x0, y1 - r); sh.lineTo(x0, y0);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: T, bevelEnabled: false, curveSegments: 16 }); g.translate(0, 0, -T / 2);
+    const e = (a: string) => a === 'x' ? new THREE.Vector3(1, 0, 0) : a === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+    g.applyMatrix4(new THREE.Matrix4().makeBasis(e(p.axes[0]), e(p.axes[1]), e(p.axes[2])));
     return g;
   }
   return new THREE.BoxGeometry(w, h, d);
@@ -123,6 +127,11 @@ export class FormaScene {
       }
       this.root.add(mesh); this.meshes.set(p.id, mesh);
     }
+    for (const gh of m.ghosts || []) {
+      const w = (gh.max[0] - gh.min[0]) * S, h = (gh.max[1] - gh.min[1]) * S, d = (gh.max[2] - gh.min[2]) * S;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: '#fbfaf6', roughness: 0.95, transparent: true, opacity: 0.9 }));
+      mesh.position.set((gh.min[0] + gh.max[0]) / 2 * S, (gh.min[1] + gh.max[1]) / 2 * S, (gh.min[2] + gh.max[2]) / 2 * S); mesh.castShadow = true; mesh.userData.ghost = true; this.root.add(mesh);
+    }
     this.buildDims(); this.applyPose(true); this.highlight();
     if (first || !keepView) this.view('iso');
     if (this.host.isConnected) this.kick();
@@ -151,7 +160,7 @@ export class FormaScene {
       mesh.position.add(ex);
     }
     for (const mv of m.moving) {
-      if (mv.kind === 'drawer') { for (const id of mv.parts) this.meshes.get(id)!.position.z += mv.travel * S * this.anim.drawer; const h = this.handleOf(mv.front); if (h) h.position.z += mv.travel * S * this.anim.drawer; }
+      if (mv.kind === 'drawer') { const ax = mv.axis === 'x' ? 'x' : 'z'; for (const id of mv.parts) this.meshes.get(id)!.position[ax] += mv.travel * S * this.anim.drawer; const h = this.handleOf(mv.front); if (h) h.position[ax] += mv.travel * S * this.anim.drawer; }
       else {
         const ang = mv.axisSign * (Math.PI / 180) * 100 * this.anim.door; // петля слева — правый край идёт к зрителю
         for (const mesh of [this.meshes.get(mv.front)!, this.handleOf(mv.front)].filter(Boolean) as THREE.Mesh[]) {
@@ -218,10 +227,12 @@ export class FormaScene {
       const mat = mesh.material as THREE.MeshStandardMaterial;
       if (o.hl) { mat.emissive?.set(o.hl.includes(id) ? '#ff7a1a' : '#000'); mat.emissiveIntensity = o.hl.includes(id) ? 0.55 : 0; }
     }
+    for (const ch of this.root.children) if (ch.userData.ghost) ch.visible = !o.show;
     if (o.w && o.h) { this.renderer.setSize(o.w, o.h, false); this.camera.aspect = o.w / o.h; this.camera.updateProjectionMatrix(); }
     this.view(o.view || 'iso'); this.renderer.render(this.scene, this.camera);
     const url = this.renderer.domElement.toDataURL('image/png');
     for (const [id, mesh] of this.meshes) mesh.visible = vis.get(id)!;
+    for (const ch of this.root.children) if (ch.userData.ghost) ch.visible = true;
     this.setOpts(prev); this.applyPose(true); this.highlight();
     return url;
   }

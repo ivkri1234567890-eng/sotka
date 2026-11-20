@@ -1,3 +1,4 @@
+import { bedSize } from '../core/bed';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Project, ProductConfig } from '../core/schema';
 import { buildModel } from '../core/engine';
@@ -20,7 +21,8 @@ export function Editor({ project, onChange, onSave, onDocs, saved, onBack }: { p
   const model = useMemo(() => buildModel(c), [c]);
   const est = useMemo(() => estimate(model, c, project.prices || demoPrices()), [model, project.prices]);
   const set = (f: (c: ProductConfig) => ProductConfig) => {
-    const next = f(c); if (JSON.stringify(next) === JSON.stringify(c)) return;
+    let next = f(c); if (next.category === 'bed') next = { ...next, size: bedSize(next) };
+    if (JSON.stringify(next) === JSON.stringify(c)) return;
     hist.current.past.push(c); if (hist.current.past.length > 100) hist.current.past.shift(); hist.current.future = [];
     onChange({ ...project, config: next }); force(x => x + 1);
   };

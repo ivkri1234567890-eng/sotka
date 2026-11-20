@@ -10,7 +10,8 @@
    "base": true,
    "top": false,
    "fronts": true,
-   "handles": false
+   "handles": false,
+   "mirror": false
   },
   "handleProtrusion": 28
  },

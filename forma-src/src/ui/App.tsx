@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import type { Project, ProductConfig } from '../core/schema';
 import { PROJECT_SCHEMA, PROJECT_VERSION } from '../core/schema';
-import { NIGHTSTANDS, WARDROBES, blank, STYLE_NAMES, type CatalogItem } from '../core/catalog';
+import { CATS, blank, STYLE_NAMES, type CatalogItem } from '../core/catalog';
 import { buildModel } from '../core/engine';
 import { listProjects, saveProject, deleteProject, type Stored } from '../platform/store';
 import { isNative, pickFile, readText, saveFile } from '../platform/files';
@@ -12,7 +12,7 @@ import { Docs } from './Docs';
 import { Toaster, toast, Modal } from './common';
 import { thumb } from './offscreen';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 const PIN_HASH = '3f83c39e586b757844029ad05bdde398b8df962206745d31450bb4cacee3fe1d';
 async function sha(s: string) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const uid = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -35,11 +35,11 @@ function Lock({ onOk }: { onOk: () => void }) {
 }
 
 function Home({ open, create, projects, reload }: { open: (id: string) => void; create: (name: string, c: ProductConfig) => void; projects: Stored[]; reload: () => void }) {
-  const [cat, setCat] = useState<'nightstand' | 'wardrobe'>('nightstand');
+  const [cat, setCat] = useState<ProductConfig['category']>('nightstand');
   const [th, setTh] = useState<Record<string, string>>({});
   const [del, setDel] = useState<Stored | null>(null);
-  const items: CatalogItem[] = cat === 'nightstand' ? NIGHTSTANDS : WARDROBES;
-  useEffect(() => { let alive = true; (async () => { for (const it of [...NIGHTSTANDS, ...WARDROBES]) { if (!alive) return; await new Promise(r => setTimeout(r, 10)); try { const u = thumb(it.config, it.id); setTh(t => ({ ...t, [it.id]: u })); } catch { /* без превью */ } } })(); return () => { alive = false; }; }, []);
+  const items: CatalogItem[] = CATS.find(x => x.id === cat)!.items;
+  useEffect(() => { let alive = true; (async () => { for (const it of CATS.flatMap(x => x.items)) { if (!alive) return; await new Promise(r => setTimeout(r, 10)); try { const u = thumb(it.config, it.id); setTh(t => ({ ...t, [it.id]: u })); } catch { /* без превью */ } } })(); return () => { alive = false; }; }, []);
   const importJson = async () => {
     const f = await pickFile('application/json,.json'); if (!f) return;
     try { const p = migrateProject(JSON.parse(await readText(f))); const s: Stored = { ...p, id: uid(), updated: new Date().toISOString(), draft: false }; await saveProject(s); reload(); toast('Проект открыт из файла'); open(s.id); }
@@ -53,20 +53,19 @@ function Home({ open, create, projects, reload }: { open: (id: string) => void; 
     <div className="wrap">
       <div className="hero"><div><h2>Выбрал → настроил → посмотрел → скачал</h2><p>Выберите модель, измените размеры, материалы и цвет — 3D-модель, чертежи, деталировка и смета пересчитаются сразу.</p></div></div>
       <div className="cats">
-        <button className={'cat' + (cat === 'nightstand' ? ' on' : '')} onClick={() => setCat('nightstand')} data-testid="cat-ns"><i>🛏️</i><div><b>Прикроватные тумбы</b><span>{NIGHTSTANDS.length} моделей</span></div></button>
-        <button className={'cat' + (cat === 'wardrobe' ? ' on' : '')} onClick={() => setCat('wardrobe')} data-testid="cat-wr"><i>🚪</i><div><b>Шкафы</b><span>{WARDROBES.length} моделей</span></div></button>
+        {CATS.map(k => <button key={k.id} className={'cat' + (cat === k.id ? ' on' : '')} onClick={() => setCat(k.id)} data-testid={'cat-' + k.id}><i>{k.icon}</i><div><b>{k.name}</b><span>{k.items.length} моделей</span></div></button>)}
       </div>
       <div className="grid">
         {items.map(it => <button key={it.id} className="model" onClick={() => create(it.name, it.config)} data-testid={'m-' + it.id}>
           {th[it.id] ? <img className="pv" src={th[it.id]} alt={'Превью ' + it.name} /> : <span className="pv" />}
           <span className="tx"><span className="st">{STYLE_NAMES[it.config.style]}</span><br /><b>{it.name}</b><p>{it.blurb}</p><p className="small">{it.config.size.width}×{it.config.size.height}×{it.config.size.depth} мм</p></span></button>)}
-        <button className="model new" onClick={() => create(cat === 'nightstand' ? 'Моя тумба' : 'Мой шкаф', blank(cat))} data-testid="m-new"><span className="pv">＋</span><span className="tx"><b>Создать свою модель</b><p>Пустой корпус — настройте всё сами.</p></span></button>
+        <button className="model new" onClick={() => create(({ nightstand: 'Моя тумба', wardrobe: 'Мой шкаф', dresser: 'Моё трюмо', bed: 'Моя кровать' } as const)[cat], blank(cat))} data-testid="m-new"><span className="pv">＋</span><span className="tx"><b>Создать свою модель</b><p>Пустой корпус — настройте всё сами.</p></span></button>
       </div>
       <div className="sec-h"><h3>Мои проекты</h3><button className="btn sm sec" onClick={importJson}>Открыть файл проекта</button></div>
       {!projects.length ? <p className="muted">Пока пусто. Проект сохраняется автоматически, как только вы начнёте настройку.</p> :
         <div className="plist">{projects.map(p => <div className="prow" key={p.id}>
           {th['p:' + p.id] ? <img src={th['p:' + p.id]} alt="" /> : <ThumbP p={p} onReady={u => setTh(t => ({ ...t, ['p:' + p.id]: u }))} />}
-          <div className="t"><b>{p.name}</b>{p.draft && <span className="badge rv" style={{ marginLeft: 6 }}>черновик</span>}<small>{p.config.category === 'nightstand' ? 'Тумба' : 'Шкаф'} · {p.config.size.width}×{p.config.size.height}×{p.config.size.depth} · изменён {new Date(p.updated).toLocaleString('ru-RU')}</small></div>
+          <div className="t"><b>{p.name}</b>{p.draft && <span className="badge rv" style={{ marginLeft: 6 }}>черновик</span>}<small>{({ nightstand: 'Тумба', wardrobe: 'Шкаф', dresser: 'Трюмо', bed: 'Кровать' } as const)[p.config.category]} · {p.config.size.width}×{p.config.size.height}×{p.config.size.depth} · изменён {new Date(p.updated).toLocaleString('ru-RU')}</small></div>
           <button className="btn sm" onClick={() => open(p.id)}>Открыть</button>
           <button className="btn sm sec" aria-label="Сохранить файл проекта" onClick={() => saveFile(`${p.name}.forma.json`, new Blob([JSON.stringify({ ...p, draft: undefined }, null, 1)], { type: 'application/json' }))}>JSON</button>
           <button className="btn sm ghost" aria-label="Удалить проект" onClick={() => setDel(p)}>🗑</button></div>)}</div>}

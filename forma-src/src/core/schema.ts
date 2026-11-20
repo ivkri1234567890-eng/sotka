@@ -44,7 +44,7 @@ export const Column = z.object({
 export const ProductConfig = z.object({
   schema: z.literal(CONFIG_SCHEMA),
   version: z.literal(CONFIG_VERSION),
-  category: z.enum(['nightstand', 'wardrobe']),
+  category: z.enum(['nightstand', 'wardrobe', 'dresser', 'bed']),
   model: z.string(),
   style: z.enum(['minimal', 'japandi', 'scandi', 'loft', 'neoclassic', 'modern']),
   size: z.object({ width: z.number(), height: z.number(), depth: z.number() }), // ОБЩИЕ габариты изделия
@@ -60,7 +60,7 @@ export const ProductConfig = z.object({
     overhangFront: z.number().min(0), overhangSides: z.number().min(0), cornerRadius: z.number().min(0),
   }),
   base: z.object({
-    type: z.enum(['legs-wood', 'legs-metal', 'plinth', 'wall', 'metal-frame']),
+    type: z.enum(['legs-wood', 'legs-metal', 'plinth', 'wall', 'metal-frame', 'floor']),
     height: z.number().min(0),
     plinthRecess: z.number().min(0).default(40),
     metalColor: z.string().default('black'),
@@ -82,6 +82,14 @@ export const ProductConfig = z.object({
     maxDoorWidth: z.number().default(600),
   }),
   notes: z.string().default(''),
+  /** Зеркало трюмо (необязательно; в старых проектах отсутствует). */
+  mirror: z.object({ type: z.enum(['none', 'rect', 'arch']), width: z.number(), height: z.number(), mount: z.enum(['top', 'wall']) }).optional(),
+  /** Параметры кровати (только для category = bed). */
+  bed: z.object({
+    mattressW: z.number(), mattressL: z.number(), base: z.enum(['slats', 'panel']),
+    headH: z.number(), head: z.enum(['flat', 'arch']), footboard: z.boolean(), footH: z.number(), railH: z.number(),
+    drawers: z.number().int().min(0).max(4),
+  }).optional(),
 });
 export type ProductConfig = z.infer<typeof ProductConfig>;
 export type Zone = z.infer<typeof Zone>;
@@ -104,7 +112,7 @@ export const Op = z.object({
 });
 export const Part = z.object({
   id: z.string(), name: z.string(), role: z.string(), group: z.string(),
-  geom: z.enum(['panel', 'panel-radius', 'tube', 'rod', 'leg', 'handle', 'profile']),
+  geom: z.enum(['panel', 'panel-radius', 'tube', 'rod', 'leg', 'handle', 'profile', 'mirror', 'slat']),
   material: z.string(), materialName: z.string(), thickness: z.number(), finish: Finish.nullable(),
   L: z.number(), W: z.number(),            // чистовые размеры (готовая деталь)
   blankL: z.number(), blankW: z.number(),  // размеры заготовки (распил)
@@ -125,19 +133,21 @@ export type Joint = {
   step: string; status: 'verified' | 'partial' | 'unverified' | 'rule'; note?: string;
 };
 export type Moving = { id: string; kind: 'door'; parts: string[]; hinge: [number, number, number]; axisSign: 1 | -1; front: string }
-  | { id: string; kind: 'drawer'; parts: string[]; travel: number; front: string };
+  | { id: string; kind: 'drawer'; parts: string[]; travel: number; front: string; axis?: 'x' | 'z' };
+export type Ghost = { name: string; min: [number, number, number]; max: [number, number, number] };
 export type Check = { level: 'error' | 'warn' | 'info' | 'ok'; area: string; msg: string; fix?: string };
 export type AssemblyStep = { id: string; title: string; text: string[]; parts: string[]; fresh: string[]; hardware: { id: string; qty: number }[]; tools: string[]; joints: string[]; show: string[] };
 
 export type ManufacturingModel = {
   schema: typeof MODEL_SCHEMA; version: typeof MODEL_VERSION;
   configHash: string;
-  overall: { width: number; height: number; depth: number; includes: { base: boolean; top: boolean; fronts: boolean; handles: boolean }; handleProtrusion: number };
+  overall: { width: number; height: number; depth: number; includes: { base: boolean; top: boolean; fronts: boolean; handles: boolean; mirror?: boolean }; handleProtrusion: number };
   body: { x0: number; y0: number; z0: number; W: number; H: number; D: number; t: number };
   parts: Part[]; joints: Joint[]; moving: Moving[]; checks: Check[]; steps: AssemblyStep[];
   hardware: { id: string; qty: number; joints: string[] }[];
   massKg: number;
   status: 'draft' | 'needs-review';
+  ghosts?: Ghost[];   // только для показа (матрас), в документы не входит
 };
 
 export const Prices = z.object({
@@ -147,7 +157,7 @@ export const Prices = z.object({
   hardware: z.record(z.number()),     // id фурнитуры → ₽/шт
   cutPerM: z.number(), drillPerHole: z.number(), edgeWorkPerM: z.number(), millPerM: z.number(),
   paintPerM2: z.record(z.number()),   // способ отделки → ₽/м² (одна сторона)
-  metalPerM: z.number(), metalWork: z.number(),
+  metalPerM: z.number(), metalWork: z.number(), glassPerM2: z.number().default(4500),
   assembly: z.number(), assemblyPerPart: z.number(), delivery: z.number(), extra: z.number(), extraNote: z.string().default(''),
   wastePct: z.number().default(0),    // используется ТОЛЬКО при расчёте по площади
   method: z.enum(['sheets', 'area']).default('sheets'),

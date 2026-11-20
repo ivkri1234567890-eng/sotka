@@ -5,7 +5,7 @@ const { chromium, devices } = require('playwright'); const fs = require('fs');
   const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', e => errs.push('PAGEERR ' + e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   const S = n => pg.screenshot({ path: `tests/shots/m-${n}.png` });
   await pg.goto('http://localhost:4173/'); await pg.waitForTimeout(2500);
-  await pg.tap('[data-testid="cat-wr"]'); await pg.waitForTimeout(800); await S('01-home');
+  await pg.tap('[data-testid="cat-wardrobe"]'); await pg.waitForTimeout(800); await S('01-home');
   await pg.tap('[data-testid="m-wr-neo"]'); await pg.waitForTimeout(1500); await S('02-editor');
   const p0 = await pg.textContent('[data-testid="price"]');
   await pg.fill('#w', '2100'); await pg.press('#w', 'Enter'); await pg.waitForTimeout(500);

@@ -16,10 +16,10 @@ export function demoPrices(): Prices {
       'solid|18': 3900, 'solid|20': 4300, 'solid|28': 5900, 'solid|40': 7900, 'hdf|3': 900, 'hdf|4': 1100, 'plywood-thin|4': 1500, 'plywood-thin|6': 1900 },
     edge: { thin: 18, thick: 38, veneer: 85 },
     hardware: { confirmat: 4, 'confirmat-cap': 2, 'shelf-pin': 6, 'hinge-blum': 520, 'hinge-plate': 140, slide: 650, 'push-open': 450, 'screw-4x16': 1, 'screw-4x25': 1.5, 'screw-4x30': 1.5,
-      'back-nail': 0.5, 'handle-screw': 3, knob: 280, bar: 420, 'edge-profile': 900, 'leg-wood': 450, 'leg-metal': 520, 'plinth-foot': 90, 'rod-holder': 70, 'wall-hanger': 900, 'frame-bolt': 3, 'frame-glide': 25, 'rod-m': 350 },
+      'back-nail': 0.5, 'handle-screw': 3, knob: 280, bar: 420, 'edge-profile': 900, 'leg-wood': 450, 'leg-metal': 520, 'plinth-foot': 90, 'rod-holder': 70, 'wall-hanger': 900, 'frame-bolt': 3, 'frame-glide': 25, 'rod-m': 350, glide: 15, 'mirror-bracket': 250, 'mirror-glue': 650, 'mirror-clip': 40, 'bed-bolt': 180, bracket: 120, 'lath-holder': 25, lamel: 160, 'bar-40x30': 90, caster: 120 },
     cutPerM: 35, drillPerHole: 12, edgeWorkPerM: 25, millPerM: 180,
     paintPerM2: { 'enamel-matte': 3200, 'enamel-satin': 3500, 'enamel-gloss': 5200, lacquer: 1900, 'rod': 0 },
-    metalPerM: 260, metalWork: 3500,
+    metalPerM: 260, metalWork: 3500, glassPerM2: 4500,
     assembly: 1500, assemblyPerPart: 60, delivery: 1500, extra: 0, extraNote: '',
     wastePct: 20, method: 'sheets', kerf: 4, trim: 10, sheetFormats: {}, demo: true,
   };
@@ -83,6 +83,8 @@ export function estimate(m: ManufacturingModel, c: ProductConfig, pr: Prices): E
   // металл
   const tubeM = m.parts.filter(p => p.geom === 'tube').reduce((s, p) => s + p.L / 1000, 0);
   if (tubeM) { add('Металлокаркас', 'Труба 20×20×1,5', tubeM * 1.05, 'м', pr.metalPerM, '+5% на рез'); add('Металлокаркас', 'Сварка и порошковая окраска каркаса', 1, 'компл', pr.metalWork); }
+  const glass = m.parts.filter(p => p.geom === 'mirror').reduce((s, p) => s + p.L * p.W / 1e6, 0);
+  if (glass) add('Зеркало', 'Зеркало 4 мм с полировкой кромки (стекольная мастерская)', glass, 'м²', pr.glassPerM2);
   const rodM = m.parts.filter(p => p.geom === 'rod').reduce((s, p) => s + p.L / 1000, 0);
   if (rodM) add('Фурнитура и крепёж', 'Штанга Ø25', rodM, 'м', pr.hardware['rod-m']);
   // сборка, доставка
