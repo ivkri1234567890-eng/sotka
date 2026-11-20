@@ -124,5 +124,10 @@ export function applyStyle(c: ProductConfig, style: ProductConfig['style']): Pro
   const src = CATALOG.find(i => i.config.category === c.category && i.config.style === style);
   if (!src) return { ...c, style };
   const s = src.config;
-  return { ...c, style, body: { ...s.body }, fronts: { ...s.fronts }, top: { ...s.top }, base: { ...s.base, wallBase: c.base.wallBase }, handles: { ...s.handles }, back: { ...s.back }, drawerBox: { ...s.drawerBox } };
+  const next: ProductConfig = { ...c, style, body: { ...s.body }, fronts: { ...s.fronts }, top: { ...s.top }, base: { ...s.base, wallBase: c.base.wallBase }, handles: { ...s.handles }, back: { ...s.back }, drawerBox: { ...s.drawerBox } };
+  // новое основание или столешница не должны «съесть» корпус: при нехватке высоты берём высоту образца стиля
+  const baseH = next.base.type === 'wall' ? 0 : next.base.height, topT = next.top.enabled ? next.top.thickness : 0;
+  const zones = Math.max(...next.columns.map(col => col.zones.length));
+  if (next.size.height - baseH - topT < 2 * next.body.thickness + 140 * zones) next.size = { ...next.size, height: Math.max(next.size.height, s.size.height) };
+  return next;
 }

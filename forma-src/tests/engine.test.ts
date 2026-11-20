@@ -13,3 +13,14 @@ describe('catalog', () => {
     expect(errs).toEqual([]);
   });
 });
+import { applyStyle, NIGHTSTANDS as NS } from '../src/core/catalog';
+describe('style', () => { it('смена стиля подвесной тумбы не ломает корпус', () => {
+  const c = applyStyle(NS[0].config, 'scandi'); const m = buildModel(c);
+  expect(m.checks.filter(x => x.level === 'error')).toEqual([]); expect(m.parts.length).toBeGreaterThan(5);
+}); });
+import { CATALOG as ALL, STYLE_NAMES } from '../src/core/catalog';
+describe('все стили для всех моделей', () => { it('без ошибок', () => {
+  const bad: string[] = [];
+  for (const it3 of ALL) for (const st of Object.keys(STYLE_NAMES) as any[]) { const m = buildModel(applyStyle(it3.config, st)); const e = m.checks.filter(x => x.level === 'error'); if (e.length) bad.push(`${it3.id}→${st}: ${e[0].msg}`); }
+  expect(bad).toEqual([]);
+}); });

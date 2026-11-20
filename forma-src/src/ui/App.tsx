@@ -88,7 +88,7 @@ export function App() {
   const [leave, setLeave] = useState(false);
   const saveTimer = useRef<any>(null);
   const reload = async () => setProjects(await listProjects());
-  useEffect(() => { reload(); const f = () => setRoute(parseHash()); window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
+  useEffect(() => { reload(); const f = () => { setRoute(parseHash()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
   useEffect(() => { if (route.s !== 'home') { const p = projects.find(x => x.id === route.id); if (p && (!cur || cur.id !== p.id)) setCur(p); } }, [route, projects]);
   // системная кнопка «Назад» Android
   const routeRef = useRef(route); routeRef.current = route; const curRef = useRef(cur); curRef.current = cur;
