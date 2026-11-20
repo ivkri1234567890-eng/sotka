@@ -3,7 +3,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
-type FormaFilesPlugin = { saveAs(o: { name: string; mime: string; base64: string }): Promise<{ uri: string; saved: boolean }> };
+type FormaFilesPlugin = { saveAs(o: { name: string; mime: string; path: string }): Promise<{ uri: string; saved: boolean }> };
 const FormaFiles = registerPlugin<FormaFilesPlugin>('FormaFiles');
 export const isNative = () => Capacitor.isNativePlatform();
 
@@ -15,7 +15,9 @@ export async function blobToBase64(b: Blob): Promise<string> {
 /** Сохранить файл: Android — диалог выбора папки и имени; браузер — загрузка. Возвращает false, если пользователь отменил. */
 export async function saveFile(name: string, data: Blob): Promise<boolean> {
   if (isNative()) {
-    const r = await FormaFiles.saveAs({ name, mime: data.type || 'application/octet-stream', base64: await blobToBase64(data) });
+    const tmp = 'export-' + Date.now() + '.bin';
+    const w = await Filesystem.writeFile({ path: tmp, data: await blobToBase64(data), directory: Directory.Cache });
+    const r = await FormaFiles.saveAs({ name, mime: data.type || 'application/octet-stream', path: w.uri.replace(/^file:\/\//, '') });
     return r.saved;
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(data); a.download = name; document.body.appendChild(a); a.click();
