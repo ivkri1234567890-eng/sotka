@@ -44,8 +44,8 @@ export function Docs({ project, onChange, onBack }: { project: Project; onChange
     <div className="wrap">
       {errors.length > 0 && <div className="ck error" style={{ marginBottom: 12 }}><b>Есть ошибки конструкции</b>Документы формируются с пометкой «не для изготовления». Исправьте: {errors.map(x => x.msg).join(' ')}</div>}
       <div className="exp">
-        <button className="btn" onClick={() => pdf(false)} disabled={!!busy} data-testid="pdf">⬇ PDF</button>
-        <button className="btn warm" onClick={() => zip(false)} disabled={!!busy} data-testid="zip">⬇ Всё одним ZIP</button>
+        <button className="btn" onClick={() => pdf(false)} disabled={!!busy} data-testid="pdf">Скачать PDF</button>
+        <button className="btn warm" onClick={() => zip(false)} disabled={!!busy} data-testid="zip">Всё одним ZIP</button>
         <button className="btn sec" onClick={() => run('CSV', async () => out(`${name}-деталировка.csv`, csvBlob(toCsv(partsRows(m), PART_HEAD))))} disabled={!!busy}>CSV деталировка</button>
         <button className="btn sec" onClick={() => run('CSV', async () => out(`${name}-фурнитура.csv`, csvBlob(toCsv(hardwareRows(m), HW_HEAD))))} disabled={!!busy}>CSV фурнитура</button>
         <button className="btn sec" onClick={() => run('DXF', async () => out(`${name}-DXF.zip`, await dxfZip(m).generateAsync({ type: 'blob' })))} disabled={!!busy}>DXF деталей</button>
