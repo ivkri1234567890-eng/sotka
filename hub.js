@@ -10,6 +10,7 @@
   {k:'sarkoidoz',n:'Саркоидоз — дневник',i:'🫁',u:'/sotka/sarkoidoz/',apk:'/sotka/sarkoidoz/android/Sarkoidoz-1.0.apk'},
   {k:'scan',n:'3D Сканер',i:'🧊',u:'/sotka/scan/'},
   {k:'pomoshnik',n:'Помощник',i:'🤖',u:'/sotka/pomoshnik/'},
+  {k:'forma',n:'Форма — дизайнерская мебель',i:'🪑',u:'/sotka/forma/',apk:'/sotka/forma/android/Forma-1.0.0.apk',d:'Тумбы и шкафы: выбор модели, размеры, материалы и RAL, 3D-модель, чертежи, деталировка, раскрой и смета.'},
   {k:'smu',n:'СМУ ERP',i:'🏗️',u:'/smu-erp/'}
  ];
  window.HUB_PROJECTS=P;

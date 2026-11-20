@@ -26,7 +26,7 @@ textarea{width:100%;min-height:92px;border:1px solid var(--line);background:tran
 (function(){var P=window.HUB_PROJECTS,LS=window.HUB_NOTES,B='https://ivkri1234567890-eng.github.io',g=document.getElementById('g');
  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
  function draw(){var n=LS.get();g.innerHTML=P.map(function(p){var x=n[p.k]||{};return'<div class="c"><div class="h"><b>'+p.i+'</b><div><h2>'+esc(p.n)+'</h2><small>'+esc(B.replace('https://','')+p.u)+'</small></div></div>'+
-  '<div class="r"><a class="b" href="'+B+p.u+'">Открыть</a>'+(p.apk?'<a class="b s" href="'+B+p.apk+'">Android (APK)</a>':'')+'</div>'+
+  (p.d?'<p class="m" style="margin:0;font-size:14px">'+esc(p.d)+'</p>':'')+'<div class="r"><a class="b" href="'+B+p.u+'">Открыть</a>'+(p.apk?'<a class="b s" href="'+B+p.apk+'" download>Скачать для Android</a>':'')+'</div>'+
   '<textarea data-k="'+p.k+'" placeholder="Что улучшить, что доделать…">'+esc(x.t||'')+'</textarea><span class="m" data-s="'+p.k+'">'+(x.ts?'Сохранено '+new Date(x.ts).toLocaleString('ru-RU'):'')+'</span></div>'}).join('')}
  draw();var tm={};g.addEventListener('input',function(e){var k=e.target.dataset.k;if(!k)return;clearTimeout(tm[k]);tm[k]=setTimeout(function(){var o=LS.get();o[k]={t:e.target.value,ts:Date.now()};LS.set(o);var s=g.querySelector('[data-s="'+k+'"]');if(s)s.textContent='Сохранено '+new Date().toLocaleTimeString('ru-RU')},300)});
  function text(){var n=LS.get();return P.filter(function(p){return n[p.k]&&n[p.k].t&&n[p.k].t.trim()}).map(function(p){return'## '+p.n+'\n'+n[p.k].t.trim()}).join('\n\n')+'\n\n<!--hub:'+btoa(unescape(encodeURIComponent(JSON.stringify(n))))+'-->'}
