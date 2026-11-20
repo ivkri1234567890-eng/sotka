@@ -1,0 +1,4046 @@
+{
+ "schema": "forma/manufacturing-model",
+ "version": 1,
+ "configHash": "1e0b4684a20e",
+ "overall": {
+  "width": 1000,
+  "height": 2000,
+  "depth": 580,
+  "includes": {
+   "base": true,
+   "top": false,
+   "fronts": true,
+   "handles": false
+  },
+  "handleProtrusion": 28
+ },
+ "body": {
+  "x0": 0,
+  "y0": 120,
+  "z0": 0,
+  "W": 1000,
+  "H": 1880,
+  "D": 561,
+  "t": 16
+ },
+ "parts": [
+  {
+   "id": "S1",
+   "name": "Боковина левая",
+   "role": "side",
+   "group": "body",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 1880,
+   "W": 561,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "L",
+   "origin": [
+    0,
+    120,
+    0
+   ],
+   "axes": [
+    "y",
+    "z",
+    "x"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 1879.2,
+   "blankW": 559,
+   "holes": [
+    {
+     "id": "h1",
+     "face": "A",
+     "u": 1872,
+     "v": 50,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J1",
+     "status": "verified"
+    },
+    {
+     "id": "h3",
+     "face": "A",
+     "u": 1872,
+     "v": 280.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J1",
+     "status": "verified"
+    },
+    {
+     "id": "h5",
+     "face": "A",
+     "u": 1872,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J1",
+     "status": "verified"
+    },
+    {
+     "id": "h13",
+     "face": "A",
+     "u": 8,
+     "v": 50,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J3",
+     "status": "verified"
+    },
+    {
+     "id": "h15",
+     "face": "A",
+     "u": 8,
+     "v": 280.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J3",
+     "status": "verified"
+    },
+    {
+     "id": "h17",
+     "face": "A",
+     "u": 8,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J3",
+     "status": "verified"
+    },
+    {
+     "id": "h25",
+     "face": "A",
+     "u": 424,
+     "v": 64,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J6",
+     "status": "verified"
+    },
+    {
+     "id": "h27",
+     "face": "A",
+     "u": 424,
+     "v": 287.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J6",
+     "status": "verified"
+    },
+    {
+     "id": "h29",
+     "face": "A",
+     "u": 424,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J6",
+     "status": "verified"
+    },
+    {
+     "id": "h45",
+     "face": "B",
+     "u": 929,
+     "v": 53,
+     "d": 5,
+     "depth": 10,
+     "through": false,
+     "kind": "Полкодержатель Ø5",
+     "joint": "J12",
+     "status": "rule"
+    },
+    {
+     "id": "h47",
+     "face": "B",
+     "u": 929,
+     "v": 506,
+     "d": 5,
+     "depth": 10,
+     "through": false,
+     "kind": "Полкодержатель Ø5",
+     "joint": "J12",
+     "status": "rule"
+    }
+   ],
+   "ops": [
+    {
+     "id": "gS1",
+     "type": "groove",
+     "face": "B",
+     "params": {
+      "offset": 10,
+      "width": 4,
+      "depth": 8,
+      "from": 0,
+      "to": 1880
+     },
+     "note": "Паз под заднюю стенку 4×8 мм в 10 мм от заднего края"
+    }
+   ],
+   "mass": 11.474918400000002
+  },
+  {
+   "id": "S2",
+   "name": "Боковина правая",
+   "role": "side",
+   "group": "body",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 1880,
+   "W": 561,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "L",
+   "origin": [
+    984,
+    120,
+    0
+   ],
+   "axes": [
+    "y",
+    "z",
+    "x"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 1879.2,
+   "blankW": 559,
+   "holes": [
+    {
+     "id": "h7",
+     "face": "A",
+     "u": 1872,
+     "v": 50,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J2",
+     "status": "verified"
+    },
+    {
+     "id": "h9",
+     "face": "A",
+     "u": 1872,
+     "v": 280.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J2",
+     "status": "verified"
+    },
+    {
+     "id": "h11",
+     "face": "A",
+     "u": 1872,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J2",
+     "status": "verified"
+    },
+    {
+     "id": "h19",
+     "face": "A",
+     "u": 8,
+     "v": 50,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J4",
+     "status": "verified"
+    },
+    {
+     "id": "h21",
+     "face": "A",
+     "u": 8,
+     "v": 280.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J4",
+     "status": "verified"
+    },
+    {
+     "id": "h23",
+     "face": "A",
+     "u": 8,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J4",
+     "status": "verified"
+    },
+    {
+     "id": "h31",
+     "face": "A",
+     "u": 424,
+     "v": 64,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J7",
+     "status": "verified"
+    },
+    {
+     "id": "h33",
+     "face": "A",
+     "u": 424,
+     "v": 287.5,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J7",
+     "status": "verified"
+    },
+    {
+     "id": "h35",
+     "face": "A",
+     "u": 424,
+     "v": 511,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J7",
+     "status": "verified"
+    },
+    {
+     "id": "h46",
+     "face": "B",
+     "u": 929,
+     "v": 53,
+     "d": 5,
+     "depth": 10,
+     "through": false,
+     "kind": "Полкодержатель Ø5",
+     "joint": "J12",
+     "status": "rule"
+    },
+    {
+     "id": "h48",
+     "face": "B",
+     "u": 929,
+     "v": 506,
+     "d": 5,
+     "depth": 10,
+     "through": false,
+     "kind": "Полкодержатель Ø5",
+     "joint": "J12",
+     "status": "rule"
+    }
+   ],
+   "ops": [
+    {
+     "id": "gS2",
+     "type": "groove",
+     "face": "B",
+     "params": {
+      "offset": 10,
+      "width": 4,
+      "depth": 8,
+      "from": 0,
+      "to": 1880
+     },
+     "note": "Паз под заднюю стенку 4×8 мм в 10 мм от заднего края"
+    }
+   ],
+   "mass": 11.474918400000002
+  },
+  {
+   "id": "T1",
+   "name": "Крыша корпуса",
+   "role": "top",
+   "group": "body",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 968,
+   "W": 561,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "L",
+   "origin": [
+    16,
+    1984,
+    0
+   ],
+   "axes": [
+    "x",
+    "z",
+    "y"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 968,
+   "blankW": 559,
+   "holes": [
+    {
+     "id": "h2",
+     "face": "W1",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J1",
+     "status": "rule"
+    },
+    {
+     "id": "h4",
+     "face": "W1",
+     "u": 280.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J1",
+     "status": "rule"
+    },
+    {
+     "id": "h6",
+     "face": "W1",
+     "u": 511,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J1",
+     "status": "rule"
+    },
+    {
+     "id": "h8",
+     "face": "W2",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J2",
+     "status": "rule"
+    },
+    {
+     "id": "h10",
+     "face": "W2",
+     "u": 280.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J2",
+     "status": "rule"
+    },
+    {
+     "id": "h12",
+     "face": "W2",
+     "u": 511,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J2",
+     "status": "rule"
+    }
+   ],
+   "ops": [
+    {
+     "id": "gT1",
+     "type": "groove",
+     "face": "B",
+     "params": {
+      "offset": 10,
+      "width": 4,
+      "depth": 8,
+      "from": 0,
+      "to": 968
+     },
+     "note": "Паз под заднюю стенку 4×8 мм в 10 мм от заднего края"
+    }
+   ],
+   "mass": 5.908362240000001
+  },
+  {
+   "id": "B1",
+   "name": "Дно корпуса",
+   "role": "bottom",
+   "group": "body",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 968,
+   "W": 561,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "L",
+   "origin": [
+    16,
+    120,
+    0
+   ],
+   "axes": [
+    "x",
+    "z",
+    "y"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 968,
+   "blankW": 559,
+   "holes": [
+    {
+     "id": "h14",
+     "face": "W1",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J3",
+     "status": "rule"
+    },
+    {
+     "id": "h16",
+     "face": "W1",
+     "u": 280.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J3",
+     "status": "rule"
+    },
+    {
+     "id": "h18",
+     "face": "W1",
+     "u": 511,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J3",
+     "status": "rule"
+    },
+    {
+     "id": "h20",
+     "face": "W2",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J4",
+     "status": "rule"
+    },
+    {
+     "id": "h22",
+     "face": "W2",
+     "u": 280.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J4",
+     "status": "rule"
+    },
+    {
+     "id": "h24",
+     "face": "W2",
+     "u": 511,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J4",
+     "status": "rule"
+    }
+   ],
+   "ops": [
+    {
+     "id": "gB1",
+     "type": "groove",
+     "face": "B",
+     "params": {
+      "offset": 10,
+      "width": 4,
+      "depth": 8,
+      "from": 0,
+      "to": 968
+     },
+     "note": "Паз под заднюю стенку 4×8 мм в 10 мм от заднего края"
+    }
+   ],
+   "mass": 5.908362240000001
+  },
+  {
+   "id": "BK",
+   "name": "Задняя стенка",
+   "role": "back",
+   "group": "back",
+   "geom": "panel",
+   "material": "hdf",
+   "materialName": "ХДФ (оргалит)",
+   "thickness": 3,
+   "finish": null,
+   "L": 1862,
+   "W": 982,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    9,
+    129,
+    10
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 1862,
+   "blankW": 982,
+   "holes": [],
+   "ops": [],
+   "mass": 4.6626342
+  },
+  {
+   "id": "D1",
+   "name": "Полка неподвижная",
+   "role": "divider",
+   "group": "body",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 968,
+   "W": 547,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "L",
+   "origin": [
+    16,
+    536,
+    14
+   ],
+   "axes": [
+    "x",
+    "z",
+    "y"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 968,
+   "blankW": 545,
+   "holes": [
+    {
+     "id": "h26",
+     "face": "W1",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J6",
+     "status": "rule"
+    },
+    {
+     "id": "h28",
+     "face": "W1",
+     "u": 273.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J6",
+     "status": "rule"
+    },
+    {
+     "id": "h30",
+     "face": "W1",
+     "u": 497,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J6",
+     "status": "rule"
+    },
+    {
+     "id": "h32",
+     "face": "W2",
+     "u": 50,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J7",
+     "status": "rule"
+    },
+    {
+     "id": "h34",
+     "face": "W2",
+     "u": 273.5,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J7",
+     "status": "rule"
+    },
+    {
+     "id": "h36",
+     "face": "W2",
+     "u": 497,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J7",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 5.760916480000001
+  },
+  {
+   "id": "F1",
+   "name": "Фасад двери",
+   "role": "door",
+   "group": "fronts",
+   "geom": "panel",
+   "material": "mdf-enamel",
+   "materialName": "МДФ под эмаль",
+   "thickness": 19,
+   "finish": {
+    "kind": "ral",
+    "code": "5024",
+    "sheen": "satin"
+   },
+   "L": 1454,
+   "W": 498,
+   "edges": {
+    "L1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "L2": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W2": {
+     "kind": "paint",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    1,
+    545,
+    561
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 1454,
+   "blankW": 498,
+   "holes": [
+    {
+     "id": "h37",
+     "face": "B",
+     "u": 100,
+     "v": 22.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J8",
+     "status": "verified"
+    },
+    {
+     "id": "h38",
+     "face": "B",
+     "u": 727,
+     "v": 22.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J8",
+     "status": "verified"
+    },
+    {
+     "id": "h39",
+     "face": "B",
+     "u": 1354,
+     "v": 22.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J8",
+     "status": "verified"
+    },
+    {
+     "id": "h40",
+     "face": "A",
+     "u": 505,
+     "v": 458,
+     "d": 5,
+     "depth": 19,
+     "through": true,
+     "kind": "Ручка: сквозное Ø5",
+     "joint": "J9",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 10.318311
+  },
+  {
+   "id": "H1",
+   "name": "Ручка-кнопка",
+   "role": "handle",
+   "group": "handles",
+   "geom": "handle",
+   "material": "metal",
+   "materialName": "Металл",
+   "thickness": 28,
+   "finish": null,
+   "L": 30,
+   "W": 30,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    444,
+    1035,
+    580
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 30,
+   "blankW": 30,
+   "holes": [],
+   "ops": [],
+   "mass": 0.06
+  },
+  {
+   "id": "F2",
+   "name": "Фасад двери",
+   "role": "door",
+   "group": "fronts",
+   "geom": "panel",
+   "material": "mdf-enamel",
+   "materialName": "МДФ под эмаль",
+   "thickness": 19,
+   "finish": {
+    "kind": "ral",
+    "code": "5024",
+    "sheen": "satin"
+   },
+   "L": 1454,
+   "W": 498,
+   "edges": {
+    "L1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "L2": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W2": {
+     "kind": "paint",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    501,
+    545,
+    561
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 1454,
+   "blankW": 498,
+   "holes": [
+    {
+     "id": "h41",
+     "face": "B",
+     "u": 100,
+     "v": 475.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J10",
+     "status": "verified"
+    },
+    {
+     "id": "h42",
+     "face": "B",
+     "u": 727,
+     "v": 475.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J10",
+     "status": "verified"
+    },
+    {
+     "id": "h43",
+     "face": "B",
+     "u": 1354,
+     "v": 475.5,
+     "d": 35,
+     "depth": 13,
+     "through": false,
+     "kind": "Чашка петли Ø35×13",
+     "joint": "J10",
+     "status": "verified"
+    },
+    {
+     "id": "h44",
+     "face": "A",
+     "u": 505,
+     "v": 40,
+     "d": 5,
+     "depth": 19,
+     "through": true,
+     "kind": "Ручка: сквозное Ø5",
+     "joint": "J11",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 10.318311
+  },
+  {
+   "id": "H2",
+   "name": "Ручка-кнопка",
+   "role": "handle",
+   "group": "handles",
+   "geom": "handle",
+   "material": "metal",
+   "materialName": "Металл",
+   "thickness": 28,
+   "finish": null,
+   "L": 30,
+   "W": 30,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    526,
+    1035,
+    580
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 30,
+   "blankW": 30,
+   "holes": [],
+   "ops": [],
+   "mass": 0.06
+  },
+  {
+   "id": "SH1",
+   "name": "Полка съёмная",
+   "role": "shelf",
+   "group": "shelves",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   },
+   "L": 966,
+   "W": 527,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thick",
+     "t": 2
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "L",
+   "origin": [
+    17,
+    1055,
+    16
+   ],
+   "axes": [
+    "x",
+    "z",
+    "y"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 966,
+   "blankW": 525,
+   "holes": [],
+   "ops": [],
+   "mass": 5.53881216
+  },
+  {
+   "id": "R1",
+   "name": "Штанга Ø25",
+   "role": "rod",
+   "group": "shelves",
+   "geom": "rod",
+   "material": "steel",
+   "materialName": "Сталь хромированная",
+   "thickness": 25,
+   "finish": null,
+   "L": 964,
+   "W": 25,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    18,
+    1911.5,
+    275
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 964,
+   "blankW": 25,
+   "holes": [],
+   "ops": [],
+   "mass": 0.5783999999999999
+  },
+  {
+   "id": "F3",
+   "name": "Фасад ящика",
+   "role": "drawer-front",
+   "group": "fronts",
+   "geom": "panel",
+   "material": "mdf-enamel",
+   "materialName": "МДФ под эмаль",
+   "thickness": 19,
+   "finish": {
+    "kind": "ral",
+    "code": "5024",
+    "sheen": "satin"
+   },
+   "L": 998,
+   "W": 206,
+   "edges": {
+    "L1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "L2": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W2": {
+     "kind": "paint",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    1,
+    337,
+    561
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 998,
+   "blankW": 206,
+   "holes": [
+    {
+     "id": "h65",
+     "face": "A",
+     "u": 499,
+     "v": 146,
+     "d": 5,
+     "depth": 19,
+     "through": true,
+     "kind": "Ручка: сквозное Ø5",
+     "joint": "J21",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 2.9296290000000003
+  },
+  {
+   "id": "DR1a",
+   "name": "Ящик 1: боковина",
+   "role": "drawer-side",
+   "group": "drawer1",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 500,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "none",
+   "origin": [
+    28.5,
+    351,
+    59
+   ],
+   "axes": [
+    "z",
+    "y",
+    "x"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 499.2,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h49",
+     "face": "A",
+     "u": 492,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J14",
+     "status": "verified"
+    },
+    {
+     "id": "h51",
+     "face": "A",
+     "u": 492,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J14",
+     "status": "verified"
+    },
+    {
+     "id": "h57",
+     "face": "A",
+     "u": 8,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J16",
+     "status": "verified"
+    },
+    {
+     "id": "h59",
+     "face": "A",
+     "u": 8,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J16",
+     "status": "verified"
+    }
+   ],
+   "ops": [],
+   "mass": 0.8704000000000001
+  },
+  {
+   "id": "DR1b",
+   "name": "Ящик 1: боковина",
+   "role": "drawer-side",
+   "group": "drawer1",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 500,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "none",
+   "origin": [
+    955.5,
+    351,
+    59
+   ],
+   "axes": [
+    "z",
+    "y",
+    "x"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 499.2,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h53",
+     "face": "A",
+     "u": 492,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J15",
+     "status": "verified"
+    },
+    {
+     "id": "h55",
+     "face": "A",
+     "u": 492,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J15",
+     "status": "verified"
+    },
+    {
+     "id": "h61",
+     "face": "A",
+     "u": 8,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J17",
+     "status": "verified"
+    },
+    {
+     "id": "h63",
+     "face": "A",
+     "u": 8,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J17",
+     "status": "verified"
+    }
+   ],
+   "ops": [],
+   "mass": 0.8704000000000001
+  },
+  {
+   "id": "DR1c",
+   "name": "Ящик 1: передняя стенка",
+   "role": "drawer-front-wall",
+   "group": "drawer1",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 911,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    44.5,
+    351,
+    543
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 911,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h50",
+     "face": "W1",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J14",
+     "status": "rule"
+    },
+    {
+     "id": "h52",
+     "face": "W1",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J14",
+     "status": "rule"
+    },
+    {
+     "id": "h54",
+     "face": "W2",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J15",
+     "status": "rule"
+    },
+    {
+     "id": "h56",
+     "face": "W2",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J15",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 1.5858688
+  },
+  {
+   "id": "DR1d",
+   "name": "Ящик 1: задняя стенка",
+   "role": "drawer-back-wall",
+   "group": "drawer1",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 911,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    44.5,
+    351,
+    59
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 911,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h58",
+     "face": "W1",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J16",
+     "status": "rule"
+    },
+    {
+     "id": "h60",
+     "face": "W1",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J16",
+     "status": "rule"
+    },
+    {
+     "id": "h62",
+     "face": "W2",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J17",
+     "status": "rule"
+    },
+    {
+     "id": "h64",
+     "face": "W2",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J17",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 1.5858688
+  },
+  {
+   "id": "DR1e",
+   "name": "Ящик 1: дно",
+   "role": "drawer-bottom",
+   "group": "drawer1",
+   "geom": "panel",
+   "material": "hdf",
+   "materialName": "ХДФ (оргалит)",
+   "thickness": 4,
+   "finish": null,
+   "L": 500,
+   "W": 943,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    28.5,
+    347,
+    59
+   ],
+   "axes": [
+    "z",
+    "x",
+    "y"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 500,
+   "blankW": 943,
+   "holes": [],
+   "ops": [],
+   "mass": 1.6031
+  },
+  {
+   "id": "H3",
+   "name": "Ручка-кнопка",
+   "role": "handle",
+   "group": "handles",
+   "geom": "handle",
+   "material": "metal",
+   "materialName": "Металл",
+   "thickness": 28,
+   "finish": null,
+   "L": 30,
+   "W": 30,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    485,
+    468,
+    580
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 30,
+   "blankW": 30,
+   "holes": [],
+   "ops": [],
+   "mass": 0.06
+  },
+  {
+   "id": "F4",
+   "name": "Фасад ящика",
+   "role": "drawer-front",
+   "group": "fronts",
+   "geom": "panel",
+   "material": "mdf-enamel",
+   "materialName": "МДФ под эмаль",
+   "thickness": 19,
+   "finish": {
+    "kind": "ral",
+    "code": "5024",
+    "sheen": "satin"
+   },
+   "L": 998,
+   "W": 214,
+   "edges": {
+    "L1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "L2": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W1": {
+     "kind": "paint",
+     "t": 0
+    },
+    "W2": {
+     "kind": "paint",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    1,
+    121,
+    561
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 998,
+   "blankW": 214,
+   "holes": [
+    {
+     "id": "h82",
+     "face": "A",
+     "u": 499,
+     "v": 154,
+     "d": 5,
+     "depth": 19,
+     "through": true,
+     "kind": "Ручка: сквозное Ø5",
+     "joint": "J29",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 3.0434010000000002
+  },
+  {
+   "id": "DR2a",
+   "name": "Ящик 2: боковина",
+   "role": "drawer-side",
+   "group": "drawer2",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 500,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "none",
+   "origin": [
+    28.5,
+    151,
+    59
+   ],
+   "axes": [
+    "z",
+    "y",
+    "x"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 499.2,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h66",
+     "face": "A",
+     "u": 492,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J22",
+     "status": "verified"
+    },
+    {
+     "id": "h68",
+     "face": "A",
+     "u": 492,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J22",
+     "status": "verified"
+    },
+    {
+     "id": "h74",
+     "face": "A",
+     "u": 8,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J24",
+     "status": "verified"
+    },
+    {
+     "id": "h76",
+     "face": "A",
+     "u": 8,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J24",
+     "status": "verified"
+    }
+   ],
+   "ops": [],
+   "mass": 0.8704000000000001
+  },
+  {
+   "id": "DR2b",
+   "name": "Ящик 2: боковина",
+   "role": "drawer-side",
+   "group": "drawer2",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 500,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W2": {
+     "kind": "thin",
+     "t": 0.4
+    }
+   },
+   "grain": "none",
+   "origin": [
+    955.5,
+    151,
+    59
+   ],
+   "axes": [
+    "z",
+    "y",
+    "x"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 499.2,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h70",
+     "face": "A",
+     "u": 492,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J23",
+     "status": "verified"
+    },
+    {
+     "id": "h72",
+     "face": "A",
+     "u": 492,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J23",
+     "status": "verified"
+    },
+    {
+     "id": "h78",
+     "face": "A",
+     "u": 8,
+     "v": 30,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J25",
+     "status": "verified"
+    },
+    {
+     "id": "h80",
+     "face": "A",
+     "u": 8,
+     "v": 130,
+     "d": 7,
+     "depth": 16,
+     "through": true,
+     "kind": "Конфирмат: сквозное Ø7",
+     "joint": "J25",
+     "status": "verified"
+    }
+   ],
+   "ops": [],
+   "mass": 0.8704000000000001
+  },
+  {
+   "id": "DR2c",
+   "name": "Ящик 2: передняя стенка",
+   "role": "drawer-front-wall",
+   "group": "drawer2",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 911,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    44.5,
+    151,
+    543
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": true,
+   "blankL": 911,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h67",
+     "face": "W1",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J22",
+     "status": "rule"
+    },
+    {
+     "id": "h69",
+     "face": "W1",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J22",
+     "status": "rule"
+    },
+    {
+     "id": "h71",
+     "face": "W2",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J23",
+     "status": "rule"
+    },
+    {
+     "id": "h73",
+     "face": "W2",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J23",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 1.5858688
+  },
+  {
+   "id": "DR2d",
+   "name": "Ящик 2: задняя стенка",
+   "role": "drawer-back-wall",
+   "group": "drawer2",
+   "geom": "panel",
+   "material": "ldsp",
+   "materialName": "ЛДСП белая",
+   "thickness": 16,
+   "finish": null,
+   "L": 911,
+   "W": 160,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "thin",
+     "t": 0.4
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    44.5,
+    151,
+    59
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 911,
+   "blankW": 159.6,
+   "holes": [
+    {
+     "id": "h75",
+     "face": "W1",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J24",
+     "status": "rule"
+    },
+    {
+     "id": "h77",
+     "face": "W1",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J24",
+     "status": "rule"
+    },
+    {
+     "id": "h79",
+     "face": "W2",
+     "u": 30,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J25",
+     "status": "rule"
+    },
+    {
+     "id": "h81",
+     "face": "W2",
+     "u": 130,
+     "v": 8,
+     "d": 5,
+     "depth": 37,
+     "through": false,
+     "kind": "Конфирмат: в торец Ø5",
+     "joint": "J25",
+     "status": "rule"
+    }
+   ],
+   "ops": [],
+   "mass": 1.5858688
+  },
+  {
+   "id": "DR2e",
+   "name": "Ящик 2: дно",
+   "role": "drawer-bottom",
+   "group": "drawer2",
+   "geom": "panel",
+   "material": "hdf",
+   "materialName": "ХДФ (оргалит)",
+   "thickness": 4,
+   "finish": null,
+   "L": 500,
+   "W": 943,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    28.5,
+    147,
+    59
+   ],
+   "axes": [
+    "z",
+    "x",
+    "y"
+   ],
+   "faceA": "-",
+   "sheet": true,
+   "blankL": 500,
+   "blankW": 943,
+   "holes": [],
+   "ops": [],
+   "mass": 1.6031
+  },
+  {
+   "id": "H4",
+   "name": "Ручка-кнопка",
+   "role": "handle",
+   "group": "handles",
+   "geom": "handle",
+   "material": "metal",
+   "materialName": "Металл",
+   "thickness": 28,
+   "finish": null,
+   "L": 30,
+   "W": 30,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    485,
+    260,
+    580
+   ],
+   "axes": [
+    "x",
+    "y",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 30,
+   "blankW": 30,
+   "holes": [],
+   "ops": [],
+   "mass": 0.06
+  },
+  {
+   "id": "L1",
+   "name": "Ножка деревянная",
+   "role": "leg",
+   "group": "base",
+   "geom": "leg",
+   "material": "wood",
+   "materialName": "Массив",
+   "thickness": 40,
+   "finish": null,
+   "L": 120,
+   "W": 40,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    30,
+    0,
+    30
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 120,
+   "blankW": 40,
+   "holes": [],
+   "ops": [],
+   "mass": 0.25
+  },
+  {
+   "id": "L2",
+   "name": "Ножка деревянная",
+   "role": "leg",
+   "group": "base",
+   "geom": "leg",
+   "material": "wood",
+   "materialName": "Массив",
+   "thickness": 40,
+   "finish": null,
+   "L": 120,
+   "W": 40,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    30,
+    0,
+    491
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 120,
+   "blankW": 40,
+   "holes": [],
+   "ops": [],
+   "mass": 0.25
+  },
+  {
+   "id": "L3",
+   "name": "Ножка деревянная",
+   "role": "leg",
+   "group": "base",
+   "geom": "leg",
+   "material": "wood",
+   "materialName": "Массив",
+   "thickness": 40,
+   "finish": null,
+   "L": 120,
+   "W": 40,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    930,
+    0,
+    30
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 120,
+   "blankW": 40,
+   "holes": [],
+   "ops": [],
+   "mass": 0.25
+  },
+  {
+   "id": "L4",
+   "name": "Ножка деревянная",
+   "role": "leg",
+   "group": "base",
+   "geom": "leg",
+   "material": "wood",
+   "materialName": "Массив",
+   "thickness": 40,
+   "finish": null,
+   "L": 120,
+   "W": 40,
+   "edges": {
+    "L1": {
+     "kind": "none",
+     "t": 0
+    },
+    "L2": {
+     "kind": "none",
+     "t": 0
+    },
+    "W1": {
+     "kind": "none",
+     "t": 0
+    },
+    "W2": {
+     "kind": "none",
+     "t": 0
+    }
+   },
+   "grain": "none",
+   "origin": [
+    930,
+    0,
+    491
+   ],
+   "axes": [
+    "y",
+    "x",
+    "z"
+   ],
+   "faceA": "+",
+   "sheet": false,
+   "blankL": 120,
+   "blankW": 40,
+   "holes": [],
+   "ops": [],
+   "mass": 0.25
+  }
+ ],
+ "joints": [
+  {
+   "kind": "confirmat",
+   "title": "Крыша корпуса — боковина левая",
+   "parts": [
+    "S1",
+    "T1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "body",
+   "status": "partial",
+   "id": "J1"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Крыша корпуса — боковина правая",
+   "parts": [
+    "S2",
+    "T1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "body-close",
+   "status": "partial",
+   "id": "J2"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Дно корпуса — боковина левая",
+   "parts": [
+    "S1",
+    "B1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "body",
+   "status": "partial",
+   "id": "J3"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Дно корпуса — боковина правая",
+   "parts": [
+    "S2",
+    "B1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "body-close",
+   "status": "partial",
+   "id": "J4"
+  },
+  {
+   "kind": "groove",
+   "title": "Задняя стенка в паз",
+   "parts": [
+    "BK",
+    "S1",
+    "S2",
+    "T1",
+    "B1"
+   ],
+   "hardware": [],
+   "step": "back",
+   "status": "rule",
+   "note": "Вставляется в паз до установки правой боковины",
+   "id": "J5"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Полка неподвижная — боковина левая",
+   "parts": [
+    "S1",
+    "D1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "dividers",
+   "status": "partial",
+   "id": "J6"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Полка неподвижная — боковина правая",
+   "parts": [
+    "S2",
+    "D1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 3
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 3
+    }
+   ],
+   "step": "dividers",
+   "status": "partial",
+   "id": "J7"
+  },
+  {
+   "kind": "hinge",
+   "title": "Петли: фасад двери F1",
+   "parts": [
+    "F1",
+    "S1"
+   ],
+   "hardware": [
+    {
+     "id": "hinge-blum",
+     "qty": 3
+    },
+    {
+     "id": "hinge-plate",
+     "qty": 3
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 6
+    }
+   ],
+   "step": "doors",
+   "status": "partial",
+   "note": "Чашки петель по документу Blum; ответные планки — требуют проверки",
+   "id": "J8"
+  },
+  {
+   "kind": "handle",
+   "title": "Ручка на фасад двери",
+   "parts": [
+    "F1",
+    "H1"
+   ],
+   "hardware": [
+    {
+     "id": "knob",
+     "qty": 1
+    },
+    {
+     "id": "handle-screw",
+     "qty": 1
+    }
+   ],
+   "step": "handles",
+   "status": "partial",
+   "id": "J9"
+  },
+  {
+   "kind": "hinge",
+   "title": "Петли: фасад двери F2",
+   "parts": [
+    "F2",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "hinge-blum",
+     "qty": 3
+    },
+    {
+     "id": "hinge-plate",
+     "qty": 3
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 6
+    }
+   ],
+   "step": "doors",
+   "status": "partial",
+   "note": "Чашки петель по документу Blum; ответные планки — требуют проверки",
+   "id": "J10"
+  },
+  {
+   "kind": "handle",
+   "title": "Ручка на фасад двери",
+   "parts": [
+    "F2",
+    "H2"
+   ],
+   "hardware": [
+    {
+     "id": "knob",
+     "qty": 1
+    },
+    {
+     "id": "handle-screw",
+     "qty": 1
+    }
+   ],
+   "step": "handles",
+   "status": "partial",
+   "id": "J11"
+  },
+  {
+   "kind": "shelf-pin",
+   "title": "Полка съёмная SH1",
+   "parts": [
+    "SH1",
+    "S1",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "shelf-pin",
+     "qty": 4
+    }
+   ],
+   "step": "shelves",
+   "status": "partial",
+   "id": "J12"
+  },
+  {
+   "kind": "rod",
+   "title": "Штанга R1",
+   "parts": [
+    "R1",
+    "S1",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "rod-holder",
+     "qty": 2
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 4
+    }
+   ],
+   "step": "shelves",
+   "status": "unverified",
+   "id": "J13"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 1: передняя стенка — боковина",
+   "parts": [
+    "DR1a",
+    "DR1c"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J14"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 1: передняя стенка — боковина",
+   "parts": [
+    "DR1b",
+    "DR1c"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J15"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 1: задняя стенка — боковина",
+   "parts": [
+    "DR1a",
+    "DR1d"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J16"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 1: задняя стенка — боковина",
+   "parts": [
+    "DR1b",
+    "DR1d"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J17"
+  },
+  {
+   "kind": "nail",
+   "title": "Ящик 1: дно",
+   "parts": [
+    "DR1e",
+    "DR1a",
+    "DR1b",
+    "DR1c",
+    "DR1d"
+   ],
+   "hardware": [
+    {
+     "id": "back-nail",
+     "qty": 29
+    }
+   ],
+   "step": "drawers",
+   "status": "rule",
+   "id": "J18"
+  },
+  {
+   "kind": "slide",
+   "title": "Ящик 1: направляющие 500 мм",
+   "parts": [
+    "DR1a",
+    "DR1b",
+    "S1",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "slide",
+     "qty": 1
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 12
+    }
+   ],
+   "step": "drawers-in",
+   "status": "unverified",
+   "note": "Длина 500 мм; зазор 12.5 мм на сторону — правило программы",
+   "id": "J19"
+  },
+  {
+   "kind": "screw",
+   "title": "Ящик 1: фасад к коробу",
+   "parts": [
+    "F3",
+    "DR1c"
+   ],
+   "hardware": [
+    {
+     "id": "screw-4x30",
+     "qty": 6
+    }
+   ],
+   "step": "drawers-in",
+   "status": "rule",
+   "id": "J20"
+  },
+  {
+   "kind": "handle",
+   "title": "Ручка на фасад ящика",
+   "parts": [
+    "F3",
+    "H3"
+   ],
+   "hardware": [
+    {
+     "id": "knob",
+     "qty": 1
+    },
+    {
+     "id": "handle-screw",
+     "qty": 1
+    }
+   ],
+   "step": "handles",
+   "status": "partial",
+   "id": "J21"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 2: передняя стенка — боковина",
+   "parts": [
+    "DR2a",
+    "DR2c"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J22"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 2: передняя стенка — боковина",
+   "parts": [
+    "DR2b",
+    "DR2c"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J23"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 2: задняя стенка — боковина",
+   "parts": [
+    "DR2a",
+    "DR2d"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J24"
+  },
+  {
+   "kind": "confirmat",
+   "title": "Ящик 2: задняя стенка — боковина",
+   "parts": [
+    "DR2b",
+    "DR2d"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 2
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 2
+    }
+   ],
+   "step": "drawers",
+   "status": "partial",
+   "id": "J25"
+  },
+  {
+   "kind": "nail",
+   "title": "Ящик 2: дно",
+   "parts": [
+    "DR2e",
+    "DR2a",
+    "DR2b",
+    "DR2c",
+    "DR2d"
+   ],
+   "hardware": [
+    {
+     "id": "back-nail",
+     "qty": 29
+    }
+   ],
+   "step": "drawers",
+   "status": "rule",
+   "id": "J26"
+  },
+  {
+   "kind": "slide",
+   "title": "Ящик 2: направляющие 500 мм",
+   "parts": [
+    "DR2a",
+    "DR2b",
+    "S1",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "slide",
+     "qty": 1
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 12
+    }
+   ],
+   "step": "drawers-in",
+   "status": "unverified",
+   "note": "Длина 500 мм; зазор 12.5 мм на сторону — правило программы",
+   "id": "J27"
+  },
+  {
+   "kind": "screw",
+   "title": "Ящик 2: фасад к коробу",
+   "parts": [
+    "F4",
+    "DR2c"
+   ],
+   "hardware": [
+    {
+     "id": "screw-4x30",
+     "qty": 6
+    }
+   ],
+   "step": "drawers-in",
+   "status": "rule",
+   "id": "J28"
+  },
+  {
+   "kind": "handle",
+   "title": "Ручка на фасад ящика",
+   "parts": [
+    "F4",
+    "H4"
+   ],
+   "hardware": [
+    {
+     "id": "knob",
+     "qty": 1
+    },
+    {
+     "id": "handle-screw",
+     "qty": 1
+    }
+   ],
+   "step": "handles",
+   "status": "partial",
+   "id": "J29"
+  },
+  {
+   "kind": "leg",
+   "title": "4 опор к дну",
+   "parts": [
+    "B1",
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "hardware": [
+    {
+     "id": "leg-wood",
+     "qty": 4
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 16
+    }
+   ],
+   "step": "base",
+   "status": "unverified",
+   "id": "J30"
+  }
+ ],
+ "moving": [
+  {
+   "id": "mvF1",
+   "kind": "door",
+   "parts": [
+    "F1"
+   ],
+   "hinge": [
+    1,
+    0,
+    561
+   ],
+   "axisSign": -1,
+   "front": "F1"
+  },
+  {
+   "id": "mvF2",
+   "kind": "door",
+   "parts": [
+    "F2"
+   ],
+   "hinge": [
+    999,
+    0,
+    561
+   ],
+   "axisSign": 1,
+   "front": "F2"
+  },
+  {
+   "id": "mvF3",
+   "kind": "drawer",
+   "parts": [
+    "F3",
+    "DR1a",
+    "DR1b",
+    "DR1c",
+    "DR1d",
+    "DR1e"
+   ],
+   "travel": 470,
+   "front": "F3"
+  },
+  {
+   "id": "mvF4",
+   "kind": "drawer",
+   "parts": [
+    "F4",
+    "DR2a",
+    "DR2b",
+    "DR2c",
+    "DR2d",
+    "DR2e"
+   ],
+   "travel": 470,
+   "front": "F4"
+  }
+ ],
+ "checks": [
+  {
+   "level": "warn",
+   "area": "Полки, секция 1",
+   "msg": "Оценка прогиба полки 966 мм из «ЛДСП» 16 мм при 15 кг: ≈ 8.6 мм с учётом ползучести (ориентир программы — не более 3.2 мм). Это оценка по формуле балки на двух опорах со справочным модулем упругости; проверенной методикой расчёта и гарантией несущей способности она не является.",
+   "fix": "Уменьшите пролёт перегородкой, увеличьте толщину или выберите более жёсткий материал."
+  },
+  {
+   "level": "ok",
+   "area": "Пересечения",
+   "msg": "Недопустимых пересечений деталей нет (паз задней стенки — предусмотренное сопряжение)."
+  },
+  {
+   "level": "ok",
+   "area": "Движение",
+   "msg": "Проверено: ящики при полном выдвижении, двери при открывании на 90° (упрощённо, по габаритам деталей)."
+  },
+  {
+   "level": "ok",
+   "area": "Присадка",
+   "msg": "Все отверстия в пределах деталей, глухие отверстия не выходят на лицевую сторону."
+  },
+  {
+   "level": "warn",
+   "area": "Фурнитура",
+   "msg": "«Ответная планка для петли Blum»: профиль не проверен — отверстия не формируются.",
+   "fix": "Не хватает: артикул планки; схема отверстий; расстояние от переднего края."
+  },
+  {
+   "level": "warn",
+   "area": "Фурнитура",
+   "msg": "«Ручка-кнопка»: профиль не проверен — отверстия не формируются.",
+   "fix": "Не хватает: модель."
+  },
+  {
+   "level": "warn",
+   "area": "Фурнитура",
+   "msg": "«Штангодержатель Ø25»: профиль не проверен — отверстия не формируются.",
+   "fix": "Не хватает: модель; нагрузка."
+  },
+  {
+   "level": "warn",
+   "area": "Фурнитура",
+   "msg": "«Направляющие шариковые полного выдвижения (пара)»: профиль не проверен — отверстия не формируются.",
+   "fix": "Не хватает: производитель и артикул; боковой зазор по документации; схема крепления к корпусу и коробу; допустимая нагрузка."
+  },
+  {
+   "level": "warn",
+   "area": "Фурнитура",
+   "msg": "«Ножка деревянная с монтажной пластиной»: профиль не проверен — отверстия не формируются.",
+   "fix": "Не хватает: модель; допустимая нагрузка."
+  }
+ ],
+ "steps": [
+  {
+   "id": "st1",
+   "title": "Крыша и дно к левой боковине",
+   "text": [
+    "Положите левую боковину наружной стороной вниз на чистую мягкую поверхность.",
+    "Приставьте крышу и дно кромкой к боковине, совместите отверстия и закрутите конфирматы."
+   ],
+   "parts": [
+    "S1",
+    "T1",
+    "B1"
+   ],
+   "fresh": [
+    "S1",
+    "T1",
+    "B1"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 6
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 6
+    }
+   ],
+   "tools": [
+    "Шестигранный ключ / бита под конфирмат",
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J1",
+    "J3"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1"
+   ]
+  },
+  {
+   "id": "st2",
+   "title": "Неподвижные полки",
+   "text": [
+    "Установите неподвижные полки между боковинами и перегородками, закрепите конфирматами."
+   ],
+   "parts": [
+    "S1",
+    "D1",
+    "S2"
+   ],
+   "fresh": [
+    "D1",
+    "S2"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 6
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 6
+    }
+   ],
+   "tools": [
+    "Шестигранный ключ / бита под конфирмат",
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J6",
+    "J7"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2"
+   ]
+  },
+  {
+   "id": "st3",
+   "title": "Задняя стенка",
+   "text": [
+    "Вставьте заднюю стенку в пазы боковины, крыши и дна гладкой стороной внутрь корпуса."
+   ],
+   "parts": [
+    "BK",
+    "S1",
+    "S2",
+    "T1",
+    "B1"
+   ],
+   "fresh": [
+    "BK"
+   ],
+   "hardware": [],
+   "tools": [],
+   "joints": [
+    "J5"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK"
+   ]
+  },
+  {
+   "id": "st4",
+   "title": "Правая боковина",
+   "text": [
+    "Наденьте правую боковину на крышу и дно, закрутите конфирматы.",
+    "Измерьте диагонали корпуса — они должны совпадать (±2 мм)."
+   ],
+   "parts": [
+    "S2",
+    "T1",
+    "B1"
+   ],
+   "fresh": [],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 6
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 6
+    }
+   ],
+   "tools": [
+    "Шестигранный ключ / бита под конфирмат",
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J2",
+    "J4"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK"
+   ]
+  },
+  {
+   "id": "st5",
+   "title": "Опоры",
+   "text": [
+    "Переверните корпус на крышу (подложите мягкий материал) и прикрутите опоры к дну.",
+    "Крепёж этого шага не имеет проверенного профиля — следуйте инструкции производителя выбранной фурнитуры."
+   ],
+   "parts": [
+    "B1",
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "fresh": [
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "hardware": [
+    {
+     "id": "leg-wood",
+     "qty": 4
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 16
+    }
+   ],
+   "tools": [
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J30"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ]
+  },
+  {
+   "id": "st6",
+   "title": "Сборка ящиков",
+   "text": [
+    "Соберите короб каждого ящика: боковины, переднюю и заднюю стенки.",
+    "Выставьте прямой угол и прибейте дно."
+   ],
+   "parts": [
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e"
+   ],
+   "fresh": [
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e"
+   ],
+   "hardware": [
+    {
+     "id": "confirmat",
+     "qty": 16
+    },
+    {
+     "id": "confirmat-cap",
+     "qty": 16
+    },
+    {
+     "id": "back-nail",
+     "qty": 58
+    }
+   ],
+   "tools": [
+    "Шестигранный ключ / бита под конфирмат",
+    "Шуруповёрт",
+    "Молоток или степлер"
+   ],
+   "joints": [
+    "J14",
+    "J15",
+    "J16",
+    "J17",
+    "J18",
+    "J22",
+    "J23",
+    "J24",
+    "J25",
+    "J26"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e"
+   ]
+  },
+  {
+   "id": "st7",
+   "title": "Направляющие и фасады ящиков",
+   "text": [
+    "Закрепите направляющие на корпусе и коробах по инструкции производителя направляющих.",
+    "Вставьте ящики, приложите фасад с равными зазорами и закрепите саморезами изнутри короба.",
+    "Крепёж этого шага не имеет проверенного профиля — следуйте инструкции производителя выбранной фурнитуры."
+   ],
+   "parts": [
+    "DR1a",
+    "DR1b",
+    "S1",
+    "S2",
+    "F3",
+    "DR1c",
+    "DR2a",
+    "DR2b",
+    "F4",
+    "DR2c"
+   ],
+   "fresh": [
+    "F3",
+    "F4"
+   ],
+   "hardware": [
+    {
+     "id": "slide",
+     "qty": 2
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 24
+    },
+    {
+     "id": "screw-4x30",
+     "qty": 12
+    }
+   ],
+   "tools": [
+    "Шуруповёрт",
+    "Отвёртка PZ2"
+   ],
+   "joints": [
+    "J19",
+    "J20",
+    "J27",
+    "J28"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e",
+    "F3",
+    "F4"
+   ]
+  },
+  {
+   "id": "st8",
+   "title": "Двери",
+   "text": [
+    "Вставьте петли в чашки фасадов, закрепите ответные планки на боковинах по инструкции производителя.",
+    "Навесьте двери и отрегулируйте зазоры винтами петель."
+   ],
+   "parts": [
+    "F1",
+    "S1",
+    "F2",
+    "S2"
+   ],
+   "fresh": [
+    "F1",
+    "F2"
+   ],
+   "hardware": [
+    {
+     "id": "hinge-blum",
+     "qty": 6
+    },
+    {
+     "id": "hinge-plate",
+     "qty": 6
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 12
+    }
+   ],
+   "tools": [
+    "Отвёртка PZ2",
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J8",
+    "J10"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e",
+    "F3",
+    "F4",
+    "F1",
+    "F2"
+   ]
+  },
+  {
+   "id": "st9",
+   "title": "Полки и штанги",
+   "text": [
+    "Вставьте полкодержатели и положите полки.",
+    "Закрепите штангодержатели и установите штангу.",
+    "Крепёж этого шага не имеет проверенного профиля — следуйте инструкции производителя выбранной фурнитуры."
+   ],
+   "parts": [
+    "SH1",
+    "S1",
+    "S2",
+    "R1"
+   ],
+   "fresh": [
+    "SH1",
+    "R1"
+   ],
+   "hardware": [
+    {
+     "id": "shelf-pin",
+     "qty": 4
+    },
+    {
+     "id": "rod-holder",
+     "qty": 2
+    },
+    {
+     "id": "screw-4x16",
+     "qty": 4
+    }
+   ],
+   "tools": [
+    "Шуруповёрт"
+   ],
+   "joints": [
+    "J12",
+    "J13"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e",
+    "F3",
+    "F4",
+    "F1",
+    "F2",
+    "SH1",
+    "R1"
+   ]
+  },
+  {
+   "id": "st10",
+   "title": "Ручки",
+   "text": [
+    "Закрепите ручки винтами изнутри фасадов."
+   ],
+   "parts": [
+    "F1",
+    "H1",
+    "F2",
+    "H2",
+    "F3",
+    "H3",
+    "F4",
+    "H4"
+   ],
+   "fresh": [
+    "H1",
+    "H2",
+    "H3",
+    "H4"
+   ],
+   "hardware": [
+    {
+     "id": "knob",
+     "qty": 4
+    },
+    {
+     "id": "handle-screw",
+     "qty": 4
+    }
+   ],
+   "tools": [
+    "Отвёртка PH2"
+   ],
+   "joints": [
+    "J9",
+    "J11",
+    "J21",
+    "J29"
+   ],
+   "show": [
+    "S1",
+    "T1",
+    "B1",
+    "D1",
+    "S2",
+    "BK",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "DR1a",
+    "DR1c",
+    "DR1b",
+    "DR1d",
+    "DR1e",
+    "DR2a",
+    "DR2c",
+    "DR2b",
+    "DR2d",
+    "DR2e",
+    "F3",
+    "F4",
+    "F1",
+    "F2",
+    "SH1",
+    "R1",
+    "H1",
+    "H2",
+    "H3",
+    "H4"
+   ]
+  }
+ ],
+ "hardware": [
+  {
+   "id": "confirmat",
+   "qty": 34,
+   "joints": [
+    "J1",
+    "J2",
+    "J3",
+    "J4",
+    "J6",
+    "J7",
+    "J14",
+    "J15",
+    "J16",
+    "J17",
+    "J22",
+    "J23",
+    "J24",
+    "J25"
+   ]
+  },
+  {
+   "id": "confirmat-cap",
+   "qty": 34,
+   "joints": [
+    "J1",
+    "J2",
+    "J3",
+    "J4",
+    "J6",
+    "J7",
+    "J14",
+    "J15",
+    "J16",
+    "J17",
+    "J22",
+    "J23",
+    "J24",
+    "J25"
+   ]
+  },
+  {
+   "id": "hinge-blum",
+   "qty": 6,
+   "joints": [
+    "J8",
+    "J10"
+   ]
+  },
+  {
+   "id": "hinge-plate",
+   "qty": 6,
+   "joints": [
+    "J8",
+    "J10"
+   ]
+  },
+  {
+   "id": "screw-4x16",
+   "qty": 56,
+   "joints": [
+    "J8",
+    "J10",
+    "J13",
+    "J19",
+    "J27",
+    "J30"
+   ]
+  },
+  {
+   "id": "knob",
+   "qty": 4,
+   "joints": [
+    "J9",
+    "J11",
+    "J21",
+    "J29"
+   ]
+  },
+  {
+   "id": "handle-screw",
+   "qty": 4,
+   "joints": [
+    "J9",
+    "J11",
+    "J21",
+    "J29"
+   ]
+  },
+  {
+   "id": "shelf-pin",
+   "qty": 4,
+   "joints": [
+    "J12"
+   ]
+  },
+  {
+   "id": "rod-holder",
+   "qty": 2,
+   "joints": [
+    "J13"
+   ]
+  },
+  {
+   "id": "back-nail",
+   "qty": 58,
+   "joints": [
+    "J18",
+    "J26"
+   ]
+  },
+  {
+   "id": "slide",
+   "qty": 2,
+   "joints": [
+    "J19",
+    "J27"
+   ]
+  },
+  {
+   "id": "screw-4x30",
+   "qty": 12,
+   "joints": [
+    "J20",
+    "J28"
+   ]
+  },
+  {
+   "id": "leg-wood",
+   "qty": 4,
+   "joints": [
+    "J30"
+   ]
+  }
+ ],
+ "massKg": 96.4,
+ "status": "needs-review"
+}

@@ -1,0 +1,103 @@
+{
+ "schema": "forma/product-config",
+ "version": 1,
+ "category": "wardrobe",
+ "model": "wr-scandi",
+ "style": "scandi",
+ "size": {
+  "width": 1000,
+  "height": 2000,
+  "depth": 580
+ },
+ "body": {
+  "material": "ldsp",
+  "thickness": 16,
+  "finish": {
+   "kind": "decor",
+   "code": "W-white",
+   "sheen": "matte"
+  }
+ },
+ "fronts": {
+  "material": "mdf-enamel",
+  "thickness": 19,
+  "finish": {
+   "kind": "ral",
+   "code": "5024",
+   "sheen": "satin"
+  },
+  "mount": "overlay",
+  "design": "flat"
+ },
+ "back": {
+  "material": "hdf",
+  "thickness": 3,
+  "mount": "groove"
+ },
+ "top": {
+  "enabled": false,
+  "material": "ldsp",
+  "thickness": 16,
+  "finish": {
+   "kind": "decor",
+   "code": "W-white",
+   "sheen": "matte"
+  },
+  "overhangFront": 0,
+  "overhangSides": 0,
+  "cornerRadius": 0
+ },
+ "base": {
+  "type": "legs-wood",
+  "height": 120,
+  "plinthRecess": 40,
+  "metalColor": "black",
+  "wallBase": "unknown"
+ },
+ "handles": {
+  "type": "knob",
+  "size": 128,
+  "color": "white"
+ },
+ "columns": [
+  {
+   "width": null,
+   "zones": [
+    {
+     "type": "door",
+     "height": null,
+     "shelves": 1,
+     "rod": true,
+     "doors": "double"
+    },
+    {
+     "type": "drawer",
+     "height": 200,
+     "shelves": 0,
+     "rod": false,
+     "doors": "auto"
+    },
+    {
+     "type": "drawer",
+     "height": 200,
+     "shelves": 0,
+     "rod": false,
+     "doors": "auto"
+    }
+   ]
+  }
+ ],
+ "drawerBox": {
+  "material": "ldsp",
+  "thickness": 16
+ },
+ "production": {
+  "gap": 2,
+  "edgeThin": 0.4,
+  "edgeThick": 2,
+  "edgeAllowance": 0,
+  "shelfLoadKg": 15,
+  "maxDoorWidth": 600
+ },
+ "notes": ""
+}
