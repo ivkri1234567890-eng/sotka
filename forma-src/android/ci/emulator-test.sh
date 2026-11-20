@@ -14,14 +14,14 @@ adb logcat -c
 adb shell am start -W -n ru.sotka.forma/.MainActivity | tee -a $OUT/log.txt
 sleep 20; shot 01-pin
 adb shell input text 000000; adb shell input keyevent 66; sleep 3; shot 01b-wrong-pin
-T "PIN"; adb shell input text 171291; adb shell input keyevent 66; sleep 15; shot 02-home
+adb shell input text 171291; adb shell input keyevent 66; sleep 15; shot 02-home
 T "Парящая" 6; sleep 15; shot 03-editor
 T "Модель крупно"; sleep 3; T "Ящики"; sleep 4; shot 04-drawers; T "Размеры" 2; sleep 2
 T "Настройки"; sleep 2; T "Ручки и основание"; sleep 2; T "Кнопка"; sleep 3; shot 05-settings
 adb shell input keyevent 4; sleep 3; shot 06-back-dialog
 T "Сохранить" 3; sleep 4; shot 07-home-saved
 adb shell am force-stop ru.sotka.forma; sleep 2; adb shell am start -W -n ru.sotka.forma/.MainActivity; sleep 15
-T "PIN"; adb shell input text 171291; adb shell input keyevent 66; sleep 12; shot 08-after-restart
+adb shell input text 171291; adb shell input keyevent 66; sleep 12; shot 08-after-restart
 python3 - <<'PY' | tee -a ci-out/log.txt
 import sys; sys.path.insert(0,'ci'); import tap
 print('PROJECT AFTER RESTART:', 'found' if tap.find('Открыть') else 'MISSING')
