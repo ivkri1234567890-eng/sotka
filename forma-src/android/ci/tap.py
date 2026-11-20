@@ -15,9 +15,9 @@ def find(text, exact=False):
                 if x2 > x1 and y2 > y1: return (x1 + x2) // 2, (y1 + y2) // 2
     return None
 if __name__ == '__main__':
-    text = sys.argv[1]; tries = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+    text = sys.argv[1]; tries = int(sys.argv[2]) if len(sys.argv) > 2 else 5; ex = len(sys.argv) > 3 and sys.argv[3] == 'x'
     for i in range(tries):
-        p = find(text)
+        p = find(text, ex)
         if p:
             subprocess.run(['adb', 'shell', 'input', 'tap', str(p[0]), str(p[1])]); print('tap', text, p); sys.exit(0)
         time.sleep(3)
