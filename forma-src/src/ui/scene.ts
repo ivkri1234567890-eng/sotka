@@ -180,6 +180,9 @@ export class FormaScene {
     if (!this.handleMap.size && this.model) for (const j of this.model.joints) if (j.kind === 'handle' && j.parts[1]) this.handleMap.set(j.parts[0], j.parts[1]);
     const id = this.handleMap.get(frontId); return id ? this.meshes.get(id) : undefined;
   }
+  /** Текущий ракурс (для сохранения при переходах между экранами). */
+  getCam(): { p: number[]; t: number[] } { return { p: this.camera.position.toArray(), t: this.controls.target.toArray() }; }
+  setCam(v: { p: number[]; t: number[] }) { this.camera.position.fromArray(v.p); this.controls.target.fromArray(v.t); this.controls.update(); if (this.host.isConnected) this.kick(); }
   select(id: string | null) { this.selected = id; this.highlight(); if (this.host.isConnected) this.kick(); }
   private highlight() { for (const [id, mesh] of this.meshes) { const m = mesh.material as THREE.MeshStandardMaterial; if (m.emissive) m.emissive.set(id === this.selected ? '#ff7a1a' : '#000000'); if (m.emissiveIntensity !== undefined) m.emissiveIntensity = id === this.selected ? 0.45 : 0; } }
   private pick(e: PointerEvent) {

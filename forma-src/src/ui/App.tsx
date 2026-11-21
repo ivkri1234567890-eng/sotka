@@ -9,10 +9,11 @@ import { isNative, pickFile, readText, saveFile } from '../platform/files';
 import { migrateProject } from '../core/migrate';
 import { Editor } from './Editor';
 import { Docs } from './Docs';
-import { Toaster, toast, Modal } from './common';
+import { Toaster, toast, Modal, Boundary } from './common';
+import { projectJson, safeName } from '../docs/bundle';
 import { thumb } from './offscreen';
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';
 const PIN_HASH = '3f83c39e586b757844029ad05bdde398b8df962206745d31450bb4cacee3fe1d';
 async function sha(s: string) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 const uid = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -79,7 +80,10 @@ function ThumbP({ p, onReady }: { p: Stored; onReady: (u: string) => void }) {
   return <img alt="" />;
 }
 
+/** Плавающая кнопка хаба сайта (если есть): body.has-hub — CSS переносит её в свободный угол нижней панели. */
+function useHub() { useEffect(() => { const f = () => document.body.classList.toggle('has-hub', !!document.getElementById('hubBtn')); f(); const t = setInterval(f, 1500); return () => clearInterval(t); }, []); }
 export function App() {
+  useHub();
   const [unlocked, setUnlocked] = useState(!isNative());
   const [route, setRoute] = useState<Route>(parseHash());
   const [projects, setProjects] = useState<Stored[]>([]);
@@ -87,7 +91,7 @@ export function App() {
   const [leave, setLeave] = useState(false);
   const saveTimer = useRef<any>(null);
   const reload = async () => setProjects(await listProjects());
-  useEffect(() => { reload(); const f = () => { setRoute(parseHash()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
+  useEffect(() => { reload(); const f = () => { const r = parseHash(); setRoute(r); if (r.s === 'docs') window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
   useEffect(() => { if (route.s !== 'home') { const p = projects.find(x => x.id === route.id); if (p && (!cur || cur.id !== p.id)) setCur(p); } }, [route, projects]);
   // системная кнопка «Назад» Android
   const routeRef = useRef(route); routeRef.current = route; const curRef = useRef(cur); curRef.current = cur;
@@ -107,8 +111,8 @@ export function App() {
   let body: React.ReactNode;
   if (route.s === 'home' || !cur || cur.id !== route.id) body = route.s !== 'home' && !projects.find(x => x.id === (route as any).id) && projects.length ? <div className="wrap"><p>Проект не найден.</p><button className="btn" onClick={() => go('/')}>На главную</button></div>
     : route.s === 'home' ? <Home open={id => go('/p/' + id)} create={create} projects={projects} reload={reload} /> : <div className="wrap">Загрузка…</div>;
-  else if (route.s === 'edit') body = <EditorWrap cur={cur} change={change} saveNow={saveNow} onDocs={() => go('/p/' + cur.id + '/docs')} onBack={requestLeave} />;
-  else body = <Docs project={cur} onChange={change} onBack={() => history.back()} />;
+  else if (route.s === 'edit') body = <Boundary what="Редактор" onBack={() => go('/')}><EditorWrap cur={cur} change={change} saveNow={saveNow} onDocs={() => go('/p/' + cur.id + '/docs')} onBack={requestLeave} /></Boundary>;
+  else body = <Boundary what="Документы" onBack={() => go('/p/' + cur.id)}><Docs project={cur} onChange={change} onBack={() => history.length > 1 ? history.back() : go('/p/' + cur.id)} /></Boundary>;
   return <>{body}
     {leave && <Modal title="Сохранить проект?" text="Проект ещё не сохранён. Сохранить его в «Мои проекты»?" actions={[
       { label: 'Отмена', kind: 'sec', onClick: () => setLeave(false) },
@@ -117,6 +121,7 @@ export function App() {
     <Toaster /></>;
 }
 function EditorWrap({ cur, change, saveNow, onDocs, onBack }: { cur: Stored; change: (p: Project) => void; saveNow: () => void; onDocs: () => void; onBack: () => void }) {
-  return <Editor project={cur} onChange={change} onSave={saveNow} onDocs={onDocs} saved={!cur.draft} onBack={onBack} />;
+  return <Editor project={cur} onChange={change} onSave={saveNow} onDocs={onDocs} saved={!cur.draft} onBack={onBack}
+    onJson={async () => { const ok = await saveFile(`${safeName(cur.name)}.forma.json`, projectJson(cur)); if (ok) toast(isNative() ? 'Файл проекта сохранён' : 'Файл проекта скачан'); }} />;
 }
 export { buildModel };

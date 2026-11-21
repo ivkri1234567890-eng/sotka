@@ -1,0 +1,118 @@
+{
+ "schema": "forma/project",
+ "version": 1,
+ "id": "pmwpf5oz3w3h3",
+ "name": "Лагом",
+ "created": "2026-11-20T20:15:59.151Z",
+ "updated": "2026-11-20T20:35:01.137Z",
+ "config": {
+  "schema": "forma/product-config",
+  "version": 1,
+  "category": "dresser",
+  "model": "dr-scandi",
+  "style": "scandi",
+  "size": {
+   "width": 600,
+   "height": 760,
+   "depth": 420
+  },
+  "body": {
+   "material": "ldsp",
+   "thickness": 16,
+   "finish": {
+    "kind": "decor",
+    "code": "W-white",
+    "sheen": "matte"
+   }
+  },
+  "fronts": {
+   "material": "mdf-enamel",
+   "thickness": 16,
+   "finish": {
+    "kind": "ral",
+    "code": "9016",
+    "sheen": "matte"
+   },
+   "mount": "overlay",
+   "design": "flat"
+  },
+  "back": {
+   "material": "hdf",
+   "thickness": 3,
+   "mount": "groove"
+  },
+  "top": {
+   "enabled": true,
+   "material": "mdf-enamel",
+   "thickness": 16,
+   "finish": {
+    "kind": "ral",
+    "code": "7004",
+    "sheen": "matte"
+   },
+   "overhangFront": 10,
+   "overhangSides": 10,
+   "cornerRadius": 40
+  },
+  "base": {
+   "type": "legs-wood",
+   "height": 560,
+   "plinthRecess": 40,
+   "metalColor": "black",
+   "wallBase": "unknown"
+  },
+  "handles": {
+   "type": "knob",
+   "size": 128,
+   "color": "chrome"
+  },
+  "columns": [
+   {
+    "width": null,
+    "zones": [
+     {
+      "type": "drawer",
+      "height": null,
+      "shelves": 0,
+      "rod": false,
+      "doors": "auto"
+     }
+    ]
+   },
+   {
+    "width": null,
+    "zones": [
+     {
+      "type": "drawer",
+      "height": null,
+      "shelves": 0,
+      "rod": false,
+      "doors": "auto"
+     }
+    ]
+   }
+  ],
+  "mirror": {
+   "type": "none",
+   "width": 600,
+   "height": 800,
+   "mount": "top"
+  },
+  "drawerBox": {
+   "material": "ldsp",
+   "thickness": 16
+  },
+  "production": {
+   "gap": 2,
+   "edgeThin": 0.4,
+   "edgeThick": 2,
+   "edgeAllowance": 0,
+   "shelfLoadKg": 15,
+   "maxDoorWidth": 600
+  },
+  "notes": ""
+ },
+ "prices": null,
+ "photos": [],
+ "docVersion": 1
+}

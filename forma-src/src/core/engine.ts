@@ -26,6 +26,9 @@ export const HINGE_K = 5;                // расстояние от края �
 export const BACK_GROOVE_OFFSET = 10;    // паз под заднюю стенку от заднего края, мм
 export const DRAWER_TOP_CLEAR = 25, DRAWER_BOTTOM_CLEAR = 15;
 export const TUBE = 20;                  // профильная труба 20×20 для металлокаркаса
+export const HANDLE_THREAD = 8;          // ввинчивание винта М4 в ручку — правило программы
+export const SCREW_M4 = [16, 20, 22, 25, 30, 35, 40, 45, 50];
+export const DRAWER_LOAD_KG = 10;        // расчётная загрузка ящика для проверки опрокидывания — правило программы
 
 export function hingeCount(h: number) { return h <= 900 ? 2 : h <= 1600 ? 3 : h <= 2000 ? 4 : 5; }
 export function handleProtrusion(c: ProductConfig) { return c.handles.type === 'knob' ? 28 : c.handles.type === 'bar' ? 32 : 0; }
@@ -82,9 +85,9 @@ export class Builder {
     p.holes.push({ id: 'h' + (++this.hid), face: faceOf(p, dir), u: r1(l[0]), v: r1(l[1]), d, depth: through ? p.thickness : depth, through, kind, joint, status });
   }
   holeEdge(p: Part, P: V3, axis: Ax, dir: '+' | '-', d: number, depth: number, kind: string, joint: string, status: Hole['status']) {
-    const l = local(p, P);
-    if (p.axes[1] === axis) p.holes.push({ id: 'h' + (++this.hid), face: dir === '-' ? 'L1' : 'L2', u: r1(l[0]), v: r1(l[2]), d, depth, through: false, kind, joint, status });
-    else if (p.axes[0] === axis) p.holes.push({ id: 'h' + (++this.hid), face: dir === '-' ? 'W1' : 'W2', u: r1(l[1]), v: r1(l[2]), d, depth, through: false, kind, joint, status });
+    const l = local(p, P), vA = r1(p.faceA === '+' ? p.thickness - l[2] : l[2]); // по толщине — от пласти A
+    if (p.axes[1] === axis) p.holes.push({ id: 'h' + (++this.hid), face: dir === '-' ? 'L1' : 'L2', u: r1(l[0]), v: vA, d, depth, through: false, kind, joint, status });
+    else if (p.axes[0] === axis) p.holes.push({ id: 'h' + (++this.hid), face: dir === '-' ? 'W1' : 'W2', u: r1(l[1]), v: vA, d, depth, through: false, kind, joint, status });
   }
 }
 
@@ -118,6 +121,13 @@ export function fastenerPositions(len: number, edge = 50, pitch = 300): number[]
   return Array.from({ length: n }, (_, i) => r1(edge + (len - 2 * edge) * i / (n - 1)));
 }
 
+/** Одна рассчитанная модель на конфигурацию: редактор, документы и экспорт берут один и тот же объект. */
+const mcache = new Map<string, ManufacturingModel>();
+export function modelFor(c: ProductConfig): ManufacturingModel {
+  const k = JSON.stringify(c); let m = mcache.get(k);
+  if (!m) { m = buildModel(c); mcache.set(k, m); if (mcache.size > 12) mcache.delete(mcache.keys().next().value as string); }
+  return m;
+}
 export function buildModel(c: ProductConfig): ManufacturingModel {
   if (c.category === 'bed') return buildBed(c);
   const d = derive(c), B = new Builder(c, d);
@@ -231,7 +241,7 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
   let fIdx = 0, shIdx = 0, divIdx = 0, drIdx = 0, rodIdx = 0, hIdx = 0;
   const innerH = bodyH - 2 * t;
   const fronts: { id: string; kind: 'door' | 'drawer'; hingeLeft?: boolean; col: number }[] = [];
-  const handleFor = (front: Part, kind: 'door' | 'drawer', hingeLeft: boolean | undefined, step: string) => {
+  const handleFor = (front: Part, kind: 'door' | 'drawer', hingeLeft: boolean | undefined, step: string, boxWall?: Part) => {
     const ht = c.handles.type; const box = partBox(front);
     const fx0 = box.min[0], fx1 = box.max[0], fy0 = box.min[1], fy1 = box.max[1], fz = box.max[2];
     if (ht === 'push') {
@@ -256,8 +266,20 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
       L: len, W: ht === 'bar' ? 12 : 30, edges: { L1: EDGE0, L2: EDGE0, W1: EDGE0, W2: EDGE0 }, grain: 'none',
       origin: vertical ? [hx - 6, hy - len / 2, fz] : (ht === 'bar' ? [hx - len / 2, hy - 6, fz] : [hx - 15, hy - 15, fz]), axes: vertical ? ['y', 'x', 'z'] : ['x', 'y', 'z'], faceA: '+', sheet: false });
     const pts: V3[] = ht === 'bar' ? (vertical ? [[hx, hy - c.handles.size / 2, fz], [hx, hy + c.handles.size / 2, fz]] : [[hx - c.handles.size / 2, hy, fz], [hx + c.handles.size / 2, hy, fz]]) : [[hx, hy, fz]];
-    const j = B.joint({ kind: 'handle', title: `Ручка на ${front.name.toLowerCase()}`, parts: [front.id, id], hardware: [{ id: ht, qty: 1 }, { id: 'handle-screw', qty: pts.length }], step, status: 'partial' });
+    // винт ручки: проходит фасад и — если попадает в переднюю стенку короба ящика — её тоже
+    const wb = boxWall ? partBox(boxWall) : null;
+    const through = !!wb && pts.every(P => P[0] - 2.5 >= wb.min[0] && P[0] + 2.5 <= wb.max[0] && P[1] - 2.5 >= wb.min[1] && P[1] + 2.5 <= wb.max[1]);
+    const partly = !!wb && !through && pts.some(P => P[0] + 2.5 > wb.min[0] && P[0] - 2.5 < wb.max[0] && P[1] + 2.5 > wb.min[1] && P[1] - 2.5 < wb.max[1]);
+    const pack = tf + (through ? boxWall!.thickness : 0), need = pack + HANDLE_THREAD, scr = SCREW_M4.find(L => L >= need) || SCREW_M4[SCREW_M4.length - 1];
+    const parts = through ? [front.id, id, boxWall!.id] : [front.id, id];
+    const note = `Винт М4×${scr}: ${through ? `фасад ${tf} + передняя стенка ящика ${boxWall!.thickness} = ${pack} мм` : `фасад ${tf} мм`}, ввинчивание в ручку ≥ ${HANDLE_THREAD} мм — правило программы, проверить по паспорту ручки. ` +
+      (through ? 'Головка винта — внутри ящика, доступна при выдвинутом ящике. Ручку ставят после крепления фасада к коробу (сверление Ø5 насквозь через фасад и стенку по месту или по карте присадки).' : 'Головка винта — с обратной стороны фасада. Ручку ставят до навески фасада или при открытой двери.');
+    const j = B.joint({ kind: 'handle', title: `Ручка на ${front.name.toLowerCase()} ${front.id}`, parts, hardware: [{ id: ht, qty: 1 }, { id: 'handle-screw', qty: pts.length }], step, status: 'partial', note });
     for (const P of pts) B.holeFace(front, P, '+', 5, 0, true, 'Ручка: сквозное Ø5', j.id, 'rule');
+    if (through) for (const P of pts) { const Q: V3 = [P[0], P[1], wb!.max[2]]; B.holeFace(boxWall!, Q, '+', 5, 0, true, `Винт ручки ${id}: сквозное Ø5`, j.id, 'rule'); }
+    B.checks.push({ level: partly ? 'error' : 'info', area: 'Ручки', part: front.id, joint: j.id,
+      msg: partly ? `Винт ручки ${id} на ${front.id} попадает в край передней стенки ящика ${boxWall!.id}: отверстие Ø5 выходит за стенку.` : `Ручка ${id} на ${front.id}: ${note}`,
+      fix: partly ? 'Сместите ручку или измените высоту ящика.' : undefined });
   };
 
   c.columns.forEach((col, ci) => {
@@ -326,7 +348,7 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
         const f = B.add({ id, name: 'Фасад ящика', role: 'drawer-front', group: 'fronts', geom: 'panel', material: fMat, materialName: MATERIALS[fMat].name, thickness: tf, finish: fFin,
           L: fw, W: fh, edges: fEdges(), grain: grain(fWood), origin: [frontRect.x0, frontRect.y0, frontRect.z], axes: ['x', 'y', 'z'], faceA: '+', sheet: true });
         if (c.fronts.design === 'milled-frame' && fh >= 160) f.ops.push({ id: 'm' + id, type: 'mill-frame', face: 'A', params: { inset: 40, width: 8, depth: 3 }, note: 'Фрезеровка декоративной рамки: отступ 40, ширина 8, глубина 3 мм' });
-        const dn = ++drIdx;
+        const dn = ++drIdx; let boxWall: Part | undefined;
         // короб
         const depthAvail = innerFront - backFrontZ - 10;
         const slide = [...SLIDE_LENGTHS].reverse().find(s => s <= depthAvail);
@@ -337,14 +359,15 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
         if (slide && boxH >= 60) {
           const tbx = c.drawerBox.thickness, bm = c.drawerBox.material, bmName = DRAWER_BOX[bm].name, bw = cw - 2 * SLIDE_SIDE_GAP;
           const bx = cxL + SLIDE_SIDE_GAP, by = r.y0 + DRAWER_BOTTOM_CLEAR, bz = innerFront - slide - 2;
+          const boxFin: Finish | null = bm === 'ldsp' ? { kind: 'decor', code: 'W-white', sheen: 'matte' } : null; // короб ящика — ЛДСП белая (тот же артикул, что белый корпус)
           const pre = `DR${dn}`, be = (vis: boolean) => vis ? edgeFor(c, bm === 'ldsp' ? 'ldsp' : 'plywood', 'side') : EDGE0;
-          const sd1 = B.add({ id: pre + 'a', name: `Ящик ${dn}: боковина`, role: 'drawer-side', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: null,
+          const sd1 = B.add({ id: pre + 'a', name: `Ящик ${dn}: боковина`, role: 'drawer-side', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: boxFin,
             L: slide, W: boxH, edges: { L1: EDGE0, L2: be(true), W1: be(true), W2: be(true) }, grain: 'none', origin: [bx, by + 0, bz], axes: ['z', 'y', 'x'], faceA: '-', sheet: true });
-          const sd2 = B.add({ id: pre + 'b', name: `Ящик ${dn}: боковина`, role: 'drawer-side', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: null,
+          const sd2 = B.add({ id: pre + 'b', name: `Ящик ${dn}: боковина`, role: 'drawer-side', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: boxFin,
             L: slide, W: boxH, edges: { L1: EDGE0, L2: be(true), W1: be(true), W2: be(true) }, grain: 'none', origin: [bx + bw - tbx, by, bz], axes: ['z', 'y', 'x'], faceA: '+', sheet: true });
-          const fr = B.add({ id: pre + 'c', name: `Ящик ${dn}: передняя стенка`, role: 'drawer-front-wall', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: null,
+          const fr = B.add({ id: pre + 'c', name: `Ящик ${dn}: передняя стенка`, role: 'drawer-front-wall', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: boxFin,
             L: bw - 2 * tbx, W: boxH, edges: { L1: EDGE0, L2: be(true), W1: EDGE0, W2: EDGE0 }, grain: 'none', origin: [bx + tbx, by, bz + slide - tbx], axes: ['x', 'y', 'z'], faceA: '+', sheet: true });
-          const bk = B.add({ id: pre + 'd', name: `Ящик ${dn}: задняя стенка`, role: 'drawer-back-wall', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: null,
+          const bk = B.add({ id: pre + 'd', name: `Ящик ${dn}: задняя стенка`, role: 'drawer-back-wall', group: 'drawer' + dn, geom: 'panel', material: bm, materialName: bmName, thickness: tbx, finish: boxFin,
             L: bw - 2 * tbx, W: boxH, edges: { L1: EDGE0, L2: be(true), W1: EDGE0, W2: EDGE0 }, grain: 'none', origin: [bx + tbx, by, bz], axes: ['x', 'y', 'z'], faceA: '-', sheet: true });
           const btm = B.add({ id: pre + 'e', name: `Ящик ${dn}: дно`, role: 'drawer-bottom', group: 'drawer' + dn, geom: 'panel', material: 'hdf', materialName: BACKS.hdf.name, thickness: 4, finish: null,
             L: slide, W: bw, edges: { L1: EDGE0, L2: EDGE0, W1: EDGE0, W2: EDGE0 }, grain: 'none', origin: [bx, by - 4, bz], axes: ['z', 'x', 'y'], faceA: '-', sheet: true });
@@ -361,11 +384,16 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
           B.joint({ kind: 'nail', title: `Ящик ${dn}: дно`, parts: [btm.id, sd1.id, sd2.id, fr.id, bk.id], hardware: [{ id: 'back-nail', qty: Math.ceil(2 * (slide + bw) / 100) }], step: 'drawers', status: 'rule' });
           B.joint({ kind: 'slide', title: `Ящик ${dn}: направляющие ${slide} мм`, parts: [sd1.id, sd2.id, leftOf(ci).id, rightOf(ci).id], hardware: [{ id: 'slide', qty: 1 }, { id: 'screw-4x16', qty: 12 }], step: 'drawers-in', status: 'unverified',
             note: `Длина ${slide} мм; зазор ${SLIDE_SIDE_GAP} мм на сторону — правило программы` });
-          B.joint({ kind: 'screw', title: `Ящик ${dn}: фасад к коробу`, parts: [id, fr.id], hardware: [{ id: 'screw-4x30', qty: fw > 500 ? 6 : 4 }], step: 'drawers-in', status: 'rule' });
+          boxWall = fr;
+          // саморез фасад → короб: проходит стенку и входит в фасад, не выходя на лицевую сторону (остаток ≥ 3 мм)
+          const sOk = [30, 25, 20, 16].find(L => L - tbx <= tf - 3 && L - tbx >= 6);
+          B.joint({ kind: 'screw', title: `Ящик ${dn}: фасад к коробу`, parts: [id, fr.id], hardware: [{ id: sOk === 30 ? 'screw-4x30' : sOk === 25 ? 'screw-4x25' : 'screw-4x16', qty: fw > 500 ? 6 : 4 }], step: 'drawers-in', status: 'rule',
+            note: sOk ? `Саморез 4×${sOk}: стенка ${tbx} мм + ${sOk - tbx} мм в фасад ${tf} мм (до лица остаётся ${tf - (sOk - tbx)} мм)` : 'Подходящей длины самореза нет' });
+          if (!sOk) chk('error', 'Ящики', `Фасад ${id} ${tf} мм и стенка ящика ${tbx} мм: нет самореза, который держит фасад и не выходит на лицевую сторону.`, 'Увеличьте толщину фасада.');
           B.moving.push({ id: 'mv' + id, kind: 'drawer', parts: [id, sd1.id, sd2.id, fr.id, bk.id, btm.id], travel: slide - 30, front: id });
         }
         fronts.push({ id, kind: 'drawer', col: ci });
-        handleFor(f, 'drawer', undefined, 'handles');
+        handleFor(f, 'drawer', undefined, 'handles', boxWall);
         if (c.handles.type === 'push') chk('warn', 'Фурнитура', 'Push-to-open для ящиков требует направляющих с толкателем — профиль не выбран.', 'Выберите ручку или систему направляющих с push-to-open.');
       } else {
         addFill(z, ci, r, zh);
@@ -430,7 +458,22 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
     }
     const n = 4 + 2 * Math.max(0, Math.ceil((bodyW - 600) / 600)), sc = t + tt * 2 / 3 >= 30 ? 'screw-4x30' : 'screw-4x25';
     B.joint({ kind: 'screw', title: 'Столешница к крыше корпуса', parts: ['TT', 'T1'], hardware: [{ id: sc, qty: n }], step: 'top', status: 'rule', note: 'Саморезы изнутри корпуса через крышу; длина — не более толщины крыши + 2/3 столешницы' });
-    if (t + tt * 2 / 3 < 25) chk('warn', 'Столешница', 'Саморез 4×25 может выйти на лицевую сторону столешницы.', 'Выберите столешницу толще.');
+    { const L = sc === 'screw-4x30' ? 30 : 25, pen = L - t; if (pen > tt - 3) chk('error', 'Столешница', `Саморез 4×${L} через крышу ${t} мм входит в столешницу ${tt} мм на ${pen} мм — до лица остаётся ${r1(tt - pen)} мм.`, 'Выберите столешницу толще или саморез короче.');
+      else chk('info', 'Столешница', `Крепление столешницы: саморез 4×${L} через крышу ${t} мм, в столешницу ${pen} мм из ${tt} мм; ${n} шт. изнутри корпуса.`); }
+    // скруглённые углы и выступающие фасады
+    if (c.top.cornerRadius > 0) {
+      const R = c.top.cornerRadius, D = d.topD, Wt = d.W;
+      const edgeZ = (x: number) => x < 0 || x > Wt ? -Infinity : x < R ? D - R + Math.sqrt(R * R - (R - x) ** 2) : x > Wt - R ? D - R + Math.sqrt(R * R - (x - (Wt - R)) ** 2) : D;
+      for (const f of B.parts.filter(q => q.group === 'fronts')) {
+        const b = partBox(f), fz = b.max[2];
+        for (const [x, side] of [[b.min[0], 'left'], [b.max[0], 'right']] as [number, 'left' | 'right'][]) {
+          const v = r1(fz - edgeZ(x));
+          if (v > 0.05) { (B as any).prot = [...((B as any).prot || []), { part: f.id, x: r1(x), z: r1(fz), value: v, side }];
+            chk('warn', 'Столешница', `Фасад ${f.id} выступает за скруглённый угол R${R} столешницы у ${side === 'left' ? 'левого' : 'правого'} края на ${String(v).replace('.', ',')} мм (точка x = ${r1(x)} мм от левого края изделия).`, `Увеличьте вынос столешницы по бокам до ${Math.ceil(R - Math.sqrt(Math.max(0, R * R - (R - (D - fz)) ** 2)) + 0)} мм или уменьшите радиус.`); }
+        }
+      }
+      void tp;
+    }
   }
 
   /* ---- основание ---- */
@@ -491,9 +534,41 @@ export function buildModel(c: ProductConfig): ManufacturingModel {
   /* ---- зеркало трюмо ---- */
   if (c.category === 'dresser' && c.mirror && c.mirror.type !== 'none') addMirror(B, c, d);
 
+  /* ---- устойчивость ---- */
+  stabilityCheck(B, c, d);
+
   /* ---- пересечения и движения ---- */
   collide(B, c);
   return finish(B, c, d);
+}
+
+/** Устойчивость с выдвинутыми ящиками: опрокидывание вперёд относительно передней линии опоры. Упрощённая статика. */
+function stabilityCheck(B: Builder, c: ProductConfig, d: Derived) {
+  const P = B.parts, bt = c.base.type;
+  if (bt === 'wall') { (B as any).stab = { checked: false, ok: true, text: 'Подвесное изделие — устойчивость определяется креплением к стене.', antiTip: true, antiTipText: 'Крепление к стене — основное (см. «Подвес»).' }; return; }
+  // передняя граница опоры
+  let zs: number;
+  const legs = P.filter(p => p.role === 'leg' || p.role === 'plinth' || p.role === 'frame');
+  if (legs.length) zs = Math.max(...legs.map(p => partBox(p).max[2]));
+  else zs = d.z0 + d.bodyD - (bt === 'floor' ? 30 : 0);
+  const cz = (p: Part, dz = 0) => { const b = partBox(p); return (b.min[2] + b.max[2]) / 2 + dz; };
+  const drawers = B.moving.filter(m => m.kind === 'drawer' && (m.axis || 'z') === 'z');
+  const com = (load: number) => {
+    let M = 0, Mz = 0;
+    for (const p of P) { const mv = drawers.find(m => m.parts.includes(p.id)); const dz = mv && mv.kind === 'drawer' ? mv.travel : 0; M += p.mass; Mz += p.mass * cz(p, dz); }
+    if (load) for (const m of drawers) { if (m.kind !== 'drawer') continue; const box = m.parts.slice(1).map(id => partBox(B.get(id))); const z = box.length ? (Math.min(...box.map(b => b.min[2])) + Math.max(...box.map(b => b.max[2]))) / 2 + m.travel : 0; M += load; Mz += load * z; }
+    return Mz / Math.max(M, 0.001);
+  };
+  const z0e = com(0), z1 = com(DRAWER_LOAD_KG), okE = z0e < zs - 5, okL = z1 < zs - 5;
+  const tall = d.H >= 1200 || c.category === 'wardrobe' || (c.category === 'dresser' && !!c.mirror && c.mirror.type !== 'none' && c.mirror.mount === 'top');
+  const f = (v: number) => String(r1(v)).replace('.', ',');
+  const text = drawers.length ? `Все ящики (${drawers.length}) выдвинуты полностью. Передняя граница опоры — ${f(zs)} мм от задней плоскости. Пустые ящики: центр масс ${f(z0e)} мм — ${okE ? 'не опрокидывается' : 'ОПРОКИДЫВАЕТСЯ'}. С загрузкой по ${DRAWER_LOAD_KG} кг: центр масс ${f(z1)} мм — ${okL ? 'не опрокидывается' : 'опрокидывается'}. Упрощённая статика по массам деталей, без толчков, наклона пола и нагрузки на столешницу.`
+    : 'Ящиков нет — проверка опрокидывания при выдвижении не требуется.';
+  const need = tall || !okL;
+  const antiTipText = need ? `Не предусмотрено — ${!okL ? 'по расчёту изделие с загруженными ящиками опрокидывается, ' : ''}нужно крепление к стене от опрокидывания (уголок или ремень, подбор по основанию стены — монтажник).` : 'Не предусмотрено; по расчёту не обязательно, рекомендуется при детях в доме.';
+  (B as any).stab = { checked: drawers.length > 0, ok: okE && okL, okEmpty: okE, need, text, antiTip: false, antiTipText };
+  if (drawers.length) B.checks.push({ level: !okE || !okL ? 'warn' : 'info', area: 'Устойчивость', msg: text, fix: okE && okL ? undefined : 'Закрепите изделие к стене, уменьшите выдвижение или увеличьте глубину опоры.' });
+  B.checks.push({ level: need ? 'warn' : 'info', area: 'Устойчивость', msg: 'Крепление от опрокидывания: ' + antiTipText });
 }
 
 /** Зеркало: щит из материала корпуса + зеркальное стекло 4 мм на клею со страховочными держателями. */
@@ -583,8 +658,11 @@ export function finish(B: Builder, c: ProductConfig, d: Derived, extra: { ghosts
   const ht = handleProtrusion(c);
   return {
     schema: MODEL_SCHEMA, version: MODEL_VERSION, configHash: hashConfig(c),
-    overall: extra.overall || (() => { const mt = c.category === 'dresser' && c.mirror && c.mirror.type !== 'none' && c.mirror.mount === 'top'; return { width: d.W, height: d.H + (mt ? c.mirror!.height : 0), depth: d.D, includes: { base: c.base.type !== 'wall' && c.base.type !== 'floor', top: c.top.enabled, fronts: !d.inset, handles: ht === 0, mirror: mt }, handleProtrusion: ht }; })(),
+    overall: extra.overall || (() => { const mt = c.category === 'dresser' && c.mirror && c.mirror.type !== 'none' && c.mirror.mount === 'top';
+      const zMax = B.parts.length ? r1(Math.max(...B.parts.map(q => partBox(q).max[2]))) : d.D;
+      return { width: d.W, height: d.H + (mt ? c.mirror!.height : 0), depth: d.D, depthTop: c.top.enabled ? d.topD : d.D, depthMax: Math.max(d.D, zMax), includes: { base: c.base.type !== 'wall' && c.base.type !== 'floor', top: c.top.enabled, fronts: !d.inset, handles: ht === 0, mirror: mt }, handleProtrusion: ht }; })(),
     ghosts: extra.ghosts,
+    protrusions: (B as any).prot, stability: (B as any).stab,
     body: { x0: d.x0, y0: d.y0, z0: d.z0, W: d.bodyW, H: d.bodyH, D: d.bodyD, t: d.t },
     parts: B.parts, joints: B.joints, moving: B.moving, checks: B.checks, steps,
     hardware: [...hw.values()], massKg: Math.round(mass * 10) / 10,

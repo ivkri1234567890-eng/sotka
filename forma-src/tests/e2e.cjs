@@ -10,10 +10,10 @@ const { chromium } = require('playwright'); const fs = require('fs');
   const price0 = await pg.textContent('[data-testid="price"]');
   await pg.fill('#w', '520'); await pg.press('#w', 'Enter'); await pg.waitForTimeout(400);
   const price1 = await pg.textContent('[data-testid="price"]'); console.log('price', price0, '->', price1);
-  await pg.click('.tab:has-text("Материалы и цвет")'); await pg.fill('[aria-label="Поиск RAL"] >> nth=0', '5014'); await pg.click('[aria-label^="RAL 5014"] >> nth=0'); await pg.waitForTimeout(300);
+  await pg.click('.tab:has-text("Материалы и цвет")'); await pg.click('[data-testid="ral-current"] >> nth=0'); await pg.fill('[aria-label="Поиск RAL"] >> nth=0', '5014'); await pg.click('[aria-label^="RAL 5014"] >> nth=0'); await pg.waitForTimeout(300);
   await pg.click('.tab:has-text("Ручки и основание")'); await pg.click('button.opt:has-text("Скоба")'); await pg.click('[aria-label="Латунь"] >> nth=0'); await pg.waitForTimeout(400);
-  await pg.click('.tg:has-text("Ящики")'); await pg.waitForTimeout(900); await S('03-drawers');
-  await pg.click('.tg:has-text("Ящики")'); await pg.click('.tg:has-text("Разнести")'); await pg.waitForTimeout(900); await S('04-exploded'); await pg.click('.tg:has-text("Разнести")');
+  await pg.click('[data-testid="drawers"]'); await pg.waitForTimeout(900); await S('03-drawers');
+  await pg.click('[data-testid="drawers"]'); await pg.click('[data-testid="explode"]'); await pg.waitForTimeout(900); await S('04-exploded'); await pg.click('[data-testid="explode"]');
   // выбор детали кликом в центр сцены
   const v = await pg.$('[data-testid="viewer"] canvas'); const bb = await v.boundingBox(); await pg.mouse.click(bb.x + bb.width * 0.5, bb.y + bb.height * 0.55); await pg.waitForTimeout(300);
   console.log('picked:', await pg.evaluate(() => document.querySelector('.pinfo b')?.textContent || 'none')); await S('05-pick');
@@ -33,6 +33,6 @@ const { chromium } = require('playwright'); const fs = require('fs');
   for (const t of ['Деталировка', 'Присадка', 'Раскрой', 'Смета', 'Инструкция']) { await pg.click(`.dnav button:has-text("${t}")`); await pg.waitForTimeout(t === 'Инструкция' ? 2500 : 500); await S('08-' + t); }
   const [dl] = await Promise.all([pg.waitForEvent('download', { timeout: 120000 }), pg.click('[data-testid="pdf"]')]); const pth = 'tests/shots/out.pdf'; await dl.saveAs(pth); console.log('pdf bytes', fs.statSync(pth).size);
   const [dz] = await Promise.all([pg.waitForEvent('download', { timeout: 180000 }), pg.click('[data-testid="zip"]')]); await dz.saveAs('tests/shots/out.zip'); console.log('zip bytes', fs.statSync('tests/shots/out.zip').size);
-  const [dj] = await Promise.all([pg.waitForEvent('download'), pg.click('[data-testid="json"]')]); await dj.saveAs('tests/shots/out.json');
+  const [dj] = await Promise.all([pg.waitForEvent('download'), pg.click('.exp-more summary').then(() => pg.click('[data-testid="json"]'))]); await dj.saveAs('tests/shots/out.json');
   console.log('ERRORS', errs.slice(0, 10)); await b.close();
 })();

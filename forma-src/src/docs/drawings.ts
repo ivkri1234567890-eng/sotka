@@ -2,10 +2,13 @@
 import type { ManufacturingModel, Part, Project } from '../core/schema';
 import { partBox } from '../core/engine';
 import type { CutGroup } from '../core/cutting';
-import { finishName } from '../core/materials';
+import { finishName, MATERIALS, BACKS } from '../core/materials';
+import { groupKey } from '../core/cutting';
 
 type Box = { min: number[]; max: number[] };
 const F = (v: number) => (Math.round(v * 100) / 100).toString();
+/** Размер для подписи: до десятых, десятичная запятая. */
+export const mm = (v: number) => String(Math.round(v * 10) / 10).replace('.', ',');
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const FONT = 'font-family="Roboto, Arial, sans-serif"';
 export const txt = (x: number, y: number, s: string, o: { size?: number; anchor?: string; bold?: boolean; fill?: string; rot?: number } = {}) =>
@@ -42,6 +45,9 @@ export function viewSvg(m: ManufacturingModel, v: View, ox: number, oy: number, 
   let s = ''; const vb = v === 'top' ? 1 : -1; // в плане глубина растёт вниз; во фронтальных видах Y вверх
   for (const { p, r } of items) {
     const x = ox + r[0] * k, w = (r[2] - r[0]) * k, y = vb > 0 ? oy + r[1] * k : oy - r[3] * k, h = (r[3] - r[1]) * k;
+    const rad = p.ops.find(op => op.type === 'radius');
+    const rr = rad ? radiusShape(p, v, rad.params.r * k) : null;
+    if (rr) { s += `<path d="${roundRect(x, y, w, h, rr.r, rr.where)}" fill="${fillOf(p)}" stroke="#111" stroke-width="0.25"/>`; if (o.labels && w > 12 && h > 6 && p.sheet) s += txt(x + w / 2, y + h / 2 + 1, p.id, { size: Math.min(3, h * 0.45) }); continue; }
     if (p.geom === 'leg' || p.geom === 'rod') s += `<rect x="${F(x)}" y="${F(y)}" width="${F(w)}" height="${F(h)}" rx="${F(Math.min(w, h) / 2)}" fill="${fillOf(p)}" stroke="#111" stroke-width="0.18"/>`;
     else s += `<rect x="${F(x)}" y="${F(y)}" width="${F(w)}" height="${F(h)}" fill="${fillOf(p)}" stroke="#111" stroke-width="${p.group === 'fronts' ? 0.3 : 0.2}"/>`;
     if (v === 'front' && p.ops.some(op => op.type === 'mill-frame')) { const ins = (p.ops.find(op => op.type === 'mill-frame')!.params.inset) * k; if (w > 2 * ins && h > 2 * ins) s += `<rect x="${F(x + ins)}" y="${F(y + ins)}" width="${F(w - 2 * ins)}" height="${F(h - 2 * ins)}" fill="none" stroke="#666" stroke-width="0.15"/>`; }
@@ -50,9 +56,44 @@ export function viewSvg(m: ManufacturingModel, v: View, ox: number, oy: number, 
   return s;
 }
 
+/** Где на проекции лежат скруглённые углы (у кромки L2 детали). null — скругление в этом виде не видно. */
+function radiusShape(p: Part, v: View, r: number): { r: number; where: 'top' | 'bottom' } | null {
+  const plane = v === 'front' ? ['x', 'y'] : v === 'left' ? ['z', 'y'] : ['x', 'z'];
+  if (!plane.includes(p.axes[0]) || !plane.includes(p.axes[1])) return null;
+  const wAx = p.axes[1];
+  if (v === 'top') return wAx === 'z' ? { r, where: 'bottom' } : null;   // в плане глубина растёт вниз; L2 — передний край
+  return wAx === 'y' ? { r, where: 'top' } : null;                      // во фронтальных видах Y вверх; L2 — верх
+}
+function roundRect(x: number, y: number, w: number, h: number, r: number, where: 'top' | 'bottom') {
+  r = Math.min(r, w / 2, h);
+  if (where === 'bottom') return `M${F(x)} ${F(y)}H${F(x + w)}V${F(y + h - r)}A${F(r)} ${F(r)} 0 0 1 ${F(x + w - r)} ${F(y + h)}H${F(x + r)}A${F(r)} ${F(r)} 0 0 1 ${F(x)} ${F(y + h - r)}Z`;
+  return `M${F(x)} ${F(y + h)}V${F(y + r)}A${F(r)} ${F(r)} 0 0 1 ${F(x + r)} ${F(y)}H${F(x + w - r)}A${F(r)} ${F(r)} 0 0 1 ${F(x + w)} ${F(y + r)}V${F(y + h)}Z`;
+}
+/** Отметки выступа фасада за скруглённую столешницу на виде сверху. */
+function protrusionMarks(m: ManufacturingModel, ox: number, oy: number, k: number) {
+  let s = '';
+  for (const q of m.protrusions || []) { const x = ox + q.x * k, y = oy + q.z * k;
+    s += `<circle cx="${F(x)}" cy="${F(y)}" r="2.2" fill="none" stroke="#b3261e" stroke-width="0.4"/>` + txt(x + (q.side === 'left' ? -3 : 3), y + 5, `выступ ${mm(q.value)}`, { size: 2.2, anchor: q.side === 'left' ? 'end' : 'start', fill: '#b3261e' }); }
+  return s;
+}
+/** Три проекции (спереди, сбоку, сверху) в одном SVG — для экрана без WebGL и для PDF вместо 3D-изображения. */
+export function projectionsSvg(m: ManufacturingModel, o2: { exploded?: boolean; title?: string } = {}): string {
+  const o = m.overall, dTop = o.depthMax || o.depth;
+  const Wd = o.width + dTop + 260, Hd = o.height + dTop + 260, k = 1;
+  const fx = 60, fy = 60 + o.height, lx = fx + o.width + 140, tx = fx, ty = fy + 120;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${F(Wd)} ${F(Hd)}" width="100%"><rect width="${F(Wd)}" height="${F(Hd)}" fill="#fff"/>`;
+  const fs = Math.max(26, Math.max(o.width, o.height) / 22);
+  s += viewSvg(m, 'front', fx, fy, k) + txt(fx + o.width / 2, 36, 'Спереди', { size: fs, bold: true });
+  s += viewSvg(m, 'left', lx, fy, k) + txt(lx + dTop / 2, 36, 'Слева', { size: fs, bold: true });
+  s += viewSvg(m, 'top', tx, ty, k) + protrusionMarks(m, tx, ty, k) + txt(tx + o.width / 2, ty - 14, 'Сверху', { size: fs, bold: true });
+  s += txt(fx, Hd - 20, `${o.width} × ${o.height} × ${mm(o.depthTop ?? o.depth)} мм${o.depthMax && o.depthMax > (o.depthTop ?? o.depth) ? ` · с ручками ${mm(o.depthMax)} мм` : ''}`, { size: fs * 0.8, anchor: 'start' });
+  return s + '</svg>';
+}
+
 export function assemblySheet(m: ManufacturingModel, p: Project, status: string): string {
   const W = 420, H = 297, o = m.overall;
-  const k = Math.min(170 / o.width, 190 / (o.height), 120 / (o.depth + o.width * 0)); // общий масштаб
+  const dM0 = o.depthMax ?? o.depth;
+  const k = Math.min(170 / o.width, 205 / (o.height + dM0 + 8), 120 / dM0); // общий масштаб: спереди + сверху помещаются по высоте листа
   const sc = [5, 10, 15, 20, 25, 40, 50].find(s => 1 / s <= k) || 50, kk = 1 / sc;
   const fx = 35, fy = 30 + o.height * kk, lx = fx + o.width * kk + 45 + m.body.z0 * kk, tx = fx, ty = fy + 25;
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/>`;
@@ -61,14 +102,17 @@ export function assemblySheet(m: ManufacturingModel, p: Project, status: string)
   if (m.body.y0 > 0) s += dim(fx, fy, fx, fy - m.body.y0 * kk, -6, `${m.body.y0}`);
   const zOff = -Math.min(0, ...m.parts.map(q => partBox(q).min[2]));
   s += viewSvg(m, 'left', lx + zOff * kk, fy, kk) + txt(lx + o.depth * kk / 2, 22, 'Вид слева', { size: 3.5, bold: true });
-  s += dim(lx, fy, lx + o.depth * kk, fy, 8, `${o.depth}`);
-  if (m.overall.handleProtrusion) s += txt(lx + o.depth * kk + 2, fy - 4, `+${m.overall.handleProtrusion} ручки`, { size: 2.4, anchor: 'start' });
-  s += viewSvg(m, 'top', tx, ty + zOff * kk, kk) + txt(tx + o.width * kk / 2, ty - 3, 'Вид сверху', { size: 3.5, bold: true });
+  const dT = o.depthTop ?? o.depth, dM = o.depthMax ?? o.depth;
+  s += dim(lx, fy, lx + dT * kk, fy, 8, `${mm(dT)}${o.includes.top ? ' по столешнице' : ''}`, 2.4);
+  if (dM > dT + 0.05) s += dim(lx, fy, lx + dM * kk, fy, 14, `${mm(dM)} с ручками`, 2.4);
+  s += viewSvg(m, 'top', tx, ty + zOff * kk, kk) + protrusionMarks(m, tx, ty + zOff * kk, kk) + txt(tx + o.width * kk / 2, ty - 3, 'Вид сверху', { size: 3.5, bold: true });
+  const tt = m.parts.find(q => q.role === 'tabletop' && q.ops.some(op => op.type === 'radius'));
+  if (tt) s += txt(tx + o.width * kk + 3, ty + zOff * kk + dT * kk - 2, `R${tt.ops.find(op => op.type === 'radius')!.params.r}`, { size: 2.6, anchor: 'start' });
   // перечень материалов
-  const mats = new Map<string, string>(); for (const q of m.parts) if (q.sheet) mats.set(q.materialName + q.thickness + (q.finish ? finishName(q.finish) : ''), `${q.materialName} ${q.thickness} мм${q.finish ? ' — ' + finishName(q.finish) : ''}`);
+  const mats = new Map<string, string>(); for (const q of m.parts) if (q.sheet) { const nm = (MATERIALS as any)[q.material]?.name || (BACKS as any)[q.material]?.name || q.materialName; mats.set(groupKey(q) + (q.finish?.kind === 'ral' ? q.finish.code : ''), `${nm} ${q.thickness} мм${q.finish ? ' — ' + finishName(q.finish) : ''}`); }
   const mx = Math.max(245, lx + o.depth * kk + 30); let my = 200; s += txt(mx, my, 'Материалы и отделка', { size: 3.4, anchor: 'start', bold: true });
   for (const v of [...mats.values()].slice(0, 9)) { my += 5; s += txt(mx, my, '• ' + v, { size: 2.7, anchor: 'start' }); }
-  s += txt(mx, 50, `Масштаб 1:${sc}`, { size: 3, anchor: 'start' }) + txt(mx, 56, `Габариты ${o.width}×${o.height}×${o.depth} мм${o.handleProtrusion ? ` (ручки +${o.handleProtrusion} мм)` : ''}`, { size: 3, anchor: 'start' }) + txt(mx, 62, `Масса ≈ ${m.massKg} кг без содержимого`, { size: 3, anchor: 'start' });
+  s += txt(mx, 50, `Масштаб 1:${sc}`, { size: 3, anchor: 'start' }) + txt(mx, 56, `Габариты ${o.width}×${o.height}×${mm(dT)} мм${dM > dT + 0.05 ? `; максимальная глубина с ручками ${mm(dM)} мм` : ''}`, { size: 3, anchor: 'start' }) + txt(mx, 62, `Масса ≈ ${m.massKg} кг без содержимого`, { size: 3, anchor: 'start' });
   return s + frame(W, H, 'Сборочный чертёж', p, status, '1') + '</svg>';
 }
 
@@ -115,17 +159,17 @@ export function partSheet(q: Part, p: Project, status: string, sheetNo: string):
   }
   const hs = q.holes.filter(x => x.face === face);
   for (const x of hs) { const [cx, cy] = P(x.u, x.v); s += `<circle cx="${F(cx)}" cy="${F(cy)}" r="${F(Math.max(0.6, x.d / 2 * kk))}" fill="${x.through ? '#111' : '#fff'}" stroke="#111" stroke-width="0.2"/>`; }
-  s += dim(ox, oy + h, ox + w, oy + h, 7, `${q.L}`) + dim(ox, oy + h, ox, oy, -7, `${q.W}`);
+  s += dim(ox, oy + h, ox + w, oy + h, 7, mm(q.L)) + dim(ox, oy + h, ox, oy, -7, mm(q.W));
   s += txt(ox, oy - 8, `${q.id} — ${q.name}. Пласть ${face}${faces.length > 1 ? ' (отверстия пласти B — в таблице)' : ''}. Начало координат — левый нижний угол (кромки W1 и L1).`, { size: 3, anchor: 'start', bold: true });
-  s += txt(ox, oy - 3, `${q.materialName} ${q.thickness} мм. Готовая деталь ${q.L}×${q.W}, заготовка ${q.blankL}×${q.blankW}. Текстура: ${q.grain === 'L' ? 'вдоль L' : q.grain === 'W' ? 'вдоль W' : 'нет'}. Масштаб 1:${sc}`, { size: 2.6, anchor: 'start' });
+  s += txt(ox, oy - 3, `${q.materialName} ${q.thickness} мм. Готовая деталь ${mm(q.L)}×${mm(q.W)}, заготовка ${mm(q.blankL)}×${mm(q.blankW)}. Текстура: ${q.grain === 'L' ? 'вдоль L' : q.grain === 'W' ? 'вдоль W' : 'нет'}. Масштаб 1:${sc}`, { size: 2.6, anchor: 'start' });
   // таблица отверстий
   let ty = oy + h + 20; const cols = [ox, ox + 12, ox + 24, ox + 42, ox + 60, ox + 72, ox + 88, ox + 150];
   const hd = ['№', 'Грань', 'u', 'v', 'Ø', 'Глуб.', 'Назначение', 'Статус'];
   hd.forEach((t, i) => { s += txt(cols[i], ty, t, { size: 2.5, anchor: 'start', bold: true }); }); s += line(ox, ty + 1.2, W - 20, ty + 1.2, 0.2);
   const all = q.holes; let n = 0;
   for (const x of all) { ty += 4; if (ty > H - 50) { s += txt(ox, ty, `… ещё ${all.length - n} отверстий — в CSV/DXF`, { size: 2.4, anchor: 'start' }); break; } n++;
-    [String(n), x.face, String(x.u), String(x.v), String(x.d), x.through ? 'насквозь' : String(x.depth), x.kind, x.status === 'verified' ? 'по документу' : x.status === 'partial' ? 'частично' : 'правило программы'].forEach((t, i) => { s += txt(cols[i], ty, t, { size: 2.4, anchor: 'start' }); }); }
-  s += txt(ox, H - 45, 'Кромка: оранжевая линия — ПВХ (толстая — 2 мм), синяя — окраска торца. u — вдоль L от кромки W1, v — вдоль W от кромки L1; для торцов v — от грани при T = 0.', { size: 2.3, anchor: 'start' });
+    [String(n), x.face, mm(x.u), mm(x.v), mm(x.d), x.through ? 'насквозь' : mm(x.depth), x.kind, x.status === 'verified' ? 'по документу' : x.status === 'partial' ? 'частично' : 'правило программы'].forEach((t, i) => { s += txt(cols[i], ty, t, { size: 2.4, anchor: 'start' }); }); }
+  s += txt(ox, H - 45, 'Кромка: оранжевая линия — ПВХ (толстая — 2 мм), синяя — окраска торца. Пласть: u — вдоль L от кромки W1, v — вдоль W от кромки L1 (вид со стороны пласти A). Торец: u — вдоль кромки, v — по толщине от пласти A.', { size: 2.3, anchor: 'start' });
   return s + frame(W, H, 'Карта присадки', p, status, sheetNo) + '</svg>';
 }
 
@@ -138,8 +182,17 @@ export function cutSheetSvg(g: CutGroup, i: number, p: Project, status: string, 
   if (g.grain) for (let y = 6; y < g.sheet.W * k; y += 8) s += line(ox + 2, oy + y, ox + g.sheet.L * k - 2, oy + y, 0.08, '#c9b79c');
   for (const q of sh.placements) {
     s += `<rect x="${F(ox + q.x * k)}" y="${F(oy + q.y * k)}" width="${F(q.w * k)}" height="${F(q.h * k)}" fill="#fff" stroke="#111" stroke-width="0.25"/>`;
-    if (q.w * k > 10 && q.h * k > 5) s += txt(ox + (q.x + q.w / 2) * k, oy + (q.y + q.h / 2) * k + 1, `${q.id} ${Math.round(q.w)}×${Math.round(q.h)}${q.rot ? ' ↻' : ''}`, { size: Math.min(2.6, q.h * k * 0.35) });
+    // ID подписывается у каждой детали; размеры заготовки — с десятыми (вдоль листа × поперёк)
+    const lab = `${q.id}${q.rot ? ' ↻' : ''}`, dims = `${mm(q.w)}×${mm(q.h)}`, fs = Math.max(1.4, Math.min(2.6, q.h * k * 0.32, q.w * k / Math.max(lab.length, dims.length) * 1.7));
+    const cx = ox + (q.x + q.w / 2) * k, cy = oy + (q.y + q.h / 2) * k;
+    if (q.h * k > fs * 2.6) s += txt(cx, cy - fs * 0.15, lab, { size: fs, bold: true }) + txt(cx, cy + fs * 1.05, dims, { size: fs * 0.9 });
+    else s += txt(cx, cy + fs * 0.35, `${lab} ${dims}`, { size: Math.min(fs, q.h * k * 0.7) });
   }
+  // перечень деталей листа: ID, размер заготовки, название — для мелких деталей, где подпись на карте мелкая
+  let ly = oy + g.sheet.W * k + 6; const colW = 88; let col = 0;
+  s += txt(ox, ly, 'Детали листа (заготовка: вдоль листа × поперёк, мм)', { size: 2.5, anchor: 'start', bold: true });
+  sh.placements.forEach((q, i) => { const yy = ly + 4 + Math.floor(i / 3) * 3.6; col = i % 3; if (yy > H - 46) return;
+    s += txt(ox + col * colW, yy, `${q.id} — ${mm(q.w)}×${mm(q.h)}${q.rot ? ' (повёрнута)' : ''} — ${q.name}`.slice(0, 58), { size: 2.2, anchor: 'start' }); });
   return s + frame(W, H, 'Карта раскроя', p, status, sheetNo) + '</svg>';
 }
 

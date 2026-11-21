@@ -77,9 +77,11 @@ export function estimate(m: ManufacturingModel, c: ProductConfig, pr: Prices): E
   }
   if (millM) add('Работы', 'Фрезеровка (пазы, рамки, радиусы)', millM, 'м', pr.millPerM);
   // окраска / отделка
-  const paint = new Map<string, number>();
-  for (const p of m.parts) { const pm = paintMethod(p); if (!pm) continue; const a = (2 * p.L * p.W + 2 * (p.L + p.W) * p.thickness) / 1e6; paint.set(pm, (paint.get(pm) || 0) + a); }
-  for (const [k, a] of paint) add('Отделка', PAINT_NAMES[k] || k, a, 'м²', pr.paintPerM2[k], 'обе пласти и торцы');
+  // каждая эмаль своего цвета — отдельная операция окраски, даже если плита МДФ одна
+  const paint = new Map<string, { m: string; col: string; a: number; ids: string[] }>();
+  for (const p of m.parts) { const pm = paintMethod(p); if (!pm) continue; const col = p.finish!.kind === 'ral' ? 'RAL ' + p.finish!.code : ''; const k = pm + '|' + col;
+    const a = (2 * p.L * p.W + 2 * (p.L + p.W) * p.thickness) / 1e6; const e = paint.get(k) || { m: pm, col, a: 0, ids: [] }; e.a += a; e.ids.push(p.id); paint.set(k, e); }
+  for (const e of paint.values()) add('Отделка', (PAINT_NAMES[e.m] || e.m) + (e.col ? ' · ' + e.col : ''), e.a, 'м²', pr.paintPerM2[e.m], `обе пласти и торцы: ${e.ids.join(', ')}`);
   // металл
   const tubeM = m.parts.filter(p => p.geom === 'tube').reduce((s, p) => s + p.L / 1000, 0);
   if (tubeM) { add('Металлокаркас', 'Труба 20×20×1,5', tubeM * 1.05, 'м', pr.metalPerM, '+5% на рез'); add('Металлокаркас', 'Сварка и порошковая окраска каркаса', 1, 'компл', pr.metalWork); }

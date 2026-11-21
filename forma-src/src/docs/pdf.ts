@@ -2,11 +2,12 @@ import { jsPDF } from 'jspdf';
 import 'svg2pdf.js';
 import type { ManufacturingModel, Project } from '../core/schema';
 import type { Estimate } from '../core/estimate';
-import { assemblySheet, interiorSheet, partSheet, cutSheetSvg } from './drawings';
+import { assemblySheet, interiorSheet, partSheet, cutSheetSvg, projectionsSvg } from './drawings';
 import { partsRows, hardwareRows, docStatus, EDGE_RU, STATUS_RU } from './export';
 import { HW } from '../core/hardware';
 import { shot } from '../ui/offscreen';
 import { STYLE_NAMES } from '../core/catalog';
+import { readiness } from '../core/readiness';
 import regularUrl from '../assets/fonts/Roboto-Regular.ttf?url';
 import mediumUrl from '../assets/fonts/Roboto-Medium.ttf?url';
 
@@ -25,6 +26,20 @@ async function svgPage(doc: jsPDF, svg: string, fmt: 'a3' | 'a4', first = false)
   const el = host.querySelector('svg')!; const vb = el.getAttribute('viewBox')!.split(' ').map(Number);
   try { await (doc as any).svg(el, { x: 0, y: 0, width: vb[2], height: vb[3] }); } finally { host.remove(); }
 }
+/** Векторная вставка SVG в заданный прямоугольник страницы (без смены страницы). */
+async function svgAt(doc: jsPDF, svg: string, x: number, y: number, w: number, h: number) {
+  const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-10000px;top:0;width:10px;height:10px;overflow:hidden';
+  host.innerHTML = svg; document.body.appendChild(host);
+  const el = host.querySelector('svg')!; const vb = el.getAttribute('viewBox')!.split(' ').map(Number); const k = Math.min(w / vb[2], h / vb[3]);
+  try { await (doc as any).svg(el, { x, y, width: vb[2] * k, height: vb[3] * k }); } finally { host.remove(); }
+}
+/** Картинка: 3D-снимок, а если WebGL недоступен — 2D-проекции (вектор). Возвращает, что вставлено. */
+async function picture(doc: jsPDF, m: ManufacturingModel, c: Project['config'], o: Parameters<typeof shot>[2], x: number, y: number, w: number, h: number, sub?: ManufacturingModel): Promise<'3d' | '2d'> {
+  const img = shot(m, c, o);
+  if (img) { doc.addImage(img, 'PNG', x, y, w, h); return '3d'; }
+  await svgAt(doc, projectionsSvg(sub || m), x, y, w, h); return '2d';
+}
+const CAT_RU: Record<string, string> = { nightstand: 'Прикроватная тумба', wardrobe: 'Шкаф', dresser: 'Трюмо', bed: 'Кровать' };
 type Col = { k: string; t: string; w: number; a?: 'r' };
 function table(doc: jsPDF, title: string, cols: Col[], rows: Record<string, any>[], o: { size?: number; header?: string } = {}) {
   const fs = o.size || 7.5, W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(); let y = 16;
@@ -47,22 +62,24 @@ function stamp(doc: jsPDF, p: Project, status: string) {
 }
 
 export async function buildPdf(p: Project, m: ManufacturingModel, e: Estimate, onProgress?: (s: string) => void): Promise<Blob> {
-  const status = docStatus(m), c = p.config;
+  const status = docStatus(m, p.approval), c = p.config;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }); await setupFonts(doc);
   const W = 210;
   onProgress?.('Титульный лист');
   doc.setFont('Roboto', 'bold'); doc.setFontSize(22); doc.text(p.name, 14, 24);
   doc.setFont('Roboto', 'normal'); doc.setFontSize(11);
-  doc.text(`${c.category === 'nightstand' ? 'Прикроватная тумба' : 'Шкаф'} · стиль «${STYLE_NAMES[c.style]}» · ${m.overall.width}×${m.overall.height}×${m.overall.depth} мм`, 14, 32);
+  const o0 = m.overall, dT = o0.depthTop ?? o0.depth, dM = o0.depthMax ?? o0.depth;
+  doc.text(`${CAT_RU[c.category] || c.category} · стиль «${STYLE_NAMES[c.style]}» · ${o0.width}×${o0.height}×${String(dT).replace('.', ',')} мм${dM > dT + 0.05 ? ` (с ручками ${String(dM).replace('.', ',')})` : ''}`, 14, 32);
   doc.text(`Версия документов ${p.docVersion} · ${new Date(p.updated).toLocaleString('ru-RU')} · код конфигурации ${m.configHash}`, 14, 38);
   doc.setTextColor(154, 52, 18); doc.setFont('Roboto', 'bold'); doc.text(status, 14, 45); doc.setTextColor(0); doc.setFont('Roboto', 'normal');
-  const img = shot(m, c, { w: 1200, h: 900, dims: true }); doc.addImage(img, 'PNG', 14, 50, 182, 136.5);
+  const kind = await picture(doc, m, c, { w: 1200, h: 900, dims: true }, 14, 50, 182, 136.5);
   doc.setFontSize(9);
   const notes = [
     'Состав: сборочный чертёж и проекции; корпус и наполнение; разнесённый вид; деталировка; карта кромления; спецификация фурнитуры и соединений; карты присадки; карты раскроя; смета; инструкция по сборке; проверки и ограничения.',
     `Габарит включает: ${m.overall.includes.base ? 'основание, ' : ''}${m.overall.includes.top ? 'столешницу, ' : ''}${m.overall.includes.fronts ? 'накладные фасады' : 'вкладные фасады'}${m.overall.handleProtrusion ? `; ручки выступают ещё на ${m.overall.handleProtrusion} мм` : ''}.`,
     'Это эскизный проект, рассчитанный программой. Он не является проверенной производственной документацией: присадка формируется только по профилям фурнитуры с известными данными, остальное помечено «требует проверки».',
     'Цвета на экране и в PDF приблизительны — перед изготовлением нужен физический образец. Декоры ЛДСП и шпон не совпадают с RAL точно.',
+    kind === '2d' ? '3D-изображение недоступно на этом устройстве (WebGL) — вместо него проекции спереди, слева и сверху.' : '',
     e.incomplete.length ? 'Смета неполная: ' + e.incomplete.join('; ') + '.' : '', (p.prices?.demo ?? true) ? 'Смета посчитана по демонстрационным ставкам — это не рыночные цены.' : '',
   ].filter(Boolean);
   let y = 194; for (const t of notes) { const l = doc.splitTextToSize(t, W - 28); doc.text(l, 14, y); y += l.length * 4 + 1.5; }
@@ -72,7 +89,7 @@ export async function buildPdf(p: Project, m: ManufacturingModel, e: Estimate, o
   doc.addPage('a3', 'landscape'); await svgPage(doc, assemblySheet(m, p, status), 'a3', true);
   await svgPage(doc, interiorSheet(m, p, status), 'a3');
   doc.addPage('a4', 'landscape'); doc.setFont('Roboto', 'bold'); doc.setFontSize(12); doc.text('Разнесённый вид', 12, 14);
-  doc.addImage(shot(m, c, { w: 1400, h: 900, exploded: true }), 'PNG', 12, 18, 210, 135); doc.setFont('Roboto', 'normal'); doc.setFontSize(8);
+  await picture(doc, m, c, { w: 1400, h: 900, exploded: true }, 12, 18, 210, 135); doc.setFont('Roboto', 'normal'); doc.setFontSize(8);
   doc.text(doc.splitTextToSize('Детали раздвинуты от центра, чтобы были видны все элементы. Обозначения деталей — на листе «Корпус и наполнение» и в деталировке.', 50), 230, 24);
   onProgress?.('Деталировка');
   doc.addPage('a4', 'landscape');
@@ -122,8 +139,8 @@ export async function buildPdf(p: Project, m: ManufacturingModel, e: Estimate, o
   ty += 2; let k = 0;
   for (const s of m.steps) {
     if (ty > 200) { doc.addPage('a4', 'portrait'); ty = 16; }
-    k++; const im = shot(m, c, { w: 900, h: 640, show: s.show, hl: s.fresh.length ? s.fresh : s.parts });
-    doc.addImage(im, 'PNG', 14, ty, 90, 64);
+    k++; const shown = new Set(s.show);
+    await picture(doc, m, c, { w: 900, h: 640, show: s.show, hl: s.fresh.length ? s.fresh : s.parts }, 14, ty, 90, 64, { ...m, parts: m.parts.filter(q => shown.has(q.id)), protrusions: [] });
     doc.setFont('Roboto', 'bold'); doc.setFontSize(11); doc.text(`Шаг ${k}. ${s.title}`, 110, ty + 5); doc.setFont('Roboto', 'normal'); doc.setFontSize(8.5);
     let yy2 = ty + 11; for (const t of [...s.text, `Детали: ${s.parts.join(', ')}`, ...s.hardware.map(h => `• ${HW[h.id]?.name || h.id} — ${h.qty} ${HW[h.id]?.unit || 'шт'}`)]) { const l = doc.splitTextToSize(t, 86); doc.text(l, 110, yy2); yy2 += l.length * 3.6 + 0.8; }
     ty = Math.max(ty + 68, yy2 + 4);
@@ -131,6 +148,11 @@ export async function buildPdf(p: Project, m: ManufacturingModel, e: Estimate, o
   if (ty > 230) { doc.addPage('a4', 'portrait'); ty = 16; }
   doc.setFont('Roboto', 'bold'); doc.setFontSize(11); doc.text('Проверки после сборки', 14, ty + 4); doc.setFont('Roboto', 'normal'); doc.setFontSize(9);
   ty += 10; for (const t of ['Диагонали корпуса равны (разница не больше 2 мм).', 'Зазоры между фасадами ровные, двери закрываются без касания.', 'Ящики выдвигаются плавно и полностью.', 'Полки лежат на всех четырёх полкодержателях.', 'Изделие стоит устойчиво; высокий шкаф закреплён к стене от опрокидывания.']) { doc.text('☐ ' + t, 14, ty); ty += 5; }
+  onProgress?.('Готовность');
+  { const rd = readiness(m, p.approval); doc.addPage('a4', 'landscape');
+    table(doc, 'Готовность к изготовлению', [{ k: 'l', t: 'Уровень', w: 22 }, { k: 't', t: 'Замечание', w: 80 }, { k: 'p', t: 'Деталь', w: 30 }, { k: 'j', t: 'Соед.', w: 14 }, { k: 'mi', t: 'Не хватает данных', w: 60 }, { k: 'o', t: 'Операции присадки', w: 67 }],
+      rd.issues.map(x => ({ l: x.level === 'block' ? 'Блокирует' : 'Проверить', t: x.title, p: x.part || '—', j: x.joint || '—', mi: x.missing.join('; ') || '—', o: x.ops.join('; ') || '—' })),
+      { header: `Проверка геометрии: ${rd.geometryOk ? 'ошибок нет' : 'ошибок ' + rd.geometryErrors.length}. Статус: ${rd.label}. ${m.stability ? 'Устойчивость: ' + m.stability.text + ' Крепление от опрокидывания: ' + m.stability.antiTipText : ''} «Готово к изготовлению» — только без блокирующих замечаний и после подтверждения технолога.` }); }
   onProgress?.('Проверки');
   doc.addPage('a4', 'portrait');
   table(doc, 'Проверки конструкции и ограничения', [{ k: 'l', t: 'Уровень', w: 20 }, { k: 'a', t: 'Раздел', w: 32 }, { k: 'm', t: 'Сообщение', w: 134 }],

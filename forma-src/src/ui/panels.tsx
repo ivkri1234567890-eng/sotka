@@ -3,7 +3,8 @@ import type { ProductConfig, Finish, Zone, MaterialIdT } from '../core/schema';
 import { MATERIALS, DECORS, WOODS, RAL, METALS, SHEEN_NAMES, searchRal, fixFinish, finishName, BACKS } from '../core/materials';
 import { STYLE_NAMES, applyStyle, ZONE, CATALOG } from '../core/catalog';
 import { MATTRESS_W, MATTRESS_L, BED_DEFAULT } from '../core/bed';
-import { derive, handleProtrusion } from '../core/engine';
+import { derive, handleProtrusion, modelFor } from '../core/engine';
+import { mm } from '../docs/drawings';
 import { Num, Chips, Opts, toast } from './common';
 import { pickFile, readDataUrl } from '../platform/files';
 
@@ -11,7 +12,7 @@ type Set = (f: (c: ProductConfig) => ProductConfig, label?: string) => void;
 type Photo = { id: string; name: string; dataUrl: string };
 
 export function FinishPicker({ mat, value, onChange }: { mat: MaterialIdT; value: Finish; onChange: (f: Finish) => void }) {
-  const m = MATERIALS[mat]; const [q, setQ] = useState('');
+  const m = MATERIALS[mat]; const [q, setQ] = useState(''); const [open, setOpen] = useState(false);
   const kinds = m.finishKinds;
   const KN: Record<string, string> = { ral: 'Эмаль RAL', decor: 'Декор плиты', wood: 'Порода дерева', natural: 'Натуральная' };
   return <div className="fld">
@@ -19,9 +20,13 @@ export function FinishPicker({ mat, value, onChange }: { mat: MaterialIdT; value
     {value.kind === 'decor' && <div className="sw">{DECORS.map(d => <button key={d.code} className="swatch" title={d.name} aria-label={d.name} aria-pressed={value.code === d.code} style={{ background: d.hex }} onClick={() => onChange({ ...value, code: d.code })} />)}</div>}
     {value.kind === 'wood' && <div className="sw">{WOODS.map(d => <button key={d.code} className="swatch" title={d.name} aria-label={d.name} aria-pressed={value.code === d.code} style={{ background: d.hex }} onClick={() => onChange({ ...value, code: d.code })} />)}</div>}
     {value.kind === 'ral' && <>
-      <div className="ralrow"><input placeholder="Поиск: код или название, например 7044 или серый" value={q} onChange={e => setQ(e.target.value)} aria-label="Поиск RAL" /></div>
-      <div className="sw" style={{ maxHeight: 150, overflow: 'auto' }}>{searchRal(q).map(r => <button key={r.code} className="swatch" title={`RAL ${r.code} ${r.name}`} aria-label={`RAL ${r.code} ${r.name}`} aria-pressed={value.code === r.code} style={{ background: r.hex }} onClick={() => onChange({ ...value, code: r.code })} />)}
-        {!searchRal(q).length && <p className="hint">В подборке нет такого цвета. Подборка — {RAL.length} цветов RAL Classic, не полный каталог.</p>}</div>
+      <button type="button" className="curcol" aria-expanded={open} onClick={() => setOpen(!open)} data-testid="ral-current">
+        <i style={{ background: RAL.find(r => r.code === value.code)?.hex || '#ccc' }} /><span><b>RAL {value.code}</b> {RAL.find(r => r.code === value.code)?.name || ''}</span><span className="muted">{open ? 'свернуть ▴' : 'изменить ▾'}</span></button>
+      {open && <div className="ralpal">
+        <div className="ralrow"><input placeholder="Поиск: 7044 или «серый»" value={q} onChange={e => setQ(e.target.value)} aria-label="Поиск RAL" enterKeyHint="search" /></div>
+        <div className="sw" style={{ maxHeight: 190, overflow: 'auto' }}>{searchRal(q).map(r => <button key={r.code} className="swatch" title={`RAL ${r.code} ${r.name}`} aria-label={`RAL ${r.code} ${r.name}`} aria-pressed={value.code === r.code} style={{ background: r.hex }} onClick={() => { onChange({ ...value, code: r.code }); setOpen(false); }} />)}
+          {!searchRal(q).length && <p className="hint">В подборке нет такого цвета. Подборка — {RAL.length} цветов RAL Classic, не полный каталог.</p>}</div>
+      </div>}
     </>}
     {value.kind !== 'decor' && <Chips value={value.sheen} options={(Object.keys(SHEEN_NAMES) as Finish['sheen'][]).filter(s => value.kind === 'ral' || s !== 'gloss').map(s => [s, SHEEN_NAMES[s]])} onChange={s => onChange({ ...value, sheen: s })} />}
     <p className="hint">Выбрано: {finishName(value)}</p>
@@ -75,16 +80,21 @@ export function SizePane({ c, set }: { c: ProductConfig; set: Set }) {
   const d = derive(c), hp = handleProtrusion(c);
   const lim = c.category === 'nightstand' ? { w: [300, 900], h: [250, 900], d: [300, 600] } : c.category === 'dresser' ? { w: [600, 1800], h: [150, 950], d: [300, 600] } : { w: [400, 3000], h: [1000, 2700], d: [350, 800] };
   return <div className="pane">
-    <div className="row3">
-      <Num id="w" label="Ширина" value={c.size.width} min={lim.w[0]} max={lim.w[1]} onChange={v => set(x => ({ ...x, size: { ...x.size, width: v } }), 'Ширина')} />
-      <Num id="h" label="Высота" value={c.size.height} min={lim.h[0]} max={lim.h[1]} onChange={v => set(x => ({ ...x, size: { ...x.size, height: v } }), 'Высота')} />
-      <Num id="d" label="Глубина" value={c.size.depth} min={lim.d[0]} max={lim.d[1]} onChange={v => set(x => ({ ...x, size: { ...x.size, depth: v } }), 'Глубина')} />
+    <div className="dims">
+      <Num id="w" testid="f-w" label="Ширина" value={c.size.width} min={lim.w[0]} max={lim.w[1]} step={10} onChange={v => set(x => ({ ...x, size: { ...x.size, width: v } }), 'Ширина')} />
+      <Num id="h" testid="f-h" label="Высота" value={c.size.height} min={lim.h[0]} max={lim.h[1]} step={10} onChange={v => set(x => ({ ...x, size: { ...x.size, height: v } }), 'Высота')} />
+      <Num id="d" testid="f-d" label={c.top.enabled ? 'Глубина по столешнице' : 'Глубина'} value={c.size.depth} min={lim.d[0]} max={lim.d[1]} step={10} onChange={v => set(x => ({ ...x, size: { ...x.size, depth: v } }), 'Глубина')} />
     </div>
+    {(() => { const m = modelFor(c), o = m.overall, dT = o.depthTop ?? o.depth, dM = o.depthMax ?? o.depth; return <div className="depths" data-testid="depths">
+      <div><span className="muted small">{c.top.enabled ? 'Глубина по столешнице' : 'Глубина по фасаду'}</span><b>{mm(dT)} мм</b></div>
+      <div><span className="muted small">Максимальная глубина{hp ? ' с ручками' : ''}</span><b>{mm(dM)} мм</b></div>
+      {(m.protrusions || []).map(q => <div key={q.part + q.side} className="ck warn" style={{ gridColumn: '1/-1' }}><b>Выступ за столешницу</b>Фасад {q.part} выступает за скруглённый угол R{c.top.cornerRadius} у {q.side === 'left' ? 'левого' : 'правого'} края на {mm(q.value)} мм.</div>)}
+    </div>; })()}
     <div className="box"><h4>Что входит в общие размеры</h4>
       <div className="small">{c.base.type === 'wall' ? '• Подвесная — ножек и цоколя нет' : c.base.type === 'floor' ? '• Без ножек — стоит на полу на подпятниках' : `• ${c.base.type === 'plinth' ? 'Цоколь' : c.base.type === 'metal-frame' ? 'Металлокаркас' : 'Ножки'} ${c.base.height} мм — входят в высоту ✓`}<br />
         {c.top.enabled ? `• Столешница ${c.top.thickness} мм с выносом ${c.top.overhangFront} мм вперёд и ${c.top.overhangSides} мм по бокам — входит ✓` : '• Отдельной столешницы нет'}<br />
         {c.fronts.mount === 'overlay' ? `• Накладные фасады ${c.fronts.thickness} мм — входят в глубину ✓` : '• Вкладные фасады — внутри корпуса'}<br />
-        {hp ? `• Ручки выступают на ${hp} мм — НЕ входят в глубину ✗` : '• Ручки не выступают'}</div>
+        {hp ? `• Ручки выступают на ${hp} мм от фасада — НЕ входят в глубину ✗ (максимальная глубина показана отдельно)` : '• Ручки не выступают'}</div>
       <div className="small muted">Корпус: {Math.round(d.bodyW)} × {Math.round(d.bodyH)} × {Math.round(d.bodyD)} мм (без основания, столешницы и фасадов)</div>
     </div>
     {c.category === 'dresser' && <MirrorBox c={c} set={set} />}
@@ -158,13 +168,14 @@ export function FillPane({ c, set }: { c: ProductConfig; set: Set }) {
       <button className="chip" onClick={() => preset([ZONE('door', { shelves: 1 })])}>Дверь</button>
       <button className="chip" onClick={() => preset([ZONE('open', { shelves: 1 })])}>Открытая</button>
     </div></div>}
-    {c.columns.map((col, ci) => <div className="box" key={ci}>
-      <h4>{c.columns.length > 1 ? `Секция ${ci + 1}` : 'Секция'}
-        {c.columns.length > 1 && <button className="btn sm ghost" onClick={() => set(x => ({ ...x, columns: x.columns.filter((_, i) => i !== ci) }), 'Удалить секцию')}>Удалить</button>}</h4>
+    {c.columns.map((col, ci) => <details className="box sect" key={ci} open={c.columns.length === 1 || undefined}>
+      <summary><b>{c.columns.length > 1 ? `Секция ${ci + 1}` : 'Секция'}</b> <span className="muted small">{zoneSummary(col.zones)}{col.width ? ` · ${col.width} мм` : ''}</span></summary>
+      {c.columns.length > 1 && <button className="btn sm ghost" style={{ justifySelf: 'start' }} onClick={() => set(x => ({ ...x, columns: x.columns.filter((_, i) => i !== ci) }), 'Удалить секцию')}>Удалить секцию</button>}
       {c.columns.length > 1 && <Chips label="Ширина секции" value={col.width ? 'fix' : 'auto'} options={[['auto', 'Поровну'], ['fix', 'Задать']]} onChange={v => set(x => ({ ...x, columns: x.columns.map((cc, i) => i !== ci ? cc : { ...cc, width: v === 'auto' ? null : 600 }) }), 'Ширина секции')} />}
       {col.width != null && <Num label="Внутренняя ширина" value={col.width} min={150} step={10} onChange={v => set(x => ({ ...x, columns: x.columns.map((cc, i) => i !== ci ? cc : { ...cc, width: v }) }), 'Ширина секции')} />}
-      {col.zones.map((z, zi) => <div className="zone" key={zi}>
-        <div className="zh"><b className="small">{zi === 0 ? 'Верх' : zi === col.zones.length - 1 ? 'Низ' : `Зона ${zi + 1}`}</b>
+      {col.zones.map((z, zi) => <details className="zone" key={zi} open={col.zones.length <= 2 || undefined}>
+        <summary><b className="small">{zi === 0 ? 'Верх' : zi === col.zones.length - 1 ? 'Низ' : `Зона ${zi + 1}`}</b> <span className="small muted">{zoneLine(z)}</span></summary>
+        <div className="zh">
           <div className="chips">{ZT.map(([v, n]) => <button key={v} className="chip" aria-pressed={z.type === v} onClick={() => updZone(ci, zi, { type: v })}>{n}</button>)}</div>
           {col.zones.length > 1 && <button className="btn sm ghost" aria-label="Удалить зону" onClick={() => set(x => ({ ...x, columns: x.columns.map((cc, i) => i !== ci ? cc : { ...cc, zones: cc.zones.filter((_, j) => j !== zi) }) }), 'Удалить зону')}>×</button>}
         </div>
@@ -175,14 +186,14 @@ export function FillPane({ c, set }: { c: ProductConfig; set: Set }) {
           <div className="fld"><span className="lbl">Штанга для одежды</span><Chips value={z.rod ? 'y' : 'n'} options={[['n', 'Нет'], ['y', 'Есть']]} onChange={v => updZone(ci, zi, { rod: v === 'y' })} /></div>
         </div>}
         {z.type === 'door' && <Chips label="Двери" value={z.doors} options={[['auto', 'Авто'], ['left', 'Петли слева'], ['right', 'Петли справа'], ['double', 'Две двери']]} onChange={v => updZone(ci, zi, { doors: v })} />}
-      </div>)}
+      </details>)}
       <button className="btn sm sec" disabled={col.zones.length >= 8} onClick={() => set(x => ({ ...x, columns: x.columns.map((cc, i) => i !== ci ? cc : { ...cc, zones: [...cc.zones, ZONE('drawer')] }) }), 'Добавить зону')}>+ Зона снизу</button>
-    </div>)}
+    </details>)}
     {c.category === 'wardrobe' && <button className="btn sec" disabled={c.columns.length >= 6} onClick={() => set(x => ({ ...x, columns: [...x.columns, { width: null, zones: [ZONE('door', { shelves: 4 })] }] }), 'Добавить секцию')}>+ Секция</button>}
-    <div className="box"><h4>Короба ящиков</h4>
+    {c.columns.some(col => col.zones.some(z => z.type === 'drawer')) && <div className="box"><h4>Короба ящиков</h4>
       <Chips value={c.drawerBox.material} options={[['ldsp', 'ЛДСП 16 мм'], ['plywood', 'Фанера']]} onChange={m => set(x => ({ ...x, drawerBox: { material: m, thickness: m === 'ldsp' ? 16 : 12 } }), 'Короба ящиков')} />
       {c.drawerBox.material === 'plywood' && <Chips label="Толщина" value={c.drawerBox.thickness} options={[[12, '12 мм'], [15, '15 мм']]} onChange={t => set(x => ({ ...x, drawerBox: { ...x.drawerBox, thickness: t } }), 'Короба ящиков')} />}
-    </div>
+    </div>}
     <p className="hint">Купе не предлагается: нет проверенного профиля конкретной системы раздвижных дверей.</p>
   </div>;
 }
@@ -208,20 +219,22 @@ export function HandlesPane({ c, set }: { c: ProductConfig; set: Set }) {
 
 export function ProdPane({ c, set }: { c: ProductConfig; set: Set }) {
   const P = c.production; const up = (k: keyof typeof P, v: number) => set(x => ({ ...x, production: { ...x.production, [k]: v } }), 'Для производства');
+  const zs = c.category === 'bed' ? [] : c.columns.flatMap(col => col.zones);
+  const hasDoors = zs.some(z => z.type === 'door'), hasShelves = zs.some(z => z.type !== 'drawer' && z.shelves > 0), hasFronts = c.category === 'bed' ? (c.bed?.drawers || 0) > 0 : zs.some(z => z.type !== 'open');
   return <div className="pane">
     <p className="hint">Параметры для мастерской. Новичку менять не нужно.</p>
     <div className="row2">
-      <Num label="Зазор между фасадами" value={P.gap} step={0.5} min={0} max={6} onChange={v => up('gap', v)} />
-      <Num label="Макс. ширина двери" value={P.maxDoorWidth} step={10} min={300} max={700} onChange={v => up('maxDoorWidth', v)} />
-      <Num label="Кромка тонкая" value={P.edgeThin} step={0.1} min={0} max={1} onChange={v => up('edgeThin', v)} />
+      {hasFronts && <Num label="Зазор между фасадами" value={P.gap} step={0.5} min={0} max={6} onChange={v => up('gap', v)} />}
+      {hasDoors && <Num label="Макс. ширина двери" value={P.maxDoorWidth} step={10} min={300} max={700} onChange={v => up('maxDoorWidth', v)} />}
+      <Num label="Кромка тонкая" testid="f-edge-thin" value={P.edgeThin} step={0.1} min={0} max={1} onChange={v => up('edgeThin', v)} />
       <Num label="Кромка толстая" value={P.edgeThick} step={0.5} min={0} max={3} onChange={v => up('edgeThick', v)} />
       <Num label="Припуск под кромку" value={P.edgeAllowance} step={0.5} min={0} max={3} onChange={v => up('edgeAllowance', v)} hint="Добавляется к заготовке на каждую кромкуемую сторону." />
-      <Num label="Нагрузка на полку" unit="кг" value={P.shelfLoadKg} step={1} min={0} max={60} onChange={v => up('shelfLoadKg', v)} hint="Для оценки прогиба." />
+      {hasShelves && <Num label="Нагрузка на полку" unit="кг" value={P.shelfLoadKg} step={1} min={0} max={60} onChange={v => up('shelfLoadKg', v)} hint="Для оценки прогиба." />}
     </div>
     <div className="box small"><h4>Система координат</h4>
       Миллиметры. X — вправо (ширина), Y — вверх (высота), Z — к зрителю (глубина). Начало — левый задний нижний угол корпуса на уровне пола.
       У каждой детали: L — длина (направление текстуры), W — ширина, T — толщина; лицевая сторона A, обратная B; кромки L1/L2 (вдоль длины), W1/W2 (по торцам).
-      Координаты отверстий на пласти — от угла детали: u вдоль L от кромки W1, v вдоль W от кромки L1.
+      Координаты отверстий на пласти — от угла детали: u вдоль L от кромки W1, v вдоль W от кромки L1 (вид со стороны A). В торце: u вдоль кромки, v — по толщине от пласти A.
     </div>
   </div>;
 }
@@ -231,3 +244,7 @@ function applyLegs(x: ProductConfig): ProductConfig {
   const h = x.category === 'dresser' ? 560 : 150;
   return { ...x, base: { ...x.base, type: 'legs-wood', height: h }, size: { ...x.size, height: x.base.type === 'floor' || x.base.type === 'wall' ? x.size.height + h : x.size.height } };
 }
+
+const ZN: Record<Zone['type'], string> = { drawer: 'ящик', door: 'дверь', open: 'открыто' };
+function zoneLine(z: Zone) { return [ZN[z.type], z.height ? `${z.height} мм` : 'высота поровну', z.type !== 'drawer' && z.shelves ? `полок ${z.shelves}` : '', z.rod ? 'штанга' : ''].filter(Boolean).join(' · '); }
+function zoneSummary(zs: Zone[]) { const n = (t: Zone['type']) => zs.filter(z => z.type === t).length; return [n('drawer') && `ящиков ${n('drawer')}`, n('door') && `дверей ${n('door')}`, n('open') && `открытых ${n('open')}`].filter(Boolean).join(', '); }

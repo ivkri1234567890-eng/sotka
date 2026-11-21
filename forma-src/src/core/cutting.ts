@@ -20,7 +20,8 @@ export function sheetFormat(material: string, p: CutParams): { L: number; W: num
   if ((BACKS as any)[material]) return (BACKS as any)[material].sheet;
   return { L: 2800, W: 2070 };
 }
-export function groupKey(p: Part) { return `${p.material}|${p.thickness}|${p.finish ? p.finish.kind + ':' + p.finish.code : 'raw'}`; }
+/** Один лист = один артикул: материал + толщина + декор. Под эмаль (RAL) плита одна и та же при любом цвете — цвет учитывается в окраске. */
+export function groupKey(p: Part) { const painted = p.finish?.kind === 'ral'; return `${p.material}|${p.thickness}|${!p.finish || painted ? 'raw' : p.finish.kind + ':' + p.finish.code}`; }
 
 type R = { x: number; y: number; w: number; h: number };
 function pack(items: { id: string; name: string; w: number; h: number; canRot: boolean }[], SW: number, SH: number) {
@@ -72,9 +73,10 @@ export function cutModel(m: ManufacturingModel, p: CutParams): CutGroup[] {
       used: s.placed.reduce((a, q) => a + (q.w - p.kerf) * (q.h - p.kerf), 0),
       free: s.free.map(f => ({ x: f.x + p.trim, y: f.y + p.trim, w: Math.max(0, f.w - p.kerf), h: Math.max(0, f.h - p.kerf) })),
     }));
-    const offcuts = sheets.flatMap(s => s.free).filter(f => f.w >= 200 && f.h >= 200).sort((a, b) => b.w * b.h - a.w * a.h).slice(0, 8).map(f => ({ w: Math.round(f.w), h: Math.round(f.h) }));
+    const offcuts = sheets.flatMap(s => s.free).filter(f => f.w >= 200 && f.h >= 200).sort((a, b) => b.w * b.h - a.w * a.h).slice(0, 8).map(f => ({ w: Math.round(f.w * 10) / 10, h: Math.round(f.h * 10) / 10 }));
     const name = ((MATERIALS as any)[p0.material]?.name || (BACKS as any)[p0.material]?.name || p0.materialName);
-    out.push({ key, title: `${name} ${p0.thickness} мм${p0.finish ? ', ' + finishName(p0.finish) : ''}`, material: p0.material, thickness: p0.thickness, grain,
+    const cols = [...new Set(parts.filter(x => x.finish?.kind === 'ral').map(x => 'RAL ' + x.finish!.code))];
+    out.push({ key, title: `${name} ${p0.thickness} мм${cols.length ? ' (под окраску: ' + cols.join(', ') + ')' : p0.finish ? ', ' + finishName(p0.finish) : ''}`, material: p0.material, thickness: p0.thickness, grain,
       sheet: fmt, sheets, unplaced: parts.filter(x => r.unplaced.includes(x.id)), partArea: parts.reduce((a, x) => a + x.blankL * x.blankW, 0), sheetArea: sheets.length * fmt.L * fmt.W, offcuts });
   }
   return out;

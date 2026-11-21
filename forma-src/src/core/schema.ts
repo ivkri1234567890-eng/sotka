@@ -102,7 +102,7 @@ export const Axis = z.enum(['x', 'y', 'z']);
 export const Edge = z.object({ kind: z.enum(['none', 'thin', 'thick', 'veneer', 'paint']), t: z.number() });
 export const Hole = z.object({
   id: z.string(), face: z.enum(['A', 'B', 'L1', 'L2', 'W1', 'W2']),
-  u: z.number(), v: z.number(), // A/B: u вдоль L от W1, v вдоль W от L1. Кромки L1/L2: u вдоль L, v — от грани B к A. Кромки W1/W2: u вдоль W.
+  u: z.number(), v: z.number(), // A/B: u вдоль L от W1, v вдоль W от L1 (вид со стороны пласти A). Торцы L1/L2: u вдоль L от W1; W1/W2: u вдоль W от L1; v — по толщине от пласти A.
   d: z.number(), depth: z.number(), through: z.boolean(),
   kind: z.string(), joint: z.string(), status: z.enum(['verified', 'partial', 'rule']),
 });
@@ -135,19 +135,27 @@ export type Joint = {
 export type Moving = { id: string; kind: 'door'; parts: string[]; hinge: [number, number, number]; axisSign: 1 | -1; front: string }
   | { id: string; kind: 'drawer'; parts: string[]; travel: number; front: string; axis?: 'x' | 'z' };
 export type Ghost = { name: string; min: [number, number, number]; max: [number, number, number] };
-export type Check = { level: 'error' | 'warn' | 'info' | 'ok'; area: string; msg: string; fix?: string };
+export type Check = { level: 'error' | 'warn' | 'info' | 'ok'; area: string; msg: string; fix?: string; part?: string; joint?: string };
+/** Выступ фасада/ручки за контур скруглённой столешницы (для чертежей). */
+export type Protrusion = { part: string; x: number; z: number; value: number; side: 'left' | 'right' };
 export type AssemblyStep = { id: string; title: string; text: string[]; parts: string[]; fresh: string[]; hardware: { id: string; qty: number }[]; tools: string[]; joints: string[]; show: string[] };
 
 export type ManufacturingModel = {
   schema: typeof MODEL_SCHEMA; version: typeof MODEL_VERSION;
   configHash: string;
-  overall: { width: number; height: number; depth: number; includes: { base: boolean; top: boolean; fronts: boolean; handles: boolean; mirror?: boolean }; handleProtrusion: number };
+  overall: { width: number; height: number; depth: number;
+    /** Глубина по столешнице (или по корпусу с фасадами, если столешницы нет). */ depthTop?: number;
+    /** Максимальная глубина с ручками и всеми выступающими деталями. */ depthMax?: number;
+    includes: { base: boolean; top: boolean; fronts: boolean; handles: boolean; mirror?: boolean }; handleProtrusion: number };
   body: { x0: number; y0: number; z0: number; W: number; H: number; D: number; t: number };
   parts: Part[]; joints: Joint[]; moving: Moving[]; checks: Check[]; steps: AssemblyStep[];
   hardware: { id: string; qty: number; joints: string[] }[];
   massKg: number;
   status: 'draft' | 'needs-review';
   ghosts?: Ghost[];   // только для показа (матрас), в документы не входит
+  protrusions?: Protrusion[];
+  /** Устойчивость с выдвинутыми ящиками (упрощённый статический расчёт). */
+  stability?: { checked: boolean; ok: boolean; okEmpty?: boolean; need?: boolean; text: string; antiTip: boolean; antiTipText: string };
 };
 
 export const Prices = z.object({
@@ -173,6 +181,8 @@ export const Project = z.object({
   config: ProductConfig, prices: Prices.nullable().default(null),
   photos: z.array(z.object({ id: z.string(), name: z.string(), dataUrl: z.string() })).default([]),
   docVersion: z.number().int().default(1),
+  /** Подтверждение технолога: действует только для конфигурации с тем же кодом. */
+  approval: z.object({ by: z.string(), at: z.string(), hash: z.string(), note: z.string().default('') }).nullable().optional(),
 });
 export type Project = z.infer<typeof Project>;
 
