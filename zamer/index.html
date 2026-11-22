@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Замер и смета 2.8</title>
+<script src="jszip.min.js"></script>
+<script src="media-zip.js"></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -133,11 +135,68 @@ function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeou
 const NATIVE=window.Native||null;
 
 /* =================== storage =================== */
-function loadDB(){try{const s=NATIVE?NATIVE.load():localStorage.getItem('zs:db');if(s)return JSON.parse(s)}catch(e){}return null}
+let dbReadError = null, lastWebDB = null;
+function loadDB(){
+  try {
+    const data=NATIVE?NATIVE.load():localStorage.getItem('zs:db');
+    if(!NATIVE)lastWebDB=data;
+    if(!data)return null;
+    const db=JSON.parse(data);
+    if(!Array.isArray(db?.projects)||!db.settings)throw Error('Повреждены данные проекта');
+    return db;
+  }catch(error){dbReadError=error;return null}
+}
 let DB=loadDB()||{projects:[],settings:{company:'',master:'',phone:'',note:'Цены на материалы ориентировочные и уточняются при закупке. Смета действительна 14 дней.',prices:{},variant:'s'}};
-window.flushDb=()=>{clearTimeout(saveT);const el=document.activeElement;if(el&&el.dataset&&el.dataset.f)el.dispatchEvent(new Event('change',{bubbles:true}));clearTimeout(saveT);const s=JSON.stringify(DB);try{NATIVE?NATIVE.save(s):localStorage.setItem('zs:db',s)}catch(e){}};
+function storageStatus(error){
+  let status=document.getElementById('storage-error');
+  if(!status&&error){
+    status=document.createElement('p');
+    status.id='storage-error';
+    status.className='card danger';
+    status.setAttribute('role','alert');
+    document.body.prepend(status);
+  }
+  if(status){
+    status.hidden=!error;
+    status.textContent=error?'Ошибка хранения: '+error.message:'';
+  }
+}
+function writeDB(db=DB){
+  if(dbReadError)throw dbReadError;
+  const data=JSON.stringify(db);
+  if(NATIVE){
+    const result=NATIVE.save(data);
+    if(result===false||NATIVE.load()!==data)throw Error('Приложение не подтвердило запись проекта');
+  }else{
+    if(data===lastWebDB)return;
+    if(localStorage.getItem('zs:db')!==lastWebDB)throw Error('Проекты изменены в другой вкладке. Сохраните копию и перезагрузите страницу');
+    localStorage.setItem('zs:db',data);
+    lastWebDB=data;
+  }
+}
+function save(){
+  try{writeDB();storageStatus(null);return true}
+  catch(error){storageStatus(error);return false}
+}
+function removeProjectsOrRooms(owner,key,remaining,removedRooms){
+  const previous=owner[key];
+  owner[key]=remaining;
+  if(!save()){owner[key]=previous;return false}
+  const ids=new Set(removedRooms.flatMap(room=>(room.photos||[]).map(photo=>photo.id)));
+  if(ids.size){
+    for(const project of DB.projects)for(const room of project.rooms){
+      for(const photo of room.photos||[])ids.delete(photo.id);
+    }
+    if(ids.size)PHDB.removeAll([...ids]).catch(storageStatus);
+  }
+  return true;
+}
+window.flushDb=()=>{
+  const el=document.activeElement;
+  if(el?.dataset?.f)el.dispatchEvent(new Event('change',{bubbles:true}));
+  return save();
+};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)window.flushDb()});
-let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{const s=JSON.stringify(DB);try{NATIVE?NATIVE.save(s):localStorage.setItem('zs:db',s)}catch(e){}},250)}
 
 /* =================== price list =================== */
 /* b = база количества (floor, ceil, wall, perim, skirt, slopes, demo, el, pl, doorsN), k = расход на единицу базы, c = округлять вверх до целых упаковок, p = цены [эконом, стандарт, премиум] */
@@ -280,7 +339,7 @@ function bleMeasure(){if(NATIVE)NATIVE.bleMeasure();else if(BLE.webChr)BLE.webCh
 /* =================== routing / state =================== */
 let R={view:'home',pid:null,rid:null,tab:'rooms'};const STACK=[];
 const UI={last:null,target:'wall',turn:90,auto:true,opType:'door'};
-function go(v,extra={}){STACK.push({...R});R={...R,view:v,...extra};render();window.scrollTo(0,0)}
+function go(v,extra={}){if(v==='room')UI.phWall=null;STACK.push({...R});R={...R,view:v,...extra};render();window.scrollTo(0,0)}
 function back(){if(!STACK.length)return false;R=STACK.pop();render();return true}
 window.appBack=()=>back();
 const P=()=>DB.projects.find(p=>p.id===R.pid);
@@ -387,7 +446,7 @@ function vSettings(){const s=DB.settings;
  <button class="btn sec wide" data-a="prices">Прайс: цены работ и материалов</button>
  <div class="card" style="margin-top:12px"><h3>Дальномер</h3><p class="small muted">Bosch GLM с Bluetooth (GLM 50-27 CG и др.). Включите Bluetooth на дальномере, нажмите «Подключить» и мерьте как обычно: каждое значение приходит в приложение.</p>${bleCard()}
  <details><summary>Журнал обмена (для диагностики)</summary><div class="log">${esc(BLE.log.join('\n')||'пусто')}</div></details></div>
- <div class="card"><h3>Данные · версия 2.3</h3><p class="small muted">Объекты хранятся только в этом телефоне.</p><div class="row"><button class="btn ghost" data-a="export">Резервная копия</button><button class="btn ghost" data-a="import">Восстановить копию</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
+ <div class="card"><h3>Данные · версия 2.8</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
 function vPrices(){const pr=DB.settings.prices||(DB.settings.prices={});
  return bar('Прайс')+`<p class="small muted">Цены за единицу для трёх вариантов: эконом / стандарт / премиум. Значения по умолчанию примерные — поставьте свои.</p>
  ${Object.entries(CAT).map(([id,it])=>{const p=pr[id]||it.p;return `<div class="card"><div class="small" style="font-weight:600">${esc(it.n)} <span class="muted">· ${it.g==='w'?'работа':'материал'}, ₽/${it.u}</span></div><div class="grid3" style="margin-top:6px">${p.map((x,i)=>`<label class="f">${VARS[i][1]}<input inputmode="decimal" aria-label="${VARS[i][1]}" data-f="pr.${id}.${i}" value="${x}"></label>`).join('')}</div></div>`}).join('')}
@@ -400,9 +459,72 @@ function render(){
  if(wasMinorOpen&&app.querySelector('#minorWorks'))app.querySelector('#minorWorks').open=true;
  if(fx){const el=app.querySelector(`[data-f="${fx}"]`);if(el){el.focus();try{const l=el.value.length;el.setSelectionRange(l,l)}catch(e){}}}}
 
+async function exportProjectZip(project,button){
+  if(!project||button.disabled)return;
+  button.disabled=true;
+  try{
+    window.flushDb();
+    if(pendingPhotoWrites.has(project))throw Error('Дождитесь окончания сохранения фотографии');
+    const snapshot=JSON.parse(JSON.stringify({project,settings:DB.settings}));
+    validateBackup({projects:[snapshot.project],settings:snapshot.settings});
+    const bytes=await ZamerZip.encode(snapshot.project,snapshot.settings,id=>PHDB.get(id));
+    outFile(sanitize(snapshot.project.name||'Проект').slice(0,86)+'.zip','application/zip',bytes,'save');
+  }catch(error){toast('ZIP не создан: '+error.message)}
+  finally{button.disabled=false}
+}
+async function importProjectZip(file){
+  const {backup,records}=await ZamerZip.decode(file);
+  validateBackup(backup);
+  const project=backup.projects[0],photos=[];
+  const matches=DB.projects.some(p=>p.id===project.id);
+  if(!confirm(matches?'Такой проект уже есть. Импортировать отдельную копию?':'Импортировать проект «'+(project.name||'Объект')+'»?'))return;
+  if(matches){project.id=uid()+uid();project.name=(project.name||'Объект')+' (копия)'}
+  const applySettings=confirm('Применить общие настройки и прайс из ZIP ко всему приложению?');
+  for(const room of project.rooms){
+    for(const photo of room.photos||[]){
+      const key=JSON.stringify([room.id,photo.id]),record=records.get(key);
+      if(!record)throw Error('Отсутствует фото комнаты '+(room.name||room.id));
+      records.delete(key);
+      photo.id=uid()+uid();
+      photos.push({...record,id:photo.id,projectId:project.id,roomId:room.id});
+    }
+  }
+  if(records.size)throw Error('ZIP содержит фотографии без привязки к помещениям');
+  if(photos.length)await PHDB.putAll(photos);
+  const next={...DB,projects:[...DB.projects,project],settings:applySettings?{...DB.settings,...backup.settings}:DB.settings};
+  try{
+    if(DB.projects.some(p=>p.id===project.id))throw Error('Проект с этим идентификатором уже существует');
+    writeDB(next);
+  }catch(error){
+    if(!NATIVE&&photos.length)await PHDB.removeAll(photos.map(photo=>photo.id)).catch(console.warn);
+    throw error;
+  }
+  DB.projects=next.projects;
+  DB.settings=next.settings;
+  storageStatus(null);
+  STACK.length=0;
+  R={view:'project',pid:project.id,rid:null,tab:'rooms'};
+  render();
+  toast('Проект восстановлен из ZIP');
+}
+const projectZipInput=document.createElement('input');
+projectZipInput.id='projectZipInput';
+projectZipInput.type='file';
+projectZipInput.accept='.zip,application/zip';
+projectZipInput.hidden=true;
+document.body.appendChild(projectZipInput);
+projectZipInput.addEventListener('change',async()=>{
+  const file=projectZipInput.files[0];
+  projectZipInput.value='';
+  if(!file)return;
+  try{await importProjectZip(file)}
+  catch(error){storageStatus(error);toast('ZIP не восстановлен: '+error.message)}
+});
+
 /* =================== events =================== */
 app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.target.closest('[data-a]');if(!b||b.tagName==='INPUT'&&b.type!=='checkbox')return;const a=b.dataset.a,p=P(),r=RM();if(handleUpgradeAction23(a,b,r))return;
  const A={
+  projectZip:()=>exportProjectZip(p,b),importZip:()=>document.getElementById('projectZipInput').click(),
   import:()=>{if(window.Access)Access.importBackup();else document.getElementById('backupFile').click()},activationReset:()=>{if(window.Access)Access.reset();else toast('Доступно в Android-приложении')},
   selectRoom:()=>{UI.layoutRoom=b.dataset.id;render()},rotateRoom:()=>{const rr=p.rooms.find(x=>x.id===UI.layoutRoom);if(rr){const l=placement(p,rr);l.rot=(l.rot+90)%360;save();render()}},resetLayout:()=>{if(confirm('Разложить комнаты заново?')){p.layout={};save();render()}},
   selectwall:()=>{UI.placeType='';UI.opWall=+b.dataset.i+1;UI.target='opw';UI.opw=UI.oph=null;UI.opOffset=null;render()},
@@ -410,10 +532,10 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   back:()=>back(),settings:()=>go('settings'),prices:()=>go('prices'),ble:()=>bleConnect(),measure:()=>bleMeasure(),
   newproj:()=>{const np={id:uid(),name:'Объект '+(DB.projects.length+1),client:'',rooms:[],ts:Date.now(),date:today(),v:DB.settings.variant||'s'};DB.projects.push(np);save();go('project',{pid:np.id,tab:'info'})},
   open:()=>go('project',{pid:b.dataset.id,tab:'rooms'}),tab:()=>{R.tab=b.dataset.t;render()},
-  delproj:()=>{if(b.dataset.sure){DB.projects=DB.projects.filter(x=>x!==p);save();back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
+  delproj:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',DB.projects.filter(x=>x!==p),p.rooms))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
   addroom:()=>{const n=b.dataset.n,same=p.rooms.filter(x=>x.name.startsWith(n)).length;const nr={id:uid(),name:same?n+' '+(same+1):n,walls:[],h:p.rooms.length?p.rooms[p.rooms.length-1].h:2.7,ops:[],fin:{floor:/Ванн|Санузел/.test(n)?'tile':'laminate',walls:/Ванн|Санузел/.test(n)?'tile':'paint',ceiling:'stretch'},cnt:{}};p.rooms.push(nr);p.ts=Date.now();save();UI.target='wall';UI.turn=90;UI.placeType='';go('room',{rid:nr.id})},
   room:()=>{UI.target='wall';UI.placeType='';go('room',{rid:b.dataset.id})},
-  delroom:()=>{if(b.dataset.sure){p.rooms=p.rooms.filter(x=>x!==r);save();back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить помещение')}},
+  delroom:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(p,'rooms',p.rooms.filter(x=>x!==r),[r]))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить помещение')}},
   setv:()=>{p.v=b.dataset.v;save();render()},
   tgt:()=>{UI.target=b.dataset.t;if(UI.target==='opw'){UI.opw=null;UI.oph=null}render();if(UI.target==='opw')window.scrollTo(0,0)},
   turn:()=>{UI.turn=b.dataset.t==='c'?45:+b.dataset.t;render()},
@@ -422,7 +544,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   undo:()=>{if(r.walls.length)removeWall23(r,r.walls.length-1)},
   delwall:()=>removeWall23(r,+b.dataset.i),
   close:()=>closeRoom(r),
-  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if(((r.ops||[]).length||(r.points||[]).length)&&!confirm('Перестроить контур прямоугольником? Проёмы и электроточки будут очищены.'))return;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
+  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if(((r.ops||[]).length||(r.points||[]).length||r.photos?.some(x=>x.wall))&&!confirm('Перестроить контур? Проёмы и электроточки будут очищены. Фотографии останутся в помещении без привязки к стенам.'))return;for(const photo of r.photos||[])photo.wall=null;UI.phWall=null;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
   optype:()=>{UI.opType=b.dataset.t;keepOp();render()},
   addop:()=>{const w=num($('#opw').value),hh=num($('#oph').value),wl=Math.round(num($('#opwall').value));if(w<=0||hh<=0||wl<1||wl>r.walls.length){toast('Укажите стену, ширину и высоту проёма');return}
    const len=physicalWallLength(r,wl-1),raw=$('#opoffset').value.trim(),offset=raw?Number(raw.replace(',','.')):(len-w)/2;if(w<=0||hh<=0||hh>r.h||!Number.isFinite(offset)||offset<0||offset+w>len+0.001){toast('Проём должен помещаться в стене и по высоте');return}if((r.ops||[]).some(o=>o.wall===wl&&Math.min(offset+w,(o.offset==null?(len-o.w)/2:o.offset)+o.w)-Math.max(offset,o.offset==null?(len-o.w)/2:o.offset)>.001)){toast('Проёмы на этой стене пересекаются');return}(r.ops=r.ops||[]).push({type:UI.opType,wall:wl,w,h:hh,offset});UI.opWall=wl;UI.opw=UI.oph=null;UI.target='wall';save();render();toast((UI.opType==='door'?'Дверь':'Окно')+' добавлено')},
@@ -434,7 +556,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   pdfsave:()=>makeAndSend(p,'save'),pdfshare:()=>makeAndSend(p,'share'),
   resetprices:()=>{DB.settings.prices={};save();render();toast('Цены сброшены')},
   export:()=>{const s=JSON.stringify(DB);if(NATIVE&&NATIVE.shareText)NATIVE.shareText('zamer-backup.json',s);else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));a.download='zamer-backup.json';a.click()}},
-  wipe:()=>{if(b.dataset.sure){DB.projects=[];save();render();toast('Все объекты удалены')}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
+  wipe:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',[],DB.projects.flatMap(project=>project.rooms))){render();toast('Все объекты удалены')}}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
  };(A[a]||(()=>{}))()});
 function keepOp(){const g=id=>{const el=$(id);return el?num(el.value):null};const w=g('#opw'),h=g('#oph'),wl=g('#opwall');if(w)UI.opw=w;if(h)UI.oph=h;if(wl)UI.opWall=wl;const offset=$('#opoffset');if(offset)UI.opOffset=offset.value}
 app.addEventListener('change',e=>{if(handleUpgradeChange23(e))return;const el=e.target,k=el.dataset.f;if(!k)return;const p=P(),r=RM(),[s,a,b2]=k.split('.');
@@ -472,7 +594,19 @@ function validateBackup(d){
  if(d.settings.prices!==undefined){if(!plain(d.settings.prices))throw Error('Повреждён прайс');for(const[k,v]of Object.entries(d.settings.prices))if(!Object.prototype.hasOwnProperty.call(CAT,k)||!Array.isArray(v)||v.length!==3||!v.every(nonneg))throw Error('Повреждён прайс')}
  if(d.settings.variant&&!['e','s','p'].includes(d.settings.variant))throw Error('Неизвестный вариант');
  for(const p of d.projects){if(!plain(p)||!id(p.id)||!Array.isArray(p.rooms)||p.rooms.length>1000||p.v&&!['e','s','p'].includes(p.v))throw Error('Повреждён список объектов');
+  const roomIds=new Set();
   for(const r of p.rooms){if(!plain(r)||!id(r.id)||!Array.isArray(r.walls)||r.walls.length>1000||r.walls.some(w=>!plain(w)||typeof w.len!=='number'||!Number.isFinite(w.len)||w.len<=0||w.len>10000||typeof w.t!=='number'||!Number.isFinite(w.t)))throw Error('Повреждены замеры');
+   if(roomIds.has(r.id))throw Error('Повторяющийся идентификатор помещения');
+   roomIds.add(r.id);
+   if(r.photos!=null){
+    if(!Array.isArray(r.photos))throw Error('Повреждены фото');
+    const photoIds=new Set();
+    for(const photo of r.photos){
+     if(!plain(photo)||!id(photo.id)||photoIds.has(photo.id)||
+        (photo.wall!=null&&(!Number.isSafeInteger(photo.wall)||photo.wall<0)))throw Error('Повреждена привязка фото');
+     photoIds.add(photo.id);
+    }
+   }
    if(r.comment!==undefined&&typeof r.comment!=='string')throw Error('Повреждён комментарий');if((r.ops||[]).some(o=>o.offset!==undefined&&!nonneg(o.offset)))throw Error('Повреждён отступ');if(r.h!==undefined&&!nonneg(r.h))throw Error('Повреждена высота');if(r.wc&&!/^#[0-9a-f]{6}$/i.test(r.wc))throw Error('Повреждён цвет');
    if(r.fin){if(!plain(r.fin))throw Error('Повреждена отделка');for(const[k,v]of Object.entries(r.fin)){if(Object.prototype.hasOwnProperty.call(FIN,k)){if(!Object.prototype.hasOwnProperty.call(FIN[k].opts,v))throw Error('Неизвестная отделка')}else if(!EXTRA.some(x=>x.id===k)||typeof v!=='boolean')throw Error('Неизвестная отделка')}}
    if(r.ops!==undefined&&(!Array.isArray(r.ops)||r.ops.some(o=>!plain(o)||!['door','window'].includes(o.type)||!Number.isInteger(o.wall)||o.wall<1||o.wall>r.walls.length||!nonneg(o.w)||!nonneg(o.h))))throw Error('Повреждены проёмы');
@@ -483,7 +617,31 @@ function validateBackup(d){
  }
 }
 
-window.importBackup=text=>{try{const d=typeof text==='string'?JSON.parse(text):text;validateBackup(d);const ids=new Set(DB.projects.map(p=>p.id));if(!confirm('Добавить '+d.projects.length+' объектов из копии? Совпадающие объекты будут добавлены как отдельные копии. Текущие данные останутся.'))return false;for(const source of d.projects){const p=JSON.parse(JSON.stringify(source));if(ids.has(p.id)){p.id=uid();p.name=(p.name||'Объект')+' (копия)'}ids.add(p.id);DB.projects.push(p)}if(!DB.settings.company&&!DB.settings.master){DB.settings={...DB.settings,...d.settings}}window.flushDb();R={view:'home',pid:null,rid:null,tab:'rooms'};STACK.length=0;render();toast('Резервная копия восстановлена');return true}catch(e){toast('Копия не загружена: '+e.message);return false}};
+window.importBackup=text=>{
+  try{
+    const data=typeof text==='string'?JSON.parse(text):text;
+    validateBackup(data);
+    if(!confirm('Добавить '+data.projects.length+' объектов из копии? Совпадающие объекты будут добавлены как отдельные копии. Текущие данные останутся.'))return false;
+    const ids=new Set(DB.projects.map(project=>project.id));
+    const projects=data.projects.map(source=>{
+      const project=JSON.parse(JSON.stringify(source));
+      if(ids.has(project.id)){project.id=uid();project.name=(project.name||'Объект')+' (копия)'}
+      ids.add(project.id);
+      return project;
+    });
+    const settings=DB.settings.company||DB.settings.master?DB.settings:{...DB.settings,...data.settings};
+    const next={...DB,projects:[...DB.projects,...projects],settings};
+    writeDB(next);
+    DB.projects=next.projects;
+    DB.settings=next.settings;
+    storageStatus(null);
+    R={view:'home',pid:null,rid:null,tab:'rooms'};
+    STACK.length=0;
+    render();
+    toast('Резервная копия восстановлена');
+    return true;
+  }catch(error){toast('Копия не загружена: '+error.message);return false}
+};
 const backupInput=document.createElement('input');backupInput.id='backupFile';backupInput.type='file';backupInput.accept='.json,application/json';backupInput.hidden=true;document.body.appendChild(backupInput);backupInput.addEventListener('change',async()=>{if(backupInput.files[0])window.importBackup(await backupInput.files[0].text());backupInput.value='' });
 
 /* =================== PDF =================== */
@@ -709,6 +867,11 @@ function addElectrical23(room,type,position){
  (room.points=room.points||[]).push(point);UI.pointIndex=room.points.length-1;save();render();return true;
 }
 function removeWall23(room,index){
+ if(index<0||index>=room.walls.length)return;
+ const number=index+1;
+ const remap=wall=>wall===number?null:wall>number?wall-1:wall;
+ for(const photo of room.photos||[])photo.wall=remap(photo.wall);
+ UI.phWall=remap(UI.phWall);
  room.walls.splice(index,1);if(room.walls[0])room.walls[0].t=0;
  room.ops=(room.ops||[]).filter(o=>o.wall!==index+1).map(o=>({...o,wall:o.wall>index+1?o.wall-1:o.wall}));
  room.points=(room.points||[]).filter(pt=>!ELECTRICAL[pt.type]?.wall||pt.wall!==index+1).map(pt=>ELECTRICAL[pt.type]?.wall?{...pt,wall:pt.wall>index+1?pt.wall-1:pt.wall}:pt);
@@ -1043,7 +1206,7 @@ function utf8(s){return new TextEncoder().encode(s)}
 function outFile(name,mime,bytes,mode){name=sanitize(name);
  if(FILES){const b=b64Bytes(bytes);mode==='share'?FILES.shareFile(name,mime,b):FILES.saveFile(name,mime,b);return}
  if(NATIVE&&NATIVE.shareText&&/json|csv|text/.test(mime)){NATIVE.shareText(name,new TextDecoder().decode(bytes));return}
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:mime}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Файл: '+name)}
+ const a=document.createElement('a');const url=URL.createObjectURL(new Blob([bytes],{type:mime}));a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('Файл: '+name)}
 
 /* ---------- geometry helpers in object coordinates ---------- */
 function roomGlobal(p,r){const l=placement(p,r),T=roomTransform23(r,l.rot);return pt=>{const q=T(pt);return[q[0]+l.x,q[1]+l.y]}}
@@ -1569,26 +1732,156 @@ function plSave27(){const r=RM(),pl=UI.pl;if(!r||!pl)return;const wi=pl.wall-1,L
 function plDel27(){const r=RM(),ed=UI.pl&&UI.pl.edit;if(!r||!ed)return;if(ed.src==='op')r.ops.splice(ed.i,1);else if(ed.src==='rad')radsOf(r).splice(ed.i,1);else r.points.splice(ed.i,1);UI.pl=null;save();render();toast('Удалено')}
 
 /* ---------- room photos (IndexedDB) ---------- */
-const PHDB={db:null,async open(){if(this.db)return this.db;return this.db=await new Promise((res,rej)=>{const q=indexedDB.open('zamer-photos',1);q.onupgradeneeded=()=>q.result.createObjectStore('ph',{keyPath:'id'});q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
- async put(o){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('ph','readwrite');t.objectStore('ph').put(o);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
- async get(id){try{const db=await this.open();return await new Promise(res=>{const q=db.transaction('ph').objectStore('ph').get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null)})}catch(e){return null}},
- async del(id){try{const db=await this.open();db.transaction('ph','readwrite').objectStore('ph').delete(id)}catch(e){}}};
-const PHC=new Map();async function phData27(id){if(PHC.has(id))return PHC.get(id);const o=await PHDB.get(id);const d=o?o.data:'';PHC.set(id,d);return d}
-async function fillPh27(){for(const im of document.querySelectorAll('img[data-ph27]')){const d=await phData27(im.dataset.ph27);if(d)im.src=d}}
-let phRoom27=null;
-function phPick27(mode){phRoom27=R.rid;if(window.Photo&&Photo.pick){Photo.pick(mode);return}const i=document.getElementById('ph27in');i.value='';if(mode==='camera')i.setAttribute('capture','environment');else i.removeAttribute('capture');i.click()}
-function shrink27(dataUrl,max=1600){return new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.84))};im.onerror=()=>res(null);im.src=dataUrl})}
-async function phAdd27(dataUrl){const p=P(),r=p&&p.rooms.find(x=>x.id===phRoom27);if(!r||!dataUrl)return;const d=await shrink27(dataUrl);if(!d){toast('Не удалось прочитать фото');return}const id=uid();await PHDB.put({id,data:d});PHC.set(id,d);(r.photos=r.photos||[]).push({id,wall:UI.phWall||null,ts:Date.now()});save();render();toast('Фото добавлено'+(UI.phWall?' к стене '+UI.phWall:''))}
-window.onNativePhoto=d=>phAdd27(d);
+const PHDB={
+  db:null,
+  async open(){
+    if(!this.db)this.db=new Promise((resolve,reject)=>{
+      const request=indexedDB.open('zamer-photos',1);
+      request.onupgradeneeded=()=>request.result.createObjectStore('ph',{keyPath:'id'});
+      request.onsuccess=()=>{
+        const db=request.result;
+        db.onversionchange=()=>{db.close();this.db=null};
+        db.onclose=()=>{this.db=null};
+        resolve(db);
+      };
+      request.onerror=()=>reject(request.error);
+    }).catch(error=>{this.db=null;throw error});
+    return this.db;
+  },
+  async putAll(records){
+    const db=await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction('ph','readwrite');
+      tx.oncomplete=()=>resolve();
+      tx.onabort=()=>reject(tx.error||Error('Запись фотографий прервана'));
+      try{
+        const store=tx.objectStore('ph');
+        for(const record of records)store.add(record);
+      }catch(error){tx.abort();reject(error)}
+    });
+  },
+  async get(id){
+    const db=await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction('ph');
+      const request=tx.objectStore('ph').get(id);
+      tx.oncomplete=()=>resolve(request.result||null);
+      tx.onabort=()=>reject(tx.error||Error('Чтение фотографии прервано'));
+    });
+  },
+  async removeAll(ids){
+    const db=await this.open();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction('ph','readwrite');
+      const store=tx.objectStore('ph');
+      tx.oncomplete=()=>resolve();
+      tx.onabort=()=>reject(tx.error||Error('Удаление фотографий прервано'));
+      for(const id of ids)store.delete(id);
+    });
+  }
+};
+async function phData27(id){
+  try{return (await PHDB.get(id))?.data||''}
+  catch(error){storageStatus(error);return ''}
+}
+async function fillPh27(){
+  for(const im of document.querySelectorAll('img[data-ph27]')){
+    const data=await phData27(im.dataset.ph27);
+    if(data)im.src=data;
+  }
+}
+let phTarget27=null;
+const pendingPhotoWrites=new Map();
+function phPick27(mode){
+  const project=P(),room=RM();
+  if(!project||!room)return;
+  phTarget27={project,room,wallObject:room.walls[UI.phWall-1]};
+  if(window.Photo&&Photo.pick){Photo.pick(mode);return}
+  const input=document.getElementById('ph27in');
+  input.value='';
+  if(mode==='camera')input.setAttribute('capture','environment');
+  else input.removeAttribute('capture');
+  input.click();
+}
+function shrink27(file,max=1600){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),image=new Image();
+    image.onload=()=>{
+      try{
+        const scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));
+        canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+        const context=canvas.getContext('2d');
+        context.fillStyle='#fff';
+        context.fillRect(0,0,canvas.width,canvas.height);
+        context.drawImage(image,0,0,canvas.width,canvas.height);
+        const preview=canvas.toDataURL('image/jpeg',.84);
+        if(!preview.startsWith('data:image/jpeg;base64,'))throw Error('Не удалось создать JPEG');
+        resolve(preview);
+      }catch(error){reject(error)}
+      finally{URL.revokeObjectURL(url)}
+    };
+    image.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Формат фото не читается на этом устройстве'))};
+    image.src=url;
+  });
+}
+async function phAdd27(source){
+  const target=phTarget27;
+  phTarget27=null;
+  if(!target||!source)return;
+  const {project,room,wallObject}=target;
+  pendingPhotoWrites.set(project,(pendingPhotoWrites.get(project)||0)+1);
+  try{
+    const original=typeof source==='string'?await (await fetch(source)).blob():source;
+    if(!original.size)throw Error('Пустая фотография');
+    let data;
+    try{data=await shrink27(original)}
+    catch(error){
+      // Keep originals that this browser cannot decode (for example HEIC).
+      console.warn(error);
+    }
+    const id=uid()+uid();
+    await PHDB.putAll([{id,original,data,name:source.name||'',projectId:project.id,roomId:room.id}]);
+    if(!DB.projects.includes(project)||!project.rooms.includes(room)){
+      await PHDB.removeAll([id]);
+      throw Error('Помещение удалено');
+    }
+    const wall=room.walls.indexOf(wallObject)+1;
+    const photo={id,wall:wall||null,ts:Date.now()};
+    (room.photos=room.photos||[]).push(photo);
+    if(!save()){
+      room.photos.pop();
+      if(!NATIVE)await PHDB.removeAll([id]).catch(console.warn);
+      return;
+    }
+    render();
+    toast(data?'Фото добавлено':'Оригинал сохранён. Просмотр этого формата недоступен');
+  }catch(error){storageStatus(error)}
+  finally{
+    const left=pendingPhotoWrites.get(project)-1;
+    if(left)pendingPhotoWrites.set(project,left);else pendingPhotoWrites.delete(project);
+  }
+}
+window.onNativePhoto=phAdd27;
 function photosCard27(r){const ph=r.photos||[];return`<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📷 Фото помещения (${ph.length})</h3></div>
  <p class="small muted" style="margin:6px 0">Снимите каждую стену — фото привяжется к стене и появится на ней в 3D.</p>
  <div class="chips"><span class="small muted" style="align-self:center">Стена:</span><button class="chip" data-a="phwall" data-i="" aria-pressed="${!UI.phWall}">общее</button>${r.walls.map((w,i)=>`<button class="chip" data-a="phwall" data-i="${i+1}" aria-pressed="${UI.phWall===i+1}">${i+1}</button>`).join('')}</div>
  <div class="row" style="margin-top:8px"><button class="btn" data-a="phcam">📷 Снять</button><button class="btn sec" data-a="phgal">Из галереи</button></div>
  ${ph.length?`<div class="ph27">${ph.map((x,i)=>`<figure><img data-ph27="${x.id}" alt="Фото ${i+1}" data-a="phopen" data-i="${i}"><figcaption>${x.wall?'стена '+x.wall:'общее'}</figcaption></figure>`).join('')}</div>`:''}</div>`}
 async function phOpen27(i){const r=RM(),x=(r.photos||[])[i];if(!x)return;const d=await phData27(x.id);const m=document.createElement('div');m.className='modal27';
- m.innerHTML=`<div class="box"><img src="${d}" alt="" style="width:100%;border-radius:10px;display:block"><div class="small muted" style="margin:8px 0 4px">Привязать к стене</div><div class="chips"><button class="chip" data-w="" aria-pressed="${!x.wall}">общее</button>${r.walls.map((w,j)=>`<button class="chip" data-w="${j+1}" aria-pressed="${x.wall===j+1}">${j+1}</button>`).join('')}</div><div class="row" style="margin-top:10px"><button class="btn ghost danger" data-x="del">Удалить фото</button><span class="grow"></span><button class="btn" data-x="ok">Готово</button></div></div>`;
- m.onclick=async e=>{const b=e.target.closest('[data-w],[data-x]');if(e.target===m){m.remove();return}if(!b)return;if(b.dataset.w!=null){x.wall=b.dataset.w?+b.dataset.w:null;save();m.querySelectorAll('[data-w]').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.w===b.dataset.w)));return}
-  if(b.dataset.x==='del'){if(!confirm('Удалить фото?'))return;r.photos.splice(i,1);PHDB.del(x.id);save()}m.remove();render()};document.body.appendChild(m)}
+ m.innerHTML=`<div class="box">${d?`<img src="${d}" alt="" style="width:100%;border-radius:10px;display:block">`:'<p>Предпросмотр недоступен</p>'}<div class="small muted" style="margin:8px 0 4px">Привязать к стене</div><div class="chips"><button class="chip" data-w="" aria-pressed="${!x.wall}">общее</button>${r.walls.map((w,j)=>`<button class="chip" data-w="${j+1}" aria-pressed="${x.wall===j+1}">${j+1}</button>`).join('')}</div><div class="row" style="margin-top:10px"><button class="btn ghost danger" data-x="del">Удалить фото</button><span class="grow"></span><button class="btn" data-x="ok">Готово</button></div></div>`;
+ m.onclick=async e=>{const b=e.target.closest('[data-w],[data-x]');if(e.target===m){m.remove();return}if(!b)return;if(b.dataset.w!=null){const previous=x.wall;x.wall=b.dataset.w?+b.dataset.w:null;if(!save()){x.wall=previous;return}m.querySelectorAll('[data-w]').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.w===b.dataset.w)));return}
+  if(b.dataset.x==='del'){
+    if(!confirm('Удалить фото?'))return;
+    const index=r.photos.indexOf(x);
+    if(index<0)return;
+    r.photos.splice(index,1);
+    if(!save()){r.photos.splice(index,0,x);return}
+    const referenced=DB.projects.some(project=>project.rooms.some(room=>room.photos?.some(photo=>photo.id===x.id)));
+    if(!NATIVE&&!referenced)PHDB.removeAll([x.id]).catch(storageStatus);
+  }
+  m.remove();render()};document.body.appendChild(m)}
 
 /* ---------- room screen: one clear card for everything on the walls ---------- */
 function wallItemsCard27(r){const items=wallItems27(r),c=geo(r).closed;
@@ -1833,6 +2126,7 @@ vProject=function(){const p=P();if(!p)return oldVProject27();const ok=measured(p
  h=h.replace(/<div class="tabs">[\s\S]*?<\/div>/,tabs);
  if(my){/* replace the «Клиент» body with ours */const start=h.indexOf(tabs)+tabs.length,f=h.lastIndexOf('<div class="foot">');const body=R.tab==='draw'?vDraw27(p):v3d27(p);h=h.slice(0,start)+body+(f>=0?h.slice(f):'')}
  if(R.tab==='3d')setTimeout(()=>mount3d27(p),0);
+ if(R.tab==='info')h+='<div class="card"><button class="btn" data-a="projectZip">Экспорт проекта ZIP</button></div>';
  return h};
 
 /* ============ actions ============ */
@@ -1858,7 +2152,6 @@ const oldChange27=handleUpgradeChange23;
 handleUpgradeChange23=function(event){const el=event.target;
  if(el.dataset.pl){const v=el.value.trim();UI.pl[el.dataset.pl]=v===''?null:num(v);const nx=plNext27(UI.pl);if(nx&&UI.pl[nx]==null)UI.pl.act=nx;const box=document.querySelector('.pl-prev');if(box)box.innerHTML=plPreview27(RM(),UI.pl);return true}
  if(el.dataset.d5){const p=P(),sc=p.sched=p.sched||{};const k=el.dataset.d5;if(k==='day')return true;if(k==='start')sc.start=el.value;else if(k==='rate')sc.rate=num(el.value)||25000;else if(k.startsWith('days.')){sc.days=sc.days||{};sc.days[k.slice(5)]=Math.max(1,Math.round(num(el.value)))}save();render();return true}
- if(el.id==='ph27in'){const f=el.files&&el.files[0];if(f){const fr=new FileReader();fr.onload=()=>phAdd27(fr.result);fr.readAsDataURL(f)}return true}
  return oldChange27(event)};
 document.addEventListener('input',e=>{const el=e.target;if(el.dataset.d5!=='day')return;const p=P();if(!p)return;UI.d5day=num(el.value);const plan=plan5d27(p),d=UI.d5day;const lab=document.getElementById('d5lab');if(lab)lab.textContent=d+' из '+plan.total+' · '+addDays27(plan.start,d);const sp=document.getElementById('d5spent');if(sp)sp.textContent=rub(spent27(plan,d));
  const g=document.getElementById('d5g');if(g)g.innerHTML=gantt27(plan,d);const s=document.getElementById('d5s');if(s)s.innerHTML=scurve27(plan,d);if(V3&&!UI.v3fin)V3.redraw()});
@@ -2223,7 +2516,7 @@ validateBackup=function(data){oldValidate28(data);for(const p of data.projects||
  if(r.hpts!=null&&(typeof r.hpts!=='object'||Array.isArray(r.hpts)||Object.values(r.hpts).some(v=>!(typeof v==='number'&&v>=0&&v<100))))throw Error('Повреждены высоты потолка');
  for(const o of r.ops||[]){if(o.hinge!=null&&!['a','b'].includes(o.hinge))throw Error('Повреждена дверь');if(o.swing!=null&&!['in','out'].includes(o.swing))throw Error('Повреждена дверь')}}};
 
-function sha256js(ascii){/* fallback for non-secure contexts (file:// on old WebViews) */const r=(v,a)=>(v>>>a)|(v<<(32-a)),mp=Math.pow,maxWord=mp(2,32);let res='',words=[],bytes=unescape(encodeURIComponent(ascii)),bl=bytes.length*8,hash=[],k=[],pc=0,ic={};
+function sha256js(ascii,binary=false){/* fallback for non-secure contexts (file:// on old WebViews) */const r=(v,a)=>(v>>>a)|(v<<(32-a)),mp=Math.pow,maxWord=mp(2,32);let res='',words=[],bytes=binary?ascii:unescape(encodeURIComponent(ascii)),bl=bytes.length*8,hash=[],k=[],pc=0,ic={};
  for(let c=2;pc<64;c++){if(!ic[c]){for(let i=0;i<313;i+=c)ic[i]=c;hash[pc]=(mp(c,.5)*maxWord)|0;k[pc++]=(mp(c,1/3)*maxWord)|0}}
  bytes+='\x80';while(bytes.length%64-56)bytes+='\x00';for(let i=0;i<bytes.length;i++){const j=bytes.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=((bl/maxWord)|0);words[words.length]=bl;
  hash=hash.slice(0,8);for(let j=0;j<words.length;){const w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];const t1=hash[7]+(r(e,6)^r(e,11)^r(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(r(w15,7)^r(w15,18)^(w15>>>3))+w[i-7]+(r(w2,17)^r(w2,19)^(w2>>>10)))|0);const t2=(r(a,2)^r(a,13)^r(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}for(let i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0}
@@ -2242,9 +2535,42 @@ function gate28(){let ok=(function(){try{return sessionStorage.getItem('sotka-ga
 window.__test={items28,pos28,set28,val28,add28,lr28,hApply28,hFields28,peSVG28,itemsSVG28,solve28,nearWalls28,fields28,obj28,offFromLeft28,hingeAB28,hingeSide28,blkDoorSide28,VIEWS28,acsOf,UI,R,allSheets27,plan5d27,wallItems27,toStart27,corners27,leftIsStart27,plOpen27,plSave27,radsOf,DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},fenceCalc,fenceCSV,geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
 
 gate28();
+if(dbReadError)storageStatus(dbReadError);
 </script>
 <input type="file" id="ph27in" accept="image/*" hidden>
-<script>if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(()=>{})</script>
+<script>
+document.getElementById('ph27in').addEventListener('change',event=>{
+  const input=event.currentTarget,file=input.files[0];
+  input.value='';
+  if(file)phAdd27(file);
+});
+</script>
+<script>
+if('serviceWorker' in navigator && window.isSecureContext && /^https?:$/.test(location.protocol)){
+  function offlineError(){
+    let status=document.getElementById('offline-error');
+    if(!status){
+      status=document.createElement('p');
+      status.id='offline-error';
+      status.className='card danger';
+      status.setAttribute('role','alert');
+      document.body.prepend(status);
+    }
+    status.textContent='Не удалось подготовить эту версию для работы без сети. Откройте страницу повторно при наличии связи.';
+  }
+  navigator.serviceWorker.register('sw.js',{scope:'./'}).then(reg=>{
+    const observe=()=>{
+      const worker=reg.installing;
+      if(worker)worker.addEventListener('statechange',()=>{
+        if(worker.state==='redundant')offlineError();
+        if(worker.state==='installed')document.getElementById('offline-error')?.remove();
+      });
+    };
+    observe();
+    reg.addEventListener('updatefound',observe);
+  }).catch(offlineError);
+}
+</script>
 <script src="/sotka/hub.js" defer></script>
 <script>document.addEventListener('sotka-unlock',function(){try{render()}catch(e){}});</script>
 </body>

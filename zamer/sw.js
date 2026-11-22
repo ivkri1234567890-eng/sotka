@@ -1,5 +1,38 @@
-const C='zamer-v28',F=['./','index.html','three.min.js','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F)));self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('zamer-')&&x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
-self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.pathname.includes('/zamer/ios/'))return;
- e.respondWith(fetch(e.request).then(r=>{if(r.ok){const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp))}return r}).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match('index.html'))))});
+const scope = self.registration.scope;
+const cachePrefix = 'zamer-media-export:' + scope + ':';
+const cacheName = cachePrefix + '2';
+const shell = [
+  './', 'index.html', 'three.min.js', 'jszip.min.js', 'media-zip.js',
+  'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
+  '../gate.js', '../hub.js'
+];
+const shellUrls = new Set(shell.map(path => new URL(path, scope).href));
+
+self.addEventListener('install', event => {
+  // Keep the active release until all files are available and its clients close.
+  const requests = [...shellUrls].map(url => new Request(url, {cache: 'reload'}));
+  event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(requests)));
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const canonical = new URL(scope).pathname === '/sotka/zamer/';
+    const old = (await caches.keys()).filter(key =>
+      (key.startsWith(cachePrefix) && key !== cacheName) ||
+      (canonical && (key === 'zamer-v28' || key === 'zamer-media-export-v1')));
+    await Promise.all(old.map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  url.search = '';
+  if (!shellUrls.has(url.href)) return;
+  event.respondWith(caches.open(cacheName).then(async cache => {
+    const cached = await cache.match(url.href);
+    return cached || fetch(request);
+  }));
+});
