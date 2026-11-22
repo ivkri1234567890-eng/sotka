@@ -146,6 +146,12 @@ def run(page, url):
         assert zipped.read(new_photo['original']) == original
         assert len(manifest['files']['project.json']['sha256']) == 64
         entries = {name: zipped.read(name) for name in zipped.namelist()}
+        assert entries['documents/estimate.pdf'].startswith(b'%PDF')
+        assert entries['documents/drawings.pdf'].startswith(b'%PDF')
+        assert b'ISO-10303-21' in entries['documents/designer/model.ifc']
+        assert b'ENTITIES' in entries['documents/designer/plan.dxf']
+        assert json.loads(entries['documents/designer/project.json'])['projects'][0]['id'] == 'v28'
+        assert 'documents/rooms/room-1.csv' in entries
         for name, info in manifest['files'].items():
             assert hashlib.sha256(entries[name]).hexdigest() == info['sha256']
     field = b'"name": "original.png"'

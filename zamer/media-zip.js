@@ -18,7 +18,7 @@ const ZamerZip = (() => {
     return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
   };
 
-  async function encode(project, settings, readPhoto) {
+  async function encode(project, settings, readPhoto, documents = []) {
     const zip = new JSZip();
     const manifest = {format: 'zamer-project', version: 1, files: {}, media: []};
     let size = 0;
@@ -57,6 +57,13 @@ const ZamerZip = (() => {
         }
         manifest.media.push(entry);
       }
+    }
+    manifest.documents = [];
+    for (const document of documents) {
+      if (!/^documents\/[A-Za-z0-9_/-]+\.[a-z0-9]+$/.test(document.path) ||
+          document.path.includes('..') || manifest.files[document.path]) throw Error('Некорректный путь документа');
+      await add(document.path, document.bytes);
+      manifest.documents.push(document.path);
     }
     const metadata = encoder.encode(JSON.stringify(manifest, null, 2));
     if (metadata.length > manifestLimit || size + metadata.length > maxBytes) {
@@ -152,6 +159,11 @@ const ZamerZip = (() => {
       const key = JSON.stringify([entry.room, entry.photo]);
       if (records.has(key)) throw Error('Повторяющееся фото в ZIP');
       records.set(key, {data, original, name: typeof entry.name === 'string' ? entry.name : ''});
+    }
+    if (manifest.documents !== undefined && !Array.isArray(manifest.documents)) throw Error('Повреждён список документов');
+    for (const path of manifest.documents || []) {
+      if (typeof path !== 'string' || !/^documents\/[A-Za-z0-9_/-]+\.[a-z0-9]+$/.test(path) || path.includes('..')) throw Error('Некорректный путь документа');
+      await verify(path);
     }
     if (used.size !== entries.length) throw Error('В ZIP есть лишние файлы');
     return {backup, records};

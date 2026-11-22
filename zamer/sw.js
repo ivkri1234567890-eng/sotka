@@ -1,6 +1,6 @@
 const scope = self.registration.scope;
 const cachePrefix = 'zamer-media-export:' + scope + ':';
-const cacheName = cachePrefix + '2';
+const cacheName = cachePrefix + '3';
 const shell = [
   './', 'index.html', 'three.min.js', 'jszip.min.js', 'media-zip.js',
   'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',

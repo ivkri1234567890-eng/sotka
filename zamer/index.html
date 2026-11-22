@@ -467,10 +467,34 @@ async function exportProjectZip(project,button){
     if(pendingPhotoWrites.has(project))throw Error('Дождитесь окончания сохранения фотографии');
     const snapshot=JSON.parse(JSON.stringify({project,settings:DB.settings}));
     validateBackup({projects:[snapshot.project],settings:snapshot.settings});
-    const bytes=await ZamerZip.encode(snapshot.project,snapshot.settings,id=>PHDB.get(id));
+    toast('Собираю документы и фотографии проекта…');
+    const documents=await projectDocuments(snapshot.project);
+    const bytes=await ZamerZip.encode(snapshot.project,snapshot.settings,id=>PHDB.get(id),documents);
     outFile(sanitize(snapshot.project.name||'Проект').slice(0,86)+'.zip','application/zip',bytes,'save');
   }catch(error){toast('ZIP не создан: '+error.message)}
   finally{button.disabled=false}
+}
+async function projectDocuments(project){
+  const documents=[];
+  const add=(path,bytes)=>documents.push({path:'documents/'+path,bytes});
+  add('estimate.pdf',makePdf(buildPdfPages(project)));
+  add('designer/project.json',studioJSON(project));
+  add('designer/plan.dxf',planDXF(project));
+  add('designer/model.ifc',planIFC(project));
+  add('foreman.csv',utf8(foremanCSV(project)));
+  const sheets=allSheets27(project),canvases=[];
+  for(const [index,sheet] of sheets.entries()){
+    add('drawings/sheet-'+(index+1)+'.svg',utf8(sheet.svg));
+    canvases.push(await sheetCanvas27(sheet.svg));
+  }
+  add('drawings.pdf',pdfLandscape27(canvases));
+  for(const canvas of canvases){canvas.width=1;canvas.height=1}
+  for(const [index,room] of project.rooms.entries()){
+    add('rooms/room-'+(index+1)+'.dxf',elevDXF(project,room));
+    add('rooms/room-'+(index+1)+'.csv',utf8(furnCSV(project,room)));
+  }
+  if(project.fence)add('fence.csv',utf8(fenceCSV(project)));
+  return documents;
 }
 async function importProjectZip(file){
   const {backup,records}=await ZamerZip.decode(file);
