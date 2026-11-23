@@ -44,6 +44,16 @@ h3{font-size:15px;margin:0 0 8px}
 .data-actions [data-a="wipe"]{margin-top:8px}
 .grow{flex:1}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eng-dialog{color-scheme:light dark;background:var(--surface);color:var(--ink);border-color:var(--line);font-family:var(--font)}
+.eng-dialog h3{margin:0 0 12px}
+.eng-dialog h3[autofocus]:focus{outline:none}
+.eng-dialog select{appearance:none;-webkit-appearance:none;color:var(--ink);padding-right:26px;background:linear-gradient(45deg,transparent 50%,var(--ink) 50%) right 14px center/5px 5px no-repeat,linear-gradient(135deg,var(--ink) 50%,transparent 50%) right 9px center/5px 5px no-repeat,var(--bg)}
+.eng-dialog .grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.eng-dialog details{border-top:1px solid var(--line);margin-top:4px}
+.eng-dialog summary{padding:10px 0;cursor:pointer}
+.eng-dialog .eng-actions{margin-top:10px}
+.pl-grid.eng-presets{grid-template-columns:repeat(2,minmax(0,1fr))}
+.eng-presets .pl-btn{justify-content:center;min-height:46px;font:600 15px var(--font)}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 input,select,textarea{font:16px var(--font);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;width:100%}

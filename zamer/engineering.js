@@ -15,6 +15,21 @@ const Eng = (() => {
   const accuracy=['Требует проверки','Измерено','Приблизительно','Расчётное'];
   const surfaces=['Стена','Пол','Потолок','Фасад','Фундамент','Участок','Без привязки'];
   const fields={offset:'От угла',height:'Высота от пола',x:'X от начала комнаты',y:'Y от начала комнаты',width:'Ширина',depth:'Глубина',sizeH:'Высота элемента',diameter:'Диаметр',projection:'Выступ'};
+  const pipeButtons=[
+    {group:'water',type:'ХВС',title:'Холодная вода'},
+    {group:'water',type:'ГВС',title:'Горячая вода'},
+    {group:'waste',type:'Вывод',title:'Канализация'},
+    {group:'heat',type:'Труба',title:'Труба отопления'}
+  ];
+  const pipeTypes={
+    water:['ХВС','ГВС','Водорозетка','Стояк','Ввод','Подключение техники'],
+    waste:['Вывод','Стояк','Наружная сеть'], heat:['Труба'], gas:['Труба','Ввод','Вывод'],
+    air:['Воздуховод','Дренаж','Дымоход']
+  };
+  const isPipe=e=>pipeTypes[e.group]?.includes(e.type);
+  const typeTitle=e=>pipeButtons.find(b=>b.group===e.group&&b.type===e.type)?.title||e.type;
+  const millimetres=v=>Number((v*1000).toFixed(6));
+  const formatMm=v=>String(millimetres(v)).replace('.',',');
   const id=()=>uid()+uid();
   const items=p=>p.engineering||[];
   const opt=(v,t,cur)=>'<option value="'+esc(v)+'" '+(String(cur)===String(v)?'selected':'')+'>'+esc(t)+'</option>';
@@ -78,15 +93,23 @@ const Eng = (() => {
   const inRoom=(p,room)=>items(p).filter(e=>e.room===room.id);
   function roomStep(p,room,wall){
     const selected=room.walls[wall-1]?wall:0;
-    const hint=selected?'Выбрана стена '+selected+'.':'Коснитесь стены на плане, чтобы привязать к ней новый элемент.';
+    const target='data-eng="new" data-room="'+esc(room.id)+'" data-wall="'+selected+'"';
+    const hint=selected?'Выбрана стена '+selected+'.':'Выберите стену на плане и нажмите на нужную трубу.';
     return '<section class="card"><h3>Инженерные коммуникации</h3><p class="small muted">'+hint+'</p>'+
-      '<button class="btn wide" data-eng="new" data-room="'+esc(room.id)+'" data-wall="'+selected+'">Добавить элемент</button>'+
+      '<div class="pl-grid eng-presets">'+pipeButtons.map((b,i)=>'<button class="pl-btn" '+target+' data-pipe="'+i+'">'+b.title+'</button>').join('')+'</div>'+
+      '<button class="chip" '+target+'>Другая коммуникация</button>'+
       cards(p,inRoom(p,room))+'</section>';
   }
   function cards(p,entries){
     return entries.map(e=>{
       const a=anchor(p,e);
-      return '<div class="card"><b>'+esc(label(e))+'</b><p>'+esc([roomOf(p,e)?.name,e.zone,a?.i!=null?'стена '+(a.i+1):a?e.surface:'без определённой привязки',e.accuracy].filter(Boolean).join(' · '))+'</p>'+['edit','copy','photo','camera','delete'].map((k,i)=>'<button class="btn ghost" data-id="'+esc(e.id)+'" data-eng="'+k+'">'+['Изменить','Копировать','Фото из галереи','Снять фото','Удалить'][i]+'</button>').join('')+ thumbnails(p,e)+'</div>';
+      const dimensions=[];
+      if(isPipe(e)){
+        if(a?.i!=null)dimensions.push('от угла '+(e.end?(a.i+1)%a.r.walls.length+1:a.i+1)+' — '+formatMm(e.offset)+' мм');
+        if(e.height!=null)dimensions.push('от пола '+formatMm(e.height)+' мм');
+        if(e.diameter!=null)dimensions.push('Ø '+formatMm(e.diameter)+' мм');
+      }
+      return '<div class="card"><b>'+esc(e.name||typeTitle(e))+'</b><p>'+esc([roomOf(p,e)?.name,e.zone,a?.i!=null?'стена '+(a.i+1):a?e.surface:'без определённой привязки',e.accuracy].filter(Boolean).join(' · '))+'</p>'+(dimensions.length?'<p class="small">'+esc(dimensions.join(' · '))+'</p>':'')+['edit','copy','photo','camera','delete'].map((k,i)=>'<button class="btn ghost" data-id="'+esc(e.id)+'" data-eng="'+k+'">'+['Изменить','Копировать','Фото из галереи','Снять фото','Удалить'][i]+'</button>').join('')+ thumbnails(p,e)+'</div>';
     }).join('');
   }
   function thumbnails(p,e){
@@ -113,43 +136,88 @@ const Eng = (() => {
       };document.body.append(d);d.showModal();
     }catch(error){storageStatus(error)}
   });
-  function editor(p,source){
+  function editor(p,source,{chooseType=false,chooseRoom=false}={}){
     const e={id:id(),group:'water',type:'ХВС',surface:'Стена',room:p.rooms[0]?.id||'',status:statuses[0],accuracy:accuracy[0],base:'Чистовой',visible:true,...source};
-    dialog=document.createElement('dialog');dialog.className='eng-dialog';
-    dialog.innerHTML='<form><h3>Инженерный элемент</h3><div class="eng-fields"></div><div class="row"><button class="btn" type="submit">Сохранить</button><button class="btn sec" type="button" data-close>Отмена</button></div></form>';
-    document.body.append(dialog);const d=dialog,form=d.querySelector('form');
+    if(e.wallIndex==null){
+      const index=roomOf(p,e)?.walls.findIndex(w=>w.engKey&&w.engKey===e.wallKey)??-1;
+      e.wallIndex=index<0?'':index;
+    }
+    const draft={};
+    const d=document.createElement('dialog');
+    dialog=d;d.className='eng-dialog';d.setAttribute('aria-labelledby','eng-title');
+    d.innerHTML='<form><h3 id="eng-title" tabindex="-1" autofocus></h3><div class="eng-fields"></div><div class="row eng-actions"><button class="btn" type="submit">Сохранить</button><button class="btn sec" type="button" data-close>Отмена</button></div></form>';
+    document.body.append(d);const form=d.querySelector('form');
     function read(){
       for(const [k,v] of new FormData(form)){
-        if(k in fields||k==='slope')e[k]=v===''?null:Number(String(v).replace(',','.'))/(k==='slope'?1:1000);
+        if(k in fields||k==='slope')draft[k]=v;
+        else if(k==='ref')e.end=v==='end';
         else e[k]=v;
       }
-      if(form.elements.visible)e.visible=form.elements.visible.checked;
-      if(form.elements.ref)e.end=form.elements.ref.value==='end';
+      e.visible=form.elements.visible.checked;
     }
+    const originalNumber=k=>e[k]==null?'':String(k==='slope'?e[k]:millimetres(e[k]));
+    const parseNumber=v=>v.trim()===''?null:Number(v.trim().replace(',','.'));
     function draw(){
       const r=roomOf(p,e);
+      const expanded=form.querySelector('details')?.open;
       const input=(k,t,v='')=>'<label class="f">'+t+'<input maxlength="600" name="'+k+'" value="'+esc(v??'')+'"></label>';
+      const size=(k,t)=>'<label class="f">'+esc(t||fields[k])+(k==='slope'?', %':', мм')+'<input type="text" name="'+k+'" inputmode="decimal" value="'+esc(draft[k]??originalNumber(k))+'"></label>';
       const priority=p.kind==='house'?['Ввод','Скважина','Насос','Септик','Наружная сеть','Котёл','Котельная']:['ХВС','ГВС','Водорозетка','Вывод','Розетка','Радиатор'];
       const types=groups[e.group][1].split(', ').sort((a,b)=>Number(priority.includes(b))-Number(priority.includes(a)));
+      if(!types.includes(e.type))types.push(e.type);
       const sel=(k,t,v)=>'<label class="f">'+t+'<select name="'+k+'">'+v+'</select></label>';
-      const nums=[...(e.surface==='Стена'?['offset']:['x','y']),'height','width','sizeH','depth','projection',...(['water','waste','heat','gas','air'].includes(e.group)?['diameter']:[])];
-      form.querySelector('.eng-fields').innerHTML=sel('group','Категория',Object.entries(groups).map(([k,v])=>opt(k,v[0],e.group)).join(''))+sel('type','Тип',opts(types,e.type))+input('name','Название',e.name)+(e.group==='gas'?'<p>Фиксация существующего ввода и оборудования по замеру.</p>':'')+
-        sel('room','Помещение',opt('','Внешняя зона / не назначено',e.room)+p.rooms.map(r=>opt(r.id,r.name,e.room)).join(''))+input('zone',p.kind==='house'?'Зона дома или участка':'Зона',e.zone)+sel('floor','Этаж зоны',opt('',e.room?'По помещению':'Первый этаж / общий уровень',e.floor)+(p.floors||[]).map(f=>opt(f.id,f.name,e.floor)).join(''))+
-        sel('surface','Поверхность',opts(surfaces,e.surface))+(e.surface==='Стена'?sel('wallIndex','Стена',opt('','Не определена',e.wallIndex)+(r?.walls||[]).map((w,i)=>opt(i,'Стена '+(i+1),e.wallIndex??(w.engKey&&w.engKey===e.wallKey?i:''))).join(''))+sel('ref','Опорный угол',opt('start','Начало стены',e.end?'end':'start')+opt('end','Конец стены',e.end?'end':'start')):'')+
-        nums.map(k=>'<label class="f">'+(!e.room&&['x','y'].includes(k)?k.toUpperCase()+' от начала общего плана':fields[k])+', мм<input name="'+k+'" inputmode="decimal" value="'+(e[k]==null?'':Math.round(e[k]*10000)/10)+'"></label>').join('')+
-        sel('base','Уровень отсчёта',opts(['Чистовой','Черновой'],e.base))+input('direction','Направление',e.direction)+(e.group==='waste'?input('slope','Измеренный уклон, %',e.slope):'')+sel('accuracy','Точность',opts(accuracy,e.accuracy))+sel('status','Состояние',opts(statuses,e.status))+input('comment','Комментарий',e.comment)+'<label class="eng-check"><input type="checkbox" name="visible" '+(e.visible?'checked':'')+'> Показывать на чертежах</label>';
+      const category=sel('group','Категория',Object.entries(groups).map(([k,v])=>opt(k,v[0],e.group)).join(''))+sel('type','Тип',opts(types,e.type));
+      const room=sel('room','Помещение',opt('','Внешняя зона / не назначено',e.room)+p.rooms.map(r=>opt(r.id,r.name,e.room)).join(''));
+      const wall=e.surface==='Стена', pipe=isPipe(e);
+      let position='';
+      if(wall){
+        const wi=Number(e.wallIndex),corners=e.wallIndex!==''&&r?.walls[wi]?corners27(r,wi):null;
+        const leftRef=corners&&leftIsStart27(r)?'start':'end',ref=e.end?'end':'start';
+        const options=corners?opt(leftRef,'Левый · '+corners.left,ref)+opt(leftRef==='start'?'end':'start','Правый · '+corners.right,ref):opt('start','Начало стены',ref)+opt('end','Конец стены',ref);
+        position='<div class="grid2">'+sel('wallIndex','Стена',opt('','Не выбрана',e.wallIndex)+(r?.walls||[]).map((w,i)=>opt(i,'Стена '+(i+1),e.wallIndex)).join(''))+
+          sel('ref','От какого угла',options)+'</div>'+size('offset',pipe?'От угла до центра трубы':'От угла до центра');
+      }else{
+        position=['x','y'].map(k=>size(k,e.room?fields[k]:k.toUpperCase()+' от начала общего плана')).join('');
+      }
+      const extraDiameter=!pipe&&(e.diameter!=null||['water','waste','heat','gas','air'].includes(e.group));
+      form.querySelector('h3').textContent=chooseType?'Инженерная коммуникация':(e.name||typeTitle(e));
+      form.querySelector('.eng-fields').innerHTML=(chooseType?category:'')+(chooseRoom?room:'')+position+
+        size('height',pipe?'От пола до центра трубы':'Высота от пола')+(pipe?size('diameter','Диаметр трубы'):'')+
+        '<details'+(expanded?' open':'')+'><summary>Дополнительно</summary><div class="eng-fields">'+
+        (chooseType?'':category)+input('name','Название',e.name)+(chooseRoom?'':room)+sel('surface','Поверхность',opts(surfaces,e.surface))+
+        input('zone',p.kind==='house'?'Зона дома или участка':'Зона',e.zone)+sel('floor','Этаж зоны',opt('',e.room?'По помещению':'Первый этаж / общий уровень',e.floor)+(p.floors||[]).map(f=>opt(f.id,f.name,e.floor)).join(''))+
+        ['width','sizeH','depth','projection'].map(k=>size(k)).join('')+(extraDiameter?size('diameter'):'')+
+        sel('base','Уровень отсчёта',opts(['Чистовой','Черновой'],e.base))+input('direction','Направление',e.direction)+(e.group==='waste'?size('slope','Измеренный уклон'):'')+
+        sel('accuracy','Точность',opts(accuracy,e.accuracy))+sel('status','Состояние',opts(statuses,e.status))+input('comment','Комментарий',e.comment)+'<label class="eng-check"><input type="checkbox" name="visible" '+(e.visible?'checked':'')+'> Показывать на чертежах</label></div></details>';
     }
-    form.onchange=ev=>{if(['group','room','surface'].includes(ev.target.name)){read();if(ev.target.name==='group')e.type=groups[e.group][1].split(', ')[0];if(ev.target.name==='room'){delete e.wallIndex;delete e.wallKey}draw()}};
+    form.onchange=ev=>{
+      const key=ev.target.name;
+      if(!['group','type','room','surface','wallIndex','ref'].includes(key))return;
+      read();
+      if(key==='group')e.type=groups[e.group][1].split(', ')[0];
+      if(key==='room'){e.wallIndex='';delete e.wallKey}
+      if(key==='ref'&&e.wallIndex!==''&&roomOf(p,e)){
+        const distance=parseNumber(draft.offset),length=millimetres(wlen(roomOf(p,e),Number(e.wallIndex)));
+        if(Number.isFinite(distance)&&distance>=0&&distance<=length)draft.offset=String(Number((length-distance).toFixed(6)));
+      }
+      draw();
+    };
     form.addEventListener('focusin',ev=>{measuring=Object.hasOwn(fields,ev.target.name)?ev.target:null});
     form.onsubmit=ev=>{
       ev.preventDefault();read();
-      if([...Object.keys(fields),'slope'].some(k=>e[k]!=null&&(!Number.isFinite(e[k])||Math.abs(e[k])>10000||(!['x','y','slope','height'].includes(k)&&e[k]<0)))){alert('Проверьте числовые поля');return}
+      const record={...e};
+      for(const [k,v] of Object.entries(draft)){
+        if(v===originalNumber(k))continue;
+        const n=parseNumber(v);
+        record[k]=n==null?null:n/(k==='slope'?1:1000);
+      }
+      if([...Object.keys(fields),'slope'].some(k=>record[k]!=null&&(!Number.isFinite(record[k])||Math.abs(record[k])>10000||(!['x','y','slope','height'].includes(k)&&record[k]<0)))){alert('Проверьте числовые поля');return}
       const r=roomOf(p,e),wall=e.wallIndex!==''&&e.wallIndex!=null?r?.walls[Number(e.wallIndex)]:null;
-      if(wall&&e.offset>wlen(r,Number(e.wallIndex))){alert('Расстояние превышает длину стены');return}
+      if(e.surface==='Стена'&&wall&&record.offset>wlen(r,Number(e.wallIndex))){alert('Расстояние превышает длину стены');return}
       const previousKey=wall?.engKey;
-      if(e.surface==='Стена'&&wall){wall.engKey=previousKey||id();e.wallKey=wall.engKey}else delete e.wallKey;
-      delete e.wallIndex;delete e.ref;e.date=e.date||new Date().toISOString();
-      if(commit(p,()=>{p.engineering=items(p).some(v=>v.id===e.id)?items(p).map(v=>v.id===e.id?e:v):items(p).concat(e)})){d.close();render()}else if(wall&&!previousKey)delete wall.engKey;
+      if(e.surface==='Стена'&&wall){wall.engKey=previousKey||id();record.wallKey=wall.engKey}else delete record.wallKey;
+      delete record.wallIndex;record.date=record.date||new Date().toISOString();
+      if(commit(p,()=>{p.engineering=items(p).some(v=>v.id===record.id)?items(p).map(v=>v.id===record.id?record:v):items(p).concat(record)})){d.close();render()}else if(wall&&!previousKey)delete wall.engKey;
     };
     d.onclose=()=>{measuring=null;dialog=null;d.remove()};d.querySelector('[data-close]').onclick=()=>d.close();draw();d.showModal();
   }
@@ -158,8 +226,11 @@ const Eng = (() => {
     const e=items(p).find(x=>x.id===b.dataset.id),action=b.dataset.eng;
     if(action==='new'){
       const room=p.rooms.find(r=>r.id===b.dataset.room);
-      const wall=Number(b.dataset.wall)-1;
-      editor(p,room?{room:room.id,wallIndex:room.walls[wall]?wall:''}:undefined);return;
+      const preset=pipeButtons[b.dataset.pipe];
+      const wall=Number(b.dataset.wall)||(room&&preset?defWall28(room,'socket'):0);
+      const source=room?{room:room.id,wallIndex:room.walls[wall-1]?wall-1:''}:{};
+      if(preset)Object.assign(source,{group:preset.group,type:preset.type,end:!leftIsStart27(room)});
+      editor(p,source,{chooseType:!preset,chooseRoom:!room});return;
     }
     if(!e)return;
     if(action==='edit'){editor(p,e);return}
@@ -191,5 +262,5 @@ const Eng = (() => {
     else toast('Выберите поле размера в миллиметрах');
     return true;
   }
-  return {groups,items,inRoom,anchor,outside,visible,label,tone,list,roomStep,editor,measure,validate};
+  return {groups,items,inRoom,anchor,outside,visible,label,tone,formatMm,list,roomStep,editor,measure,validate};
 })();

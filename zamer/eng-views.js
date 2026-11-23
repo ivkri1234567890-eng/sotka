@@ -19,7 +19,7 @@ function engElev(p,r,i,X,Y,k){
   while(occupied.some(q=>Math.abs(q[0]-labelX)<20&&Math.abs(q[1]-labelY)<3))labelY+=3;
   occupied.push([labelX,labelY]);
   const guide='<path d="M '+baseX+' '+y+' H '+x+' V '+baseY+'" fill="none" stroke="'+col+'" stroke-width=".15" stroke-dasharray="1 1"/>';
-  const text=(n+1)+' · '+Math.round(e.offset*1000)+' / '+Math.round(e.height*1000)+(e.diameter?' Ø'+Math.round(e.diameter*1000):'');
+  const text=(n+1)+' · '+Math.round(e.offset*1000)+' / '+Math.round(e.height*1000)+(e.diameter?' Ø'+Eng.formatMm(e.diameter):'');
   return guide+'<rect x="'+(x-w/2)+'" y="'+(y-h/2)+'" width="'+w+'" height="'+h+'" fill="none" stroke="'+Eng.tone(e)+'" stroke-width=".35"/><circle cx="'+x+'" cy="'+y+'" r="1.4" fill="'+Eng.tone(e)+'"/>'+tx27(labelX,labelY,text,{s:1.9,a:'start',c:col});
  }).join('');
 }
@@ -31,7 +31,7 @@ function engTable(p){
   data.slice(i,i+13).forEach((e,j)=>{
    const a=Eng.anchor(p,e),y=31+j*19;
    body+=tx27(18,y,(i+j+1)+'. '+Eng.label(e)+' · '+(a?.r?.name||e.zone||'без привязки')+' · '+e.status+' · '+e.accuracy,{s:3.6,a:'start'});
-   const dims=Object.entries({offset:'От угла',height:'Уровень',diameter:'Ø',width:'Ширина',sizeH:'Высота',depth:'Глубина',projection:'Выступ',x:'X',y:'Y'}).filter(([k])=>e[k]!=null).map(([k,v])=>v+' '+Math.round(e[k]*1000));
+   const dims=Object.entries({offset:'От угла',height:'Уровень',diameter:'Ø',width:'Ширина',sizeH:'Высота',depth:'Глубина',projection:'Выступ',x:'X',y:'Y'}).filter(([k])=>e[k]!=null).map(([k,v])=>v+' '+(k==='diameter'?Eng.formatMm(e[k]):Math.round(e[k]*1000)));
    body+=tx27(24,y+6,[a?.i!=null?'Стена '+(a.i+1)+(e.end?' от конца':' от начала'):e.surface,...dims,e.base].join(' · '),{s:2.8,a:'start'});
    body+=tx27(24,y+11,[Eng.groups[e.group][0],e.zone,e.slope!=null?'Уклон '+e.slope+'%':'',e.direction,e.comment].filter(Boolean).join(' · ').slice(0,160),{s:2.4,a:'start'});
   });
