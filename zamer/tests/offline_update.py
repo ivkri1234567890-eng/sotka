@@ -1,4 +1,4 @@
-"""Run alongside media_roundtrip.py. Pass the e90742f distribution ZIP as the only argument."""
+"""Run alongside media_roundtrip.py. Pass a 2.8 or 2.9 web distribution ZIP (sotka/ prefix) as the only argument."""
 import functools
 import http.server
 import os
@@ -49,12 +49,15 @@ def run(pw, server, root, profile):
         }""", project('2.7'))
         page.reload()
         page.wait_for_function('navigator.serviceWorker.controller')
+        old_cache = page.evaluate("async()=> (await caches.keys()).find(k=>k.startsWith('zamer'))")
+        assert old_cache
         old_project = page.evaluate('localStorage.getItem("zs:db")')
         old_photo = page.evaluate('phData27("legacy")')
         assert old_photo.startswith('data:image/jpeg;')
         source = Path(__file__).resolve().parents[1]
         for name in ('index.html', 'sw.js', 'media-zip.js', 'engineering.js', 'eng-views.js', 'drawing-dialog.js', 'drawing-project.js', 'drawing-reader.js', 'pdf-local.js', 'pdf-worker.js'):
             shutil.copyfile(source / name, root / 'zamer' / name)
+        shutil.copytree(source / 'ocr', root / 'zamer' / 'ocr', dirs_exist_ok=True)
         server.interrupt_install = True
         page.evaluate("""async () => {
           const reg = await navigator.serviceWorker.ready;
@@ -66,7 +69,7 @@ def run(pw, server, root, profile):
           await Promise.race([failed, new Promise((_, reject) =>
             setTimeout(() => reject(Error('No failed install observed')), 12000))]);
         }""")
-        assert page.evaluate('caches.has("zamer-media-export-v1")')
+        assert page.evaluate('key=>caches.has(key)',old_cache)
         assert page.evaluate('localStorage.getItem("zs:db")') == old_project
         server.interrupt_install = False
         page.evaluate("""async () => {
@@ -83,7 +86,7 @@ def run(pw, server, root, profile):
             setTimeout(() => reject(Error('No installed update observed')), 12000))]);
           if(!reg.waiting) throw Error('New release did not wait for old client');
         }""")
-        assert page.evaluate('caches.has("zamer-media-export-v1")')
+        assert page.evaluate('key=>caches.has(key)',old_cache)
         # Observe the specific waiting worker from a page outside its scope.
         # Opening another in-scope page immediately can keep the previous worker alive.
         (root / 'observer.html').write_text('<title>Update observer</title>', encoding='utf-8')
@@ -104,8 +107,8 @@ def run(pw, server, root, profile):
         page = context.new_page()
         page.goto(url)
         enter_app(page)
-        assert page.evaluate("typeof pendingPhotoWrites === 'object'")
-        assert not page.evaluate('caches.has("zamer-media-export-v1")')
+        assert page.evaluate("typeof DrawingProject.create === 'function'")
+        assert not page.evaluate('key=>caches.has(key)',old_cache)
         context.set_offline(True)
         page.reload()
         enter_app(page)

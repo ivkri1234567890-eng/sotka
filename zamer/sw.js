@@ -4,6 +4,7 @@ const cacheName = cachePrefix + '4.0-review1';
 const shell = [
   './', 'index.html', 'three.min.js', 'jszip.min.js', 'media-zip.js',
   'engineering.js', 'eng-views.js', 'drawing-reader.js', 'drawing-project.js', 'drawing-dialog.js', 'pdf-local.js', 'pdf-worker.js',
+  'ocr/tesseract.min.js', 'ocr/worker.min.js', 'ocr/tesseract-core-lstm.wasm.js', 'ocr/eng.traineddata.gz',
   'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
   '../gate.js', '../hub.js'
 ];

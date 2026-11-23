@@ -48,7 +48,7 @@ const DrawingProject=(()=>{
   if(!name.trim())throw Error('Введите название объекта');
   const p={id:uid()+uid(),name:name.trim(),kind,v:DB.settings.variant||'s',date:today(),ts:Date.now(),rooms:[],layout:{},client:''},floors=new Map();
   for(const d of drafts){const {room,position}=roomFrom(d);
-   if(kind==='house'){const title=d.floor?.trim();if(!title)throw Error('Укажите этаж для каждой комнаты дома');if(!floors.has(title))floors.set(title,{id:uid()+uid(),name:title});room.floor=floors.get(title).id}
+   if(kind==='house'){const title=d.floor?.trim();if(!title)throw Error('Укажите этаж для каждой комнаты дома');if(!floors.has(title))floors.set(title,{id:uid()+uid(),name:title});const floor=floors.get(title);if(d.level!=null){if(!Number.isFinite(d.level)||Math.abs(d.level)>1000||floor.level!=null&&Math.abs(floor.level-d.level)>.001)throw Error('Проверьте отметку пола для этажа «'+title+'»');floor.level=d.level}room.floor=floor.id}
    p.rooms.push(room);p.layout[room.id]=position;
   }
   if(kind==='house')p.floors=[...floors.values()];

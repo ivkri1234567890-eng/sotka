@@ -53,7 +53,7 @@ const DrawingReader=(()=>{
   for(const p of clean){p.pts=p.pts.map(map);ctx.beginPath();p.pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));if(p.closed)ctx.closePath();ctx.stroke()}
   ctx.font='13px sans-serif';ctx.fillStyle='#365873';for(const l of labels.slice(0,1500))if(l.pt.every(Number.isFinite))ctx.fillText(l.value.slice(0,90),...map(l.pt));
   const factors={1:.0254,2:.3048,4:.001,5:.01,6:1,7:1000,10:.9144,14:.1};
-  return {image,shapes:chain(clean),scale:factors[units]?factors[units]/s:null,texts:labels.map(x=>x.value),note:'Слои: '+[...new Set(clean.map(p=>p.layer))].slice(0,20).join(', ')+'. '+(factors[units]?'Единицы взяты из $INSUNITS.':'Единицы отсутствуют или неизвестны. Нужна калибровка.')+(unknown.size?' Пропущены: '+[...unknown].slice(0,20).join(', '):'')};
+  return {image,lines:clean.slice(0,6000),shapes:chain(clean),scale:factors[units]?factors[units]/s:null,labels:labels.filter(l=>l.pt.every(Number.isFinite)).map(l=>({value:l.value,pt:map(l.pt)})),texts:labels.map(x=>x.value),note:'Слои: '+[...new Set(clean.map(p=>p.layer))].slice(0,20).join(', ')+'. '+(factors[units]?'Единицы взяты из $INSUNITS.':'Единицы отсутствуют или неизвестны. Нужна калибровка.')+(unknown.size?' Пропущены: '+[...unknown].slice(0,20).join(', '):'')};
  }
  const multiply=(a,b)=>[a[0]*b[0]+a[2]*b[1],a[1]*b[0]+a[3]*b[1],a[0]*b[2]+a[2]*b[3],a[1]*b[2]+a[3]*b[3],a[0]*b[4]+a[2]*b[5]+a[4],a[1]*b[4]+a[3]*b[5]+a[5]];
  function vector(ops,viewport){
@@ -69,7 +69,7 @@ const DrawingReader=(()=>{
     else if(op===O.closePath)flush(true);else if([O.curveTo,O.curveTo2,O.curveTo3].includes(op)){j+=op===O.curveTo?6:4;curved=true;unknown=true}
    }}else if([O.stroke,O.fill,O.eoFill,O.fillStroke,O.eoFillStroke,O.endPath,O.closeStroke,O.closeFillStroke,O.closeEOFillStroke].includes(f))flush([O.closeStroke,O.closeFillStroke,O.closeEOFillStroke].includes(f));
   }
-  flush();return {shapes:chain(paths),unknown};
+  flush();return {shapes:chain(paths),lines:paths.slice(0,6000),unknown};
  }
  function script(path){return new Promise((yes,no)=>{const el=document.createElement('script');el.src=path;el.onload=yes;el.onerror=()=>no(Error('Не удалось открыть локальный модуль PDF'));document.head.append(el)})}
  async function open(file){
@@ -79,12 +79,12 @@ const DrawingReader=(()=>{
    if(!window.pdfjsLib)await script('pdf-local.js');pdfjsLib.GlobalWorkerOptions.workerSrc=new URL('pdf-worker.js',document.baseURI).href;
    if(location.protocol==='file:'&&!window.pdfjsWorker)await script('pdf-worker.js');
    const task=pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false,useWorkerFetch:false,stopAtErrors:true,maxImageSize:24e6,useSystemFonts:true});
-   const pdf=await task.promise;
+   const pdf=await task.promise;if(pdf.numPages>1000){await pdf.destroy();throw Error('Разделите PDF на файлы до 1000 страниц')}
    return {ext,count:pdf.numPages,close:()=>pdf.destroy(),async page(n){
     const page=await pdf.getPage(n),unit=page.getViewport({scale:1}),vp=page.getViewport({scale:extent/Math.max(unit.width,unit.height)});
     const image=canvas(vp.width,vp.height);await page.render({canvasContext:image.getContext('2d'),viewport:vp}).promise;
     const op=await page.getOperatorList(),v=vector(op,vp),labels=await page.getTextContent();page.cleanup();
-    return {image,shapes:v.shapes.length?v.shapes:raster(image),texts:labels.items.map(x=>x.str).filter(Boolean),note:v.shapes.length?'Векторные контуры PDF требуют проверки.'+(v.unknown?' Кривые проверьте по подложке.':''):'Растровая подложка. Предложения по замкнутым областям приблизительны; можно обвести вручную.'};
+    return {image,lines:v.lines,labels:labels.items.filter(l=>l.transform).map(l=>({value:l.str,pt:vp.convertToViewportPoint(l.transform[4]+l.width/2,l.transform[5])})),shapes:v.shapes.length?v.shapes:raster(image),texts:labels.items.map(x=>x.str).filter(Boolean),note:v.shapes.length?'Векторные контуры PDF требуют проверки.'+(v.unknown?' Кривые проверьте по подложке.':''):'Растровая подложка. Предложения по замкнутым областям приблизительны; можно обвести вручную.'};
    }};
   }
   if(ext==='dxf'){const raw=await file.arrayBuffer();let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(raw)}catch{text=new TextDecoder('windows-1251').decode(raw)}const result=dxf(text);return {ext,count:1,page:async()=>result,close(){}}}
@@ -118,5 +118,55 @@ const DrawingReader=(()=>{
   for(let i=1;i<p.length-1;i++){const t=Math.max(0,Math.min(1,((p[i][0]-a[0])*dx+(p[i][1]-a[1])*dy)/(den||1))),d=dist(p[i],[a[0]+t*dx,a[1]+t*dy]);if(d>best){best=d;idx=i}}
   return idx?[...simplify(p.slice(0,idx+1),tol).slice(0,-1),...simplify(p.slice(idx),tol)]:[a,b];
  }
- return {open,dxf,raster,dist};
+ async function digits(image,signal,progress){
+  if(!window.Tesseract)await script('ocr/tesseract.min.js');
+  if(signal.aborted)throw Error('Распознавание отменено');
+  const url=p=>new URL('ocr/'+p,document.baseURI).href;
+  let worker,stop;
+  const interrupt=new Promise((_,reject)=>{stop=()=>reject(Error('Распознавание отменено'));signal.addEventListener('abort',stop,{once:true})});
+  const timer=setTimeout(()=>stop(),90000);
+  try{
+   let fail;
+   const error=new Promise((_,reject)=>{fail=e=>reject(Error(String(e)))});
+   const init=Tesseract.createWorker('eng',1,{workerPath:url('worker.min.js'),corePath:url('tesseract-core-lstm.wasm.js'),langPath:url(''),workerBlobURL:false,cacheMethod:'none',logger:m=>progress(m.status==='recognizing text'?Math.round(m.progress*100):0),errorHandler:e=>fail(e)});
+   let ended=false;
+   try{worker=await Promise.race([init,interrupt,error])}catch(e){ended=true;throw e}finally{if(ended)init.then(w=>w.terminate(),()=>{})}
+   await worker.setParameters({tessedit_char_whitelist:'0123456789.,',tessedit_pageseg_mode:'11'});
+   const {data}=await Promise.race([worker.recognize(image,{}, {blocks:true}),interrupt,error]);
+   const labels=[];for(const b of data.blocks||[])for(const p of b.paragraphs||[])for(const l of p.lines||[])for(const w of l.words||[]){
+    const box=w.bbox;if(w.confidence<40||!box)continue;labels.push({value:w.text,pt:[(box.x0+box.x1)/2,(box.y0+box.y1)/2]});
+   }
+   return labels;
+  }finally{clearTimeout(timer);signal.removeEventListener('abort',stop);if(worker)await worker.terminate()}
+ }
+ function suggest(labels,shapes){
+  const result=[];
+  for(const label of labels.slice(0,200)){
+   const match=/^(\d{1,6}(?:[.,]\d{1,3})?)\s*(мм|mm|см|cm|м|m)?$/i.exec(String(label.value).trim());
+   if(!match||!label.pt?.every(Number.isFinite))continue;
+   const factor=/^(м|m)$/i.test(match[2])?1000:/^(см|cm)$/i.test(match[2])?10:1;
+   const mm=Number(match[1].replace(',','.'))*factor;if(mm<20||mm>200000)continue;
+   let best;
+   for(const shape of shapes.slice(0,100)){const pts=shape.pts;for(let i=0;i<pts.length;i++){
+    const a=pts[i],b=pts[(i+1)%pts.length],mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],length=dist(a,b),score=dist(mid,label.pt)/Math.max(length,1);
+    if(length>12&&score<.38&&(!best||score<best.score))best={a,b,mm,score,value:label.value};
+   }}
+   if(best)result.push(best);if(result.length>=30)break;
+  }
+  return result;
+ }
+ function openings(labels,lines){
+  const classify=s=>/двер|door|^д[\s\d-]/i.test(s)?'door':/окн|window|^о[\s\d-]/i.test(s)?'window':null;
+  const result=[],segments=[];
+  for(const path of lines||[]){for(let i=1;i<path.pts.length;i++){const a=path.pts[i-1],b=path.pts[i];if(dist(a,b)<5)continue;
+   const item={a,b,mid:[(a[0]+b[0])/2,(a[1]+b[1])/2]};if(segments.length<6000)segments.push(item);
+   const type=classify(path.layer);if(type&&result.length<150)result.push({...item,type,value:path.layer});
+  }}
+  for(const label of labels.slice(0,500)){const type=classify(label.value);if(!type||result.length>=150)continue;
+   let nearest,score=.45;for(const s of segments){const d=dist(s.mid,label.pt)/dist(s.a,s.b);if(d<score){score=d;nearest=s}}
+   if(nearest)result.push({...nearest,type,value:label.value});
+  }
+  return result;
+ }
+ return {open,dxf,raster,dist,digits,suggest,openings};
 })();
