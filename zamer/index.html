@@ -6,6 +6,9 @@
 <title>Замер и смета 2.8</title>
 <script src="jszip.min.js"></script>
 <script src="media-zip.js"></script>
+<script src="engineering.js"></script>
+<script src="eng-views.js"></script>
+<style>.eng-dialog, .drawing-dialog{box-sizing:border-box;width:min(94vw,620px);max-height:90dvh;overflow:auto;padding:16px;border:1px solid #aaa;border-radius:12px}.eng-dialog input,.eng-dialog select,.drawing-dialog input,.drawing-dialog select{min-width:0;max-width:100%;font-size:16px}.eng-check{display:block;padding:8px}.eng-check input,#eng-loose{width:auto;min-height:24px}.eng-fields{display:grid;gap:8px}</style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -504,7 +507,7 @@ async function importProjectZip(file){
   if(!confirm(matches?'Такой проект уже есть. Импортировать отдельную копию?':'Импортировать проект «'+(project.name||'Объект')+'»?'))return;
   if(matches){project.id=uid()+uid();project.name=(project.name||'Объект')+' (копия)'}
   const applySettings=confirm('Применить общие настройки и прайс из ZIP ко всему приложению?');
-  for(const room of project.rooms){
+  for(const room of [...project.rooms,...(project.engMedia?[project.engMedia]:[])]){
     for(const photo of room.photos||[]){
       const key=JSON.stringify([room.id,photo.id]),record=records.get(key);
       if(!record)throw Error('Отсутствует фото комнаты '+(room.name||room.id));
@@ -891,6 +894,7 @@ function addElectrical23(room,type,position){
  (room.points=room.points||[]).push(point);UI.pointIndex=room.points.length-1;save();render();return true;
 }
 function removeWall23(room,index){
+ if(room.walls[index]?.engKey&&P()?.engineering?.some(e=>e.room===room.id&&e.wallKey===room.walls[index].engKey)&&!confirm('Элементы удаляемой стены останутся без привязки. Продолжить?'))return;
  if(index<0||index>=room.walls.length)return;
  const number=index+1;
  const remap=wall=>wall===number?null:wall>number?wall-1:wall;
@@ -1403,7 +1407,7 @@ const bulgeOf=(A,M,B)=>{const cx=B[0]-A[0],cy=B[1]-A[1],c=Math.hypot(cx,cy);if(c
 function planDXF(p){const D=Dxf();[['СТЕНЫ',7],['ДВЕРИ',30],['ОКНА',5],['ЭЛЕКТРИКА',1],['ПОМЕЩЕНИЯ',3],['РАЗМЕРЫ',8]].forEach(([n,c])=>D.L(n,c));
  let shiftX=0;const groups=roomsByFloor(p);for(const grp of groups){const all=grp.rooms.map(r=>{const G=roomGlobal(p,r);return{r,G,pts:geo(r).contour.map(G)}}),xs=all.flatMap(a=>a.pts.map(q=>q[0])),ys=all.flatMap(a=>a.pts.map(q=>q[1])),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs);
   const M=q=>[(q[0]-minX)*1000+shiftX,-(q[1]-minY)*1000];if(grp.f)D.text('ПОМЕЩЕНИЯ',M([minX,minY-.8]),250,grp.f.name,0);
-  for(const{r,G}of all){const g=geo(r),segs=g.segments,vs=segs.map(s=>{const A=M(G(s.at(0))),B=M(G(s.at(1))),Mi=M(G(s.at(.5)));return[A[0],A[1],s.curve?bulgeOf(A,Mi,B):0]});D.poly('СТЕНЫ',vs,true);
+  for(const{r,G}of all){const g=geo(r),segs=g.segments,vs=segs.map(s=>{const A=M(G(s.at(0))),B=M(G(s.at(1))),Mi=M(G(s.at(.5)));return[A[0],A[1],s.curve?bulgeOf(A,Mi,B):0]});D.poly('СТЕНЫ',vs,true);engDxf(p,r,D,q=>M(G(q)));
    segs.forEach((s,i)=>{const m=G(s.at(.5)),n=inwardN(r,s,.5),q=M([m[0]+n[0]*.22,m[1]+n[1]*.22]);D.text('РАЗМЕРЫ',q,100,Math.round(s.length*1000)+(s.curve?' дуга':''))});
    const c=roomCentroid(g.contour.slice(0,-1).map(G));D.text('ПОМЕЩЕНИЯ',M(c),180,r.name);D.text('ПОМЕЩЕНИЯ',M([c[0],c[1]+.3]),130,fmt(g.floor)+' м2, h='+Math.round(num(r.h)*1000));
    for(const o of r.ops||[]){const a=opAt(r,o);if(!a)continue;const P0=G(a.s.at(a.t0)),P1=G(a.s.at(a.t1)),n=inwardN(r,a.s,(a.t0+a.t1)/2),nG=(()=>{const z=G([0,0]),u=G(n);return[u[0]-z[0],u[1]-z[1]]})();
@@ -1816,10 +1820,9 @@ async function fillPh27(){
 }
 let phTarget27=null;
 const pendingPhotoWrites=new Map();
-function phPick27(mode){
-  const project=P(),room=RM();
+function phPick27(mode,project=P(),room=RM(),element=null){
   if(!project||!room)return;
-  phTarget27={project,room,wallObject:room.walls[UI.phWall-1]};
+  phTarget27={project,room,wallObject:room.walls?.[UI.phWall-1],element};
   if(window.Photo&&Photo.pick){Photo.pick(mode);return}
   const input=document.getElementById('ph27in');
   input.value='';
@@ -1867,15 +1870,17 @@ async function phAdd27(source){
     }
     const id=uid()+uid();
     await PHDB.putAll([{id,original,data,name:source.name||'',projectId:project.id,roomId:room.id}]);
-    if(!DB.projects.includes(project)||!project.rooms.includes(room)){
+    if(!DB.projects.includes(project)||!(target.element?project.engineering?.some(e=>e.id===target.element.id):project.rooms.includes(room))){
       await PHDB.removeAll([id]);
       throw Error('Помещение удалено');
     }
-    const wall=room.walls.indexOf(wallObject)+1;
+    const wall=(room.walls||[]).indexOf(wallObject)+1;
     const photo={id,wall:wall||null,ts:Date.now()};
-    (room.photos=room.photos||[]).push(photo);
+    const owner=target.element?project.engMedia:room;
+    if(target.element)photo.elements=[target.element.id];
+    (owner.photos=owner.photos||[]).push(photo);
     if(!save()){
-      room.photos.pop();
+      owner.photos.pop();
       if(!NATIVE)await PHDB.removeAll([id]).catch(console.warn);
       return;
     }
@@ -1888,6 +1893,7 @@ async function phAdd27(source){
   }
 }
 window.onNativePhoto=phAdd27;
+Eng.pick=(p,e)=>{p.engMedia=p.engMedia||{id:'~eng',photos:[]};phPick27('gallery',p,p.engMedia,e)};
 function photosCard27(r){const ph=r.photos||[];return`<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📷 Фото помещения (${ph.length})</h3></div>
  <p class="small muted" style="margin:6px 0">Снимите каждую стену — фото привяжется к стене и появится на ней в 3D.</p>
  <div class="chips"><span class="small muted" style="align-self:center">Стена:</span><button class="chip" data-a="phwall" data-i="" aria-pressed="${!UI.phWall}">общее</button>${r.walls.map((w,i)=>`<button class="chip" data-a="phwall" data-i="${i+1}" aria-pressed="${UI.phWall===i+1}">${i+1}</button>`).join('')}</div>
@@ -1999,7 +2005,7 @@ function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const G
  const AW=380,AH=225,sc=STD_SCALES.find(s=>(maxx-minx)*1000/s<=AW-30&&(maxy-miny)*1000/s<=AH-30)||500,k=1000/sc;
  const ox=25+(AW-(maxx-minx)*k)/2,oy=12+(AH-(maxy-miny)*k)/2,M=q=>[ox+(q[0]-minx)*k,oy+(q[1]-miny)*k];
  let s=frame27(p,{title:kindOf(p).plan||'Обмерный план',scale:'1:'+sc,n,N});
- Gs.forEach(({r,G})=>{s+=roomDrawing27(r,G,M,k,{fs:2,d1:4,d2:8.5})});
+ Gs.forEach(({r,G})=>{s+=roomDrawing27(r,G,M,k,{fs:2,d1:4,d2:8.5})+engMarkers(p,r,q=>M(G(q)),2)});
  /* room schedule left of the title block */
  const T=rooms.map((r,i)=>{const g=geo(r);return[i+1,r.name,fmt(g.floor,2),fmt(g.perim,2),num(r.h)?fmt(num(r.h),2):'—']}),bx=25,by=252;s+=`<rect x="${bx}" y="${by}" width="200" height="40" fill="#fff" stroke="#000" stroke-width=".35"/>`+tx27(bx+100,by+4.5,'Экспликация помещений',{s:2.8,b:1});
  const cols=[8,92,34,34,32],rh=Math.min(4.2,30/Math.max(1,T.length+1));let y=by+7,x;
@@ -2010,7 +2016,7 @@ function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const G
  return{svg:wrapSheet27(s),title:'План'}}
 function wrapSheet27(inner){return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SH.W} ${SH.H}" width="${SH.W}mm" height="${SH.H}mm" class="sheet27"><rect width="${SH.W}" height="${SH.H}" fill="#fff"/>${inner}</svg>`}
 /* elevation of one wall (seen from inside; left corner on the left) */
-function elevDrawing27(r,wi,x0,y0,k){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=H*k,lis=leftIsStart27(r),X=(off,wd=0)=>x0+(lis?off:L-off-wd)*k,Y=y=>y0+(H-y)*k,c=corners27(r,wi);
+function elevDrawing27(r,wi,x0,y0,k,project){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=H*k,lis=leftIsStart27(r),X=(off,wd=0)=>x0+(lis?off:L-off-wd)*k,Y=y=>y0+(H-y)*k,c=corners27(r,wi);
  let s=`<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(h)}" fill="#fff" stroke="#000" stroke-width=".5"/>`;
  s+=tx27(x0+w/2,y0-6,'Развёртка стены '+(wi+1)+' (угол '+c.left+' — угол '+c.right+')',{s:2.8,b:1});
  const xs=[0,L],dn=[1,0];
@@ -2029,7 +2035,7 @@ function elevDrawing27(r,wi,x0,y0,k){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=
  s+=dim27([x0,y0+h],[x0+w,y0+h],[0,1],C.length>2?9:4,String(mm(L)),{s:2.2,gap:.5});
  if(pts.length){const P=[x0,...pts.sort((a,b)=>a-b)];for(let i=1;i<P.length;i++)s+=dim27([P[i-1],y0+h],[P[i],y0+h],[0,1],C.length>2?14:9,String(Math.round((P[i]-P[i-1])/k*1000)),{s:1.7,gap:.5})}
  s+=dim27([x0,y0],[x0,y0+h],[-1,0],5,String(mm(H)),{s:2.2,gap:.5});
- return s}
+ return s+engElev(project,r,wi,X,Y,k)}
 function sheetsRoom27(p,r,n0,N){const g=geo(r),out=[];const pts=[];g.segments.forEach(seg=>sampleSeg27(seg,seg.length*4).forEach(q=>pts.push(q)));
  const minx=Math.min(...pts.map(q=>q[0])),maxx=Math.max(...pts.map(q=>q[0])),miny=Math.min(...pts.map(q=>q[1])),maxy=Math.max(...pts.map(q=>q[1]));
  const PWm=150,PHm=118,sc=STD_SCALES.find(s=>(maxx-minx)*1000/s<=PWm-34&&(maxy-miny)*1000/s<=PHm-34)||500,k=1000/sc,ox=25+(PWm-(maxx-minx)*k)/2+5,oy=14+(PHm-(maxy-miny)*k)/2+4,M=q=>[ox+(q[0]-minx)*k,oy+(q[1]-miny)*k];
@@ -2044,13 +2050,13 @@ function sheetsRoom27(p,r,n0,N){const g=geo(r),out=[];const pts=[];g.segments.fo
    s+=tx27(28,256,'Площадь пола '+fmt(g.floor,2)+' м² · периметр '+fmt(g.perim,2)+' м · высота '+(num(r.h)?mm(num(r.h))+' мм':'не измерена')+' · стены за вычетом проёмов '+fmt(g.wall,2)+' м²',{s:2.4,a:'start'});
    s+=tx27(28,262,'Обозначения: ○ розетка  ● выключатель  □ прочие настенные точки  ⊗ светильник. Развёртки — вид изнутри помещения, размеры в мм.',{s:2.1,a:'start',c:'#333'});
    if(r.comment)s+=tx27(28,268,'Примечание: '+String(r.comment).slice(0,140),{s:2.1,a:'start',c:'#333'})}
-  for(const b of pg)s+=elevDrawing27(r,b.i,b.x,b.y,ke);out.push({svg:wrapSheet27(s),title:r.name+(pi?' (прод.)':'')})});
+  for(const b of pg)s+=elevDrawing27(r,b.i,b.x,b.y,ke,p);out.push({svg:wrapSheet27(s),title:r.name+(pi?' (прод.)':'')})});
  return out}
 const ELEVROWS27=(r,i)=>18+((r.points||[]).some(pt=>num(pt.wall)===i+1&&ELECTRICAL[pt.type]&&ELECTRICAL[pt.type].wall)?5:0);
 function allSheets27(p){const rooms=p.rooms.filter(r=>geo(r).closed);let sheets=[{f:n=>sheetPlan27(p,n,0)}];
  /* count pages first */
  const tmp=[];tmp.push(sheetPlan27(p,1,1));let n=2;for(const r of rooms){const ss=sheetsRoom27(p,r,n,1);n+=ss.length;tmp.push(...ss)}
- const N=tmp.length;const out=[sheetPlan27(p,1,N)];n=2;for(const r of rooms){const ss=sheetsRoom27(p,r,n,N);n+=ss.length;out.push(...ss)}return out}
+ const N=tmp.length;const out=[sheetPlan27(p,1,N)];n=2;for(const r of rooms){const ss=sheetsRoom27(p,r,n,N);n+=ss.length;out.push(...ss)}return out.concat(engTable(p))}
 function vDraw27(p){const sh=allSheets27(p);UI.sheetI=Math.min(UI.sheetI||0,sh.length-1);const cur=sh[UI.sheetI];
  return`<div class="card"><h3>Рабочий чертёж (обмерный)</h3><p class="small muted">Формат А3, рамка и штамп, размеры в мм: цепочки до проёмов и радиаторов, габаритные размеры, развёртки стен с высотами подоконников, радиаторов и электроточек. Реквизиты для штампа — в настройках.</p>
  <div class="chips">${sh.map((x,i)=>`<button class="chip" data-a="sheet" data-i="${i}" aria-pressed="${i===UI.sheetI}">${i+1}. ${esc(x.title)}</button>`).join('')}</div></div>
@@ -2087,7 +2093,7 @@ function scurve27(plan,day){const W=640,H=150,L=8,k=(W-2*L)/Math.max(1,plan.tota
 function v3d27(p){const plan=plan5d27(p),day=Math.min(num(UI.d5day),plan.total),pr=progress27(plan,day);UI.d5day=day;
  return`<div class="card" style="padding:8px"><div class="v3d27" id="v3d27"><canvas id="c3d27"></canvas><div class="v3d27-hint small">Вращайте пальцем · два пальца — масштаб</div></div>
  <div class="chips" style="margin-top:8px"><button class="chip" data-a="v3view" data-v="iso" aria-pressed="${(UI.v3view||'iso')==='iso'}">3D</button><button class="chip" data-a="v3view" data-v="top" aria-pressed="${UI.v3view==='top'}">Сверху</button><button class="chip" data-a="v3view" data-v="in" aria-pressed="${UI.v3view==='in'}">Внутри</button><button class="chip" data-a="v3mode" aria-pressed="${!!UI.v3fin}">${UI.v3fin?'Готовый ремонт':'По графику 5D'}</button></div>
- <p class="small muted" style="margin:6px 0 0">Фото стен из замера накладываются на стены. Цвета — по выбранной отделке.</p></div>
+ <p class="small muted" style="margin:6px 0 0">${Eng.items(p).length?'<label class="eng-check"><input id="eng-show3d" type="checkbox" '+(p.engineering3d!==false?'checked':'')+'> Инженерные элементы в 3D</label>':''}Фото стен из замера накладываются на стены. Цвета — по выбранной отделке.</p></div>
  <div class="card"><h3>5D: график и стоимость</h3>${plan.list.length?`<p class="small muted" style="margin-top:0">3D-модель + время + деньги. Этапы собраны из сметы (вариант «${vName(p.v||DB.settings.variant||'s')}»), длительность — по выработке бригады; меняйте под себя.</p>
  <label class="f">День ремонта: <b id="d5lab">${day} из ${plan.total} · ${addDays27(plan.start,day)}</b><input type="range" min="0" max="${plan.total}" step="1" value="${day}" data-d5="day" style="width:100%"></label>
  <div class="stat" style="margin:6px 0"><div><b id="d5spent">${rub(spent27(plan,day))}</b><span>потрачено к этому дню</span></div><div><b>${rub(plan.sum)}</b><span>вся смета</span></div><div><b>${plan.total}</b><span>рабочих дней</span></div><div><b>${addDays27(plan.start,plan.total)}</b><span>окончание</span></div></div>
@@ -2137,18 +2143,18 @@ function build3d27(T,p,grp){const plan=UI.v3fin?null:plan5d27(p),pr=plan&&plan.l
   for(const rd of radsOf(r)){const seg=g.segments[num(rd.wall)-1];if(!seg)continue;const t=(num(rd.offset)+num(rd.w)/2)/(seg.length||1),q=seg.at(t),tg=seg.tangent(t),nl=[-tg[1]*sign,tg[0]*sign],P0=G(q),Pi=G([q[0]+nl[0]*.07,q[1]+nl[1]*.07]),A=G(seg.at(0)),B=G(seg.at(1));const m=new T.Mesh(new T.BoxGeometry(num(rd.w),num(rd.h),.08),mat(0xf7f7f7));m.position.set(Pi[0],num(rd.y)+num(rd.h)/2,Pi[1]);m.rotation.y=-Math.atan2(B[1]-A[1],B[0]-A[0]);grp.add(m)}
   if(col.points)(r.points||[]).forEach(pt=>{const d=ELECTRICAL[pt.type];if(!d)return;const q=pointLocal(r,pt);if(!q)return;const P0=G(q);if(d.wall){const seg=g.segments[num(pt.wall)-1];if(!seg)return;const t=Math.min(1,num(pt.offset)/(seg.length||1)),tg=seg.tangent(t),nl=[-tg[1]*sign,tg[0]*sign],Pi=G([q[0]+nl[0]*.012,q[1]+nl[1]*.012]),A=G(seg.at(0)),B=G(seg.at(1));const m=new T.Mesh(new T.BoxGeometry(.08,.08,.02),mat(/switch/.test(pt.type)?0x2465b7:0xffffff));m.position.set(Pi[0],num(pt.height),Pi[1]);m.rotation.y=-Math.atan2(B[1]-A[1],B[0]-A[0]);grp.add(m)}
    else{const m=new T.Mesh(new T.CylinderGeometry(.12,.12,.04,16),new T.MeshBasicMaterial({color:0xffe08a}));m.position.set(P0[0],H-.03,P0[1]);grp.add(m)}})}
- return bx}
+ eng3d(T,p,grp);return bx}
 
 /* ============ tabs: short main row + «Ещё» ============ */
 const MAIN_TABS27=[['rooms','Замер'],['plan','План'],['draw','Чертёж'],['3d','3D · 5D'],['est','Смета']];
-const MORE_TABS27=[['foreman','Прораб'],['elec','Электрика'],['design','Дизайнеру'],['furn','Мебельщику'],['fence','Забор'],['info','Клиент']];
+const MORE_TABS27=[['engineering','Инж. коммуникации'],['foreman','Прораб'],['elec','Электрика'],['design','Дизайнеру'],['furn','Мебельщику'],['fence','Забор'],['info','Клиент']];
 const GATED27=new Set(['draw','3d']);
 const oldVProject27=vProject;
-vProject=function(){const p=P();if(!p)return oldVProject27();const ok=measured(p);if(GATED27.has(R.tab)&&!ok)R.tab='rooms';const my=GATED27.has(R.tab),keep=R.tab;if(my)R.tab='info';let h=oldVProject27();R.tab=keep;
+vProject=function(){const p=P();if(!p)return oldVProject27();const ok=measured(p);if(GATED27.has(R.tab)&&!ok)R.tab='rooms';const my=GATED27.has(R.tab)||R.tab==='engineering',keep=R.tab;if(my)R.tab='info';let h=oldVProject27();R.tab=keep;
  const inMore=MORE_TABS27.some(([k])=>k===R.tab),open=UI.moreTabs||inMore,btn=([k,n])=>`<button data-a="tab" data-t="${k}" aria-pressed="${R.tab===k||(k==='est'&&R.tab==='var')}" ${(GATED.has(k)||GATED27.has(k))&&!ok?'disabled':''}>${k==='plan'?esc(kindOf(p).plan.replace(/^План\s*/,'План ').split(' ').slice(0,2).join(' ')):n}</button>`;
  const tabs=`<div class="tabs">${MAIN_TABS27.map(btn).join('')}<button data-a="moretabs" aria-pressed="${open}">${open?'Скрыть ▴':'Ещё ▾'}</button></div>${open?`<div class="tabs tabs2">${MORE_TABS27.map(btn).join('')}</div>`:''}`;
  h=h.replace(/<div class="tabs">[\s\S]*?<\/div>/,tabs);
- if(my){/* replace the «Клиент» body with ours */const start=h.indexOf(tabs)+tabs.length,f=h.lastIndexOf('<div class="foot">');const body=R.tab==='draw'?vDraw27(p):v3d27(p);h=h.slice(0,start)+body+(f>=0?h.slice(f):'')}
+ if(my){/* replace the «Клиент» body with ours */const start=h.indexOf(tabs)+tabs.length,f=h.lastIndexOf('<div class="foot">');const body=R.tab==='engineering'?Eng.list(p):R.tab==='draw'?vDraw27(p):v3d27(p);h=h.slice(0,start)+body+(f>=0?h.slice(f):'')}
  if(R.tab==='3d')setTimeout(()=>mount3d27(p),0);
  if(R.tab==='info')h+='<div class="card"><button class="btn" data-a="projectZip">Экспорт проекта ZIP</button></div>';
  return h};
@@ -2294,7 +2300,7 @@ const VIEWS28={};
 function peSVG28(r,opt={}){const W=600,H=440;if(!r.walls.length)return'<div class="card" style="text-align:center;padding:26px 12px"><div style="font-size:30px">📐</div><b>План появится после первой стены</b><p class="small muted" style="margin:4px 0 0">Замерьте стену дальномером или введите длину ниже</p></div>';const P=planPrims(r,W,H,46),g=geo(r),sel=opt.sel;
  let s=`<svg class="pe28" data-view="room" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="План помещения">`;
  VIEWS28.room={T:{[r.id]:P.T},s:P.s,redraw:svg=>{const R2=RM();if(R2)svg.innerHTML=peInner28(R2,planPrims(R2,W,H,46),opt)}};
- return s+peInner28(r,P,opt)+'</svg>'}
+ return s+peInner28(r,P,opt)+engMarkers(window.__test?.DB.projects.find(p=>p.id===R.pid),r,P.T,9)+'</svg>'}
 function peInner28(r,P,opt){const g=geo(r),sel=opt.sel;let s='';
  if(P.closed)s+=`<path d="${pathData(P.contour)} Z" fill="${FLOORC(r)}" opacity=".45"/>`;
  for(const w of P.walls){const on=opt.wall===w.i+1;s+=`<path d="${pathData(w.path)}" data-wall28="${w.i+1}" fill="none" stroke="${wallColor(r)}" stroke-width="8" stroke-linecap="round" style="cursor:pointer"/>`+(on?`<path d="${pathData(w.path)}" fill="none" stroke="#e0620d" stroke-width="3" stroke-dasharray="8 5" pointer-events="none"/>`:'')+`<path d="${pathData(w.path)}" data-wall28="${w.i+1}" fill="none" stroke="transparent" stroke-width="22"/>`;
@@ -2513,7 +2519,7 @@ handleUpgradeChange23=function(event){const el=event.target;
 
 /* ---------- rangefinder: active field of the step ---------- */
 const oldOnMeasure28=onMeasure;
-onMeasure=function(v){if(R.view==='room'&&!UI.roomFull&&RM()){const r=RM();
+onMeasure=function(v){if(Eng.measure(v))return;if(R.view==='room'&&!UI.roomFull&&RM()){const r=RM();
  if(UI.step28==='height'){const F=hFields28(r),k=UI.hAct||F[0][0];r.hpts=r.hpts||{};r.hpts[k]=r3(v);hApply28(r);const i=F.findIndex(f=>f[0]===k),nx=F.slice(i+1).find(f=>!r.hpts[f[0]])||F[i+1];UI.hAct=nx?nx[0]:k;UI.last=v;save();render();toast((F[i]||[,''])[1]+': '+mm(v)+' мм');return}
  const sel=UI.sel28;if(sel&&UI.peAct&&sel.rid===r.id){UI.last=v;const k=UI.peAct;if(set28(r,sel,k,v)){const F=fields28(r,sel).map(f=>f[0]),i=F.indexOf(k);UI.peAct=F[i+1]||null;save();toast(((fields28(r,sel).find(f=>f[0]===k)||[])[1]||'Замер')+': '+mm(v)+' мм')}render();return}
  if(UI.step28&&UI.step28!=='walls'){UI.last=v;render();toast('Замер '+mm(v)+' мм — выберите поле с 📏');return}}
@@ -2535,7 +2541,7 @@ build3d27=function(T,p,grp){const bx=oldBuild3d28(T,p,grp);const mat=c=>new T.Me
 
 /* ---------- validation of new fields ---------- */
 const oldValidate28=validateBackup;
-validateBackup=function(data){oldValidate28(data);for(const p of data.projects||[])for(const r of p.rooms||[]){
+validateBackup=function(data){oldValidate28(data);for(const p of data.projects)Eng.validate(p);for(const p of data.projects||[])for(const r of p.rooms||[]){
  if(r.acs!=null&&(!Array.isArray(r.acs)||r.acs.some(x=>!(num(x.wall)>=1&&num(x.w)>=0&&num(x.h)>=0))))throw Error('Повреждены кондиционеры');
  if(r.hpts!=null&&(typeof r.hpts!=='object'||Array.isArray(r.hpts)||Object.values(r.hpts).some(v=>!(typeof v==='number'&&v>=0&&v<100))))throw Error('Повреждены высоты потолка');
  for(const o of r.ops||[]){if(o.hinge!=null&&!['a','b'].includes(o.hinge))throw Error('Повреждена дверь');if(o.swing!=null&&!['in','out'].includes(o.swing))throw Error('Повреждена дверь')}}};
