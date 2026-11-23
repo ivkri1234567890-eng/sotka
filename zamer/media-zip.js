@@ -31,7 +31,7 @@ const ZamerZip = (() => {
       zip.file(path, bytes, {createFolders: false});
     }
     await add('project.json', encoder.encode(JSON.stringify({projects: [project], settings})));
-    for (const room of project.rooms) {
+    for (const room of [...project.rooms, ...(project.engMedia ? [project.engMedia] : [])]) {
       for (const photo of room.photos || []) {
         const record = await readPhoto(photo.id);
         if (!record?.data && !record?.original) throw Error('Отсутствует фото ' + photo.id);
@@ -57,6 +57,12 @@ const ZamerZip = (() => {
         }
         manifest.media.push(entry);
       }
+    }
+    if (project.drawingSource?.id) {
+      const record = await readPhoto(project.drawingSource.id);
+      if (!record?.source || record.source.size !== project.drawingSource.size) throw Error('Исходный чертёж недоступен. Можно экспортировать без исходника.');
+      manifest.source = 'source/drawing.' + project.drawingSource.ext;
+      await add(manifest.source, new Uint8Array(await record.source.arrayBuffer()));
     }
     manifest.documents = [];
     for (const document of documents) {
@@ -165,8 +171,15 @@ const ZamerZip = (() => {
       if (typeof path !== 'string' || !/^documents\/[A-Za-z0-9_/-]+\.[a-z0-9]+$/.test(path) || path.includes('..')) throw Error('Некорректный путь документа');
       await verify(path);
     }
+    const ref = backup.projects[0]?.drawingSource;
+    let source;
+    if (ref?.id || manifest.source) {
+      if (!ref?.id || !['pdf','jpg','png','dxf'].includes(ref.ext) || manifest.source !== 'source/drawing.' + ref.ext) throw Error('Некорректная связь исходного чертежа');
+      source = new Blob([await verify(manifest.source)]);
+      if (source.size !== ref.size) throw Error('Неверный размер исходного чертежа');
+    }
     if (used.size !== entries.length) throw Error('В ZIP есть лишние файлы');
-    return {backup, records};
+    return {backup, records, source};
   }
 
   return {encode, decode};

@@ -3,9 +3,15 @@
 <head><script src="/sotka/gate.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Замер и смета 2.8</title>
+<title>Замер и смета 3.0</title>
 <script src="jszip.min.js"></script>
 <script src="media-zip.js"></script>
+<script src="engineering.js"></script>
+<script src="eng-views.js"></script>
+<script src="drawing-reader.js"></script>
+<script src="drawing-project.js"></script>
+<script src="drawing-dialog.js"></script>
+<style>.eng-dialog, .drawing-dialog{box-sizing:border-box;width:min(94vw,620px);max-height:90dvh;overflow:auto;padding:16px;border:1px solid #aaa;border-radius:12px}.eng-dialog input,.eng-dialog select,.drawing-dialog input,.drawing-dialog select{min-width:0;max-width:100%;font-size:16px}.eng-check{display:block;padding:8px}.eng-check input,#eng-loose{width:auto;min-height:24px}.eng-fields{display:grid;gap:8px}.drawing-dialog header{display:flex;justify-content:space-between;align-items:center}.drawing-dialog h3{margin-top:24px}.drawing-dialog button{min-height:40px}.drawing-view{max-height:46vh;overflow:auto;background:white}.drawing-view canvas{display:block;width:100%;height:auto;cursor:crosshair}.drawing-view canvas.zoom{width:180%;max-width:none}.drawing-dialog [role=status]{font-weight:600}.drawing-dialog [hidden]{display:none!important}</style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -178,13 +184,14 @@ function save(){
   try{writeDB();storageStatus(null);return true}
   catch(error){storageStatus(error);return false}
 }
+function mediaOwners(p){return [...p.rooms,...(p.engMedia?[p.engMedia]:[]),...(p.drawingSource?.id?[{photos:[p.drawingSource]}]:[])]}
 function removeProjectsOrRooms(owner,key,remaining,removedRooms){
   const previous=owner[key];
   owner[key]=remaining;
   if(!save()){owner[key]=previous;return false}
   const ids=new Set(removedRooms.flatMap(room=>(room.photos||[]).map(photo=>photo.id)));
   if(ids.size){
-    for(const project of DB.projects)for(const room of project.rooms){
+    for(const project of DB.projects)for(const room of mediaOwners(project)){
       for(const photo of room.photos||[])ids.delete(photo.id);
     }
     if(ids.size)PHDB.removeAll([...ids]).catch(storageStatus);
@@ -252,7 +259,7 @@ const priceOf=(id,v)=>((DB.settings.prices||{})[id]||CAT[id].p)[VI[v]];
 const ROOM_NAMES=['Комната','Кухня','Спальня','Гостиная','Ванная','Санузел','Коридор','Балкон'];
 
 /* =================== geometry =================== */
-function planPts(room){const pts=[[0,0]];let h=0;(room.walls||[]).forEach((w,i)=>{if(i>0)h+=num(w.t);const r=h*Math.PI/180,[x,y]=pts[pts.length-1];pts.push([x+num(w.len)*Math.cos(r),y+num(w.len)*Math.sin(r)])});return{pts,heading:h}}
+function planPts(room){const pts=[[0,0]];let h=room.drawingHeading||0;(room.walls||[]).forEach((w,i)=>{if(i>0)h+=num(w.t);const r=h*Math.PI/180,[x,y]=pts[pts.length-1];pts.push([x+num(w.len)*Math.cos(r),y+num(w.len)*Math.sin(r)])});return{pts,heading:h}}
 function geo(room){
  const {pts,heading}=planPts(room),n=(room.walls||[]).length,last=pts[n],gap=Math.hypot(last[0],last[1]);
  const closed=n>=3&&gap<0.03;const P=closed?pts.slice(0,n):pts;let A=0;
@@ -446,7 +453,7 @@ function vSettings(){const s=DB.settings;
  <button class="btn sec wide" data-a="prices">Прайс: цены работ и материалов</button>
  <div class="card" style="margin-top:12px"><h3>Дальномер</h3><p class="small muted">Bosch GLM с Bluetooth (GLM 50-27 CG и др.). Включите Bluetooth на дальномере, нажмите «Подключить» и мерьте как обычно: каждое значение приходит в приложение.</p>${bleCard()}
  <details><summary>Журнал обмена (для диагностики)</summary><div class="log">${esc(BLE.log.join('\n')||'пусто')}</div></details></div>
- <div class="card"><h3>Данные · версия 2.8</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
+ <div class="card"><h3>Данные · версия 3.0</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». Очистка данных Safari может удалить проекты. Сохраните ZIP вне браузера. JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost" data-drawing-start>Создать проект из чертежа</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
 function vPrices(){const pr=DB.settings.prices||(DB.settings.prices={});
  return bar('Прайс')+`<p class="small muted">Цены за единицу для трёх вариантов: эконом / стандарт / премиум. Значения по умолчанию примерные — поставьте свои.</p>
  ${Object.entries(CAT).map(([id,it])=>{const p=pr[id]||it.p;return `<div class="card"><div class="small" style="font-weight:600">${esc(it.n)} <span class="muted">· ${it.g==='w'?'работа':'материал'}, ₽/${it.u}</span></div><div class="grid3" style="margin-top:6px">${p.map((x,i)=>`<label class="f">${VARS[i][1]}<input inputmode="decimal" aria-label="${VARS[i][1]}" data-f="pr.${id}.${i}" value="${x}"></label>`).join('')}</div></div>`}).join('')}
@@ -466,6 +473,7 @@ async function exportProjectZip(project,button){
     window.flushDb();
     if(pendingPhotoWrites.has(project))throw Error('Дождитесь окончания сохранения фотографии');
     const snapshot=JSON.parse(JSON.stringify({project,settings:DB.settings}));
+    if(snapshot.project.drawingSource?.id&&!confirm('Включить исходный чертёж в ZIP? Размер '+(snapshot.project.drawingSource.size/1048576).toFixed(1)+' МБ. Отмена сохранит ZIP без исходного файла.'))delete snapshot.project.drawingSource;
     validateBackup({projects:[snapshot.project],settings:snapshot.settings});
     toast('Собираю документы и фотографии проекта…');
     const documents=await projectDocuments(snapshot.project);
@@ -482,13 +490,13 @@ async function projectDocuments(project){
   add('designer/plan.dxf',planDXF(project));
   add('designer/model.ifc',planIFC(project));
   add('foreman.csv',utf8(foremanCSV(project)));
-  const sheets=allSheets27(project),canvases=[];
+  const sheets=allSheets27(project).concat(await engPhotoSheets(project)),canvases=[];
   for(const [index,sheet] of sheets.entries()){
     add('drawings/sheet-'+(index+1)+'.svg',utf8(sheet.svg));
-    canvases.push(await sheetCanvas27(sheet.svg));
+    canvases.push(await sheetJpeg27(sheet.svg));
   }
   add('drawings.pdf',pdfLandscape27(canvases));
-  for(const canvas of canvases){canvas.width=1;canvas.height=1}
+  canvases.length=0;
   for(const [index,room] of project.rooms.entries()){
     add('rooms/room-'+(index+1)+'.dxf',elevDXF(project,room));
     add('rooms/room-'+(index+1)+'.csv',utf8(furnCSV(project,room)));
@@ -497,14 +505,14 @@ async function projectDocuments(project){
   return documents;
 }
 async function importProjectZip(file){
-  const {backup,records}=await ZamerZip.decode(file);
+  const {backup,records,source}=await ZamerZip.decode(file);
   validateBackup(backup);
   const project=backup.projects[0],photos=[];
   const matches=DB.projects.some(p=>p.id===project.id);
   if(!confirm(matches?'Такой проект уже есть. Импортировать отдельную копию?':'Импортировать проект «'+(project.name||'Объект')+'»?'))return;
   if(matches){project.id=uid()+uid();project.name=(project.name||'Объект')+' (копия)'}
   const applySettings=confirm('Применить общие настройки и прайс из ZIP ко всему приложению?');
-  for(const room of project.rooms){
+  for(const room of [...project.rooms,...(project.engMedia?[project.engMedia]:[])]){
     for(const photo of room.photos||[]){
       const key=JSON.stringify([room.id,photo.id]),record=records.get(key);
       if(!record)throw Error('Отсутствует фото комнаты '+(room.name||room.id));
@@ -514,6 +522,7 @@ async function importProjectZip(file){
     }
   }
   if(records.size)throw Error('ZIP содержит фотографии без привязки к помещениям');
+  if(source){project.drawingSource.id=uid()+uid();photos.push({id:project.drawingSource.id,source,projectId:project.id})}
   if(photos.length)await PHDB.putAll(photos);
   const next={...DB,projects:[...DB.projects,project],settings:applySettings?{...DB.settings,...backup.settings}:DB.settings};
   try{
@@ -556,7 +565,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   back:()=>back(),settings:()=>go('settings'),prices:()=>go('prices'),ble:()=>bleConnect(),measure:()=>bleMeasure(),
   newproj:()=>{const np={id:uid(),name:'Объект '+(DB.projects.length+1),client:'',rooms:[],ts:Date.now(),date:today(),v:DB.settings.variant||'s'};DB.projects.push(np);save();go('project',{pid:np.id,tab:'info'})},
   open:()=>go('project',{pid:b.dataset.id,tab:'rooms'}),tab:()=>{R.tab=b.dataset.t;render()},
-  delproj:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',DB.projects.filter(x=>x!==p),p.rooms))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
+  delproj:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',DB.projects.filter(x=>x!==p),mediaOwners(p)))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
   addroom:()=>{const n=b.dataset.n,same=p.rooms.filter(x=>x.name.startsWith(n)).length;const nr={id:uid(),name:same?n+' '+(same+1):n,walls:[],h:p.rooms.length?p.rooms[p.rooms.length-1].h:2.7,ops:[],fin:{floor:/Ванн|Санузел/.test(n)?'tile':'laminate',walls:/Ванн|Санузел/.test(n)?'tile':'paint',ceiling:'stretch'},cnt:{}};p.rooms.push(nr);p.ts=Date.now();save();UI.target='wall';UI.turn=90;UI.placeType='';go('room',{rid:nr.id})},
   room:()=>{UI.target='wall';UI.placeType='';go('room',{rid:b.dataset.id})},
   delroom:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(p,'rooms',p.rooms.filter(x=>x!==r),[r]))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить помещение')}},
@@ -568,7 +577,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   undo:()=>{if(r.walls.length)removeWall23(r,r.walls.length-1)},
   delwall:()=>removeWall23(r,+b.dataset.i),
   close:()=>closeRoom(r),
-  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if(((r.ops||[]).length||(r.points||[]).length||r.photos?.some(x=>x.wall))&&!confirm('Перестроить контур? Проёмы и электроточки будут очищены. Фотографии останутся в помещении без привязки к стенам.'))return;for(const photo of r.photos||[])photo.wall=null;UI.phWall=null;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
+  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if((r.walls.some(w=>w.engKey)||(r.ops||[]).length||(r.points||[]).length||r.photos?.some(x=>x.wall))&&!confirm('Перестроить контур? Проёмы и электроточки будут очищены. Фотографии останутся в помещении. У инженерных элементов потребуется проверить привязку к новым стенам.'))return;for(const photo of r.photos||[])photo.wall=null;UI.phWall=null;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
   optype:()=>{UI.opType=b.dataset.t;keepOp();render()},
   addop:()=>{const w=num($('#opw').value),hh=num($('#oph').value),wl=Math.round(num($('#opwall').value));if(w<=0||hh<=0||wl<1||wl>r.walls.length){toast('Укажите стену, ширину и высоту проёма');return}
    const len=physicalWallLength(r,wl-1),raw=$('#opoffset').value.trim(),offset=raw?Number(raw.replace(',','.')):(len-w)/2;if(w<=0||hh<=0||hh>r.h||!Number.isFinite(offset)||offset<0||offset+w>len+0.001){toast('Проём должен помещаться в стене и по высоте');return}if((r.ops||[]).some(o=>o.wall===wl&&Math.min(offset+w,(o.offset==null?(len-o.w)/2:o.offset)+o.w)-Math.max(offset,o.offset==null?(len-o.w)/2:o.offset)>.001)){toast('Проёмы на этой стене пересекаются');return}(r.ops=r.ops||[]).push({type:UI.opType,wall:wl,w,h:hh,offset});UI.opWall=wl;UI.opw=UI.oph=null;UI.target='wall';save();render();toast((UI.opType==='door'?'Дверь':'Окно')+' добавлено')},
@@ -580,7 +589,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   pdfsave:()=>makeAndSend(p,'save'),pdfshare:()=>makeAndSend(p,'share'),
   resetprices:()=>{DB.settings.prices={};save();render();toast('Цены сброшены')},
   export:()=>{const s=JSON.stringify(DB);if(NATIVE&&NATIVE.shareText)NATIVE.shareText('zamer-backup.json',s);else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));a.download='zamer-backup.json';a.click()}},
-  wipe:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',[],DB.projects.flatMap(project=>project.rooms))){render();toast('Все объекты удалены')}}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
+  wipe:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',[],DB.projects.flatMap(mediaOwners))){render();toast('Все объекты удалены')}}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
  };(A[a]||(()=>{}))()});
 function keepOp(){const g=id=>{const el=$(id);return el?num(el.value):null};const w=g('#opw'),h=g('#oph'),wl=g('#opwall');if(w)UI.opw=w;if(h)UI.oph=h;if(wl)UI.opWall=wl;const offset=$('#opoffset');if(offset)UI.opOffset=offset.value}
 app.addEventListener('change',e=>{if(handleUpgradeChange23(e))return;const el=e.target,k=el.dataset.f;if(!k)return;const p=P(),r=RM(),[s,a,b2]=k.split('.');
@@ -600,7 +609,7 @@ app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='wlen'){e.p
 /* Shared apartment geometry; physical coordinates in metres, screen and PDF share it. */
 function roomShape(r,rot=0){const a=rot*Math.PI/180,c=Math.cos(a),s=Math.sin(a),pts=geo(r).pts.slice(0,r.walls.length).map(([x,y])=>[x*c-y*s,x*s+y*c]);const minx=Math.min(...pts.map(p=>p[0])),miny=Math.min(...pts.map(p=>p[1]));return pts.map(([x,y])=>[x-minx,y-miny])}
 function placement(p,r){p.layout=p.layout||{};if(!p.layout[r.id]){const rooms=p.rooms.filter(r=>geo(r).closed),i=rooms.indexOf(r),shapes=rooms.map(r=>roomShape(r)),dx=Math.max(1,...shapes.flat().map(p=>p[0]))+1,dy=Math.max(1,...shapes.flat().map(p=>p[1]))+1;p.layout[r.id]={x:(i%2)*dx,y:Math.floor(i/2)*dy,rot:0}}return p.layout[r.id]}
-function apartmentModel(p){const rooms=p.rooms.filter(r=>geo(r).closed).map(r=>{const l=placement(p,r),pts=roomShape(r,l.rot).map(([x,y])=>[x+l.x,y+l.y]);return{r,l,pts}});const pts=rooms.flatMap(x=>x.pts);return{rooms,box:pts.length?[Math.min(...pts.map(p=>p[0]))-1,Math.min(...pts.map(p=>p[1]))-1,Math.max(...pts.map(p=>p[0]))+1,Math.max(...pts.map(p=>p[1]))+1]:[0,0,10,10]}}
+function apartmentModel(p){const rooms=p.rooms.filter(r=>geo(r).closed).map(r=>{const l=placement(p,r),pts=roomShape(r,l.rot).map(([x,y])=>[x+l.x,y+l.y]);return{r,l,pts}});const pts=rooms.flatMap(x=>x.pts).concat(Eng.outside(p));return{rooms,box:pts.length?[Math.min(...pts.map(p=>p[0]))-1,Math.min(...pts.map(p=>p[1]))-1,Math.max(...pts.map(p=>p[0]))+1,Math.max(...pts.map(p=>p[1]))+1]:[0,0,10,10]}}
 function layoutIssues(p){const m=apartmentModel(p),warnings=[];for(let i=0;i<m.rooms.length;i++)for(let j=i+1;j<m.rooms.length;j++){const bounds=ps=>[Math.min(...ps.map(p=>p[0])),Math.min(...ps.map(p=>p[1])),Math.max(...ps.map(p=>p[0])),Math.max(...ps.map(p=>p[1]))],a=bounds(m.rooms[i].pts),b=bounds(m.rooms[j].pts);if(Math.min(a[2],b[2])-Math.max(a[0],b[0])>.02&&Math.min(a[3],b[3])-Math.max(a[1],b[1])>.02)warnings.push(m.rooms[i].r.name+' / '+m.rooms[j].r.name)}const open=p.rooms.filter(r=>!geo(r).closed).length;return(open?open+' незамкнутых помещений не включено в общий план. ':'')+(warnings.length?'Габариты перекрываются: '+warnings.join('; ')+'. Проверьте расположение.':'')}
 function apartmentPrims(p,W,H){const m=apartmentModel(p),b=m.box,scale=Math.min((W-30)/(b[2]-b[0]),(H-30)/(b[3]-b[1])),ox=(W-(b[2]-b[0])*scale)/2-b[0]*scale,oy=(H-(b[3]-b[1])*scale)/2-b[1]*scale;return{...m,scale,ox,oy,rooms:m.rooms.map(x=>({...x,screen:x.pts.map(([x,y])=>[x*scale+ox,y*scale+oy])}))}}
 function apartmentSVG(p){const m=apartmentPrims(p,420,420);const ps=a=>a.join(',');return `<svg class="apartment" id="apt" viewBox="0 0 420 420" data-scale="${m.scale}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Общий план квартиры, комнаты можно перетаскивать">${m.rooms.map(x=>{const pp=x.screen,n=pp.length,c=[pp.reduce((a,p)=>a+p[0],0)/n,pp.reduce((a,p)=>a+p[1],0)/n];return `<g data-room="${x.r.id}"><polygon points="${pp.map(ps).join(' ')}" fill="${x.r.wc||'#f5e8d4'}" stroke="${UI.layoutRoom===x.r.id?'#e0620d':'#36332d'}" stroke-width="${UI.layoutRoom===x.r.id?4:2}"/>${pp.map((a,i)=>{const b=pp[(i+1)%n];return `<text x="${(a[0]+b[0])/2}" y="${(a[1]+b[1])/2-6}" font-size="12" text-anchor="middle" fill="#333" paint-order="stroke" stroke="white" stroke-width="3">${fmt(x.r.walls[i].len,2)} м</text>`}).join('')}${(x.r.ops||[]).map(o=>openingSVG(openingPrims(o,[...pp,pp[0]],m.scale,geo(x.r).sign))).join('')}<text x="${c[0]}" y="${c[1]}" text-anchor="middle" font-size="15" font-weight="bold" paint-order="stroke" stroke="white" stroke-width="3" fill="#222">${esc(x.r.name)}</text><text x="${c[0]}" y="${c[1]+20}" text-anchor="middle" font-size="13" fill="#333">${fmt(geo(x.r).floor)} м²</text></g>`}).join('')}</svg>`}
@@ -649,6 +658,7 @@ window.importBackup=text=>{
     const ids=new Set(DB.projects.map(project=>project.id));
     const projects=data.projects.map(source=>{
       const project=JSON.parse(JSON.stringify(source));
+      if(project.drawingSource?.id){delete project.drawingSource;project.drawingSourceOmitted=true}
       if(ids.has(project.id)){project.id=uid();project.name=(project.name||'Объект')+' (копия)'}
       ids.add(project.id);
       return project;
@@ -891,6 +901,7 @@ function addElectrical23(room,type,position){
  (room.points=room.points||[]).push(point);UI.pointIndex=room.points.length-1;save();render();return true;
 }
 function removeWall23(room,index){
+ if(room.walls[index]?.engKey&&P()?.engineering?.some(e=>e.room===room.id&&e.wallKey===room.walls[index].engKey)&&!confirm('Элементы удаляемой стены останутся без привязки. Продолжить?'))return;
  if(index<0||index>=room.walls.length)return;
  const number=index+1;
  const remap=wall=>wall===number?null:wall>number?wall-1:wall;
@@ -906,6 +917,7 @@ function setWallValue23(room,index,field,value){
  if(field==='len'&&(next<=0||next>10000||Math.abs(num(w.curve))>next/2)){toast('Длина должна быть положительной и не меньше двух прогибов');render();return false;}
  if(field==='t'&&!Number.isFinite(Number(String(value).replace(',','.')))){toast('Укажите угол');render();return false;}
  const old=w[field];w[field]=next;const length=physicalWallLength(room,index);
+ if(w.engKey&&P()?.engineering?.some(e=>e.room===room.id&&e.wallKey===w.engKey&&e.offset>length)&&!confirm('После изменения длины стены часть инженерных элементов окажется без привязки. Продолжить?')){w[field]=old;render();return false}
  if((room.ops||[]).some(o=>o.wall===index+1&&num(o.offset)+num(o.w)>length+.001)||(room.points||[]).some(pt=>ELECTRICAL[pt.type]?.wall&&pt.wall===index+1&&pt.offset>length+.001)){w[field]=old;toast('Сначала переместите точки или проёмы в пределы новой стены');render();return false;}
  room.closed=geo(room).closed;return true;
 }
@@ -1071,7 +1083,7 @@ function bleDisconnect24(){if(BLE2)BLE2.disconnect();else if(BLE.web&&BLE.web.de
 function bleConnectTo24(d){if(!BLE2){toast('Обновите приложение: выбор устройства доступен в версии 2.4');return}BLE.state='connecting';BLE.name=d.name;render();BLE2.connect(d.addr,d.kind,d.name)}
 
 const canRemote=()=>BLE.proto==='bosch'||BLE.proto==='leica';
-bleCard=function(){const s=BLE.state,devs=BLE.devices.slice().sort((a,b)=>(b.proto?1:0)-(a.proto?1:0)||(b.rssi||-999)-(a.rssi||-999));
+bleCard=function(){if(!NATIVE&&!navigator.bluetooth)return '<div class="card"><b>Ручной замер</b><p class="small muted">Этот браузер не предоставляет связь с дальномером. Введите показания прибора в поля размеров.</p></div>';const s=BLE.state,devs=BLE.devices.slice().sort((a,b)=>(b.proto?1:0)-(a.proto?1:0)||(b.rssi||-999)-(a.rssi||-999));
  let h=`<div class="meas"><div class="grow"><div class="s">${s==='on'?'Дальномер: '+esc(BLE.name||'подключён')+(BLE.proto?' · '+esc(PROTO_NAMES[BLE.proto]||BLE.proto):''):s==='connecting'?'Поиск и подключение…':'Дальномер не подключён'}</div><div class="v">${UI.last!=null?fmt(UI.last,3)+' м':'— м'}</div></div>${s==='on'?(canRemote()?'<button class="btn" data-a="measure">Замер</button>':'')+'<button class="btn ghost" data-a="rfoff" style="color:inherit">Откл.</button>':'<button class="btn" data-a="ble">Подключить</button>'}</div>`;
  if(s!=='on'&&devs.length)h+=`<div class="card rfdev"><div class="small muted" style="margin-bottom:6px">Найденные устройства — нажмите на свой дальномер:</div><div class="chips">${devs.slice(0,12).map(d=>`<button class="chip" data-a="rfpick" data-addr="${esc(d.addr)}" data-kind="${esc(d.kind)}">${d.proto?'★ ':''}${esc(d.name||d.addr)}${d.kind==='classic'?' · BT':''}${d.bonded?' · сопряжён':''}</button>`).join('')}</div></div>`;
  h+=`<label class="f kbd">⌨ Ввод с дальномера в режиме клавиатуры (HID) или вручную + Enter<input data-f="kbd" id="kbd" inputmode="decimal" autocomplete="off" placeholder="например 2.345 или 2345 мм"></label>`;
@@ -1107,7 +1119,7 @@ UI.roomsFloor={};UI.aptFloor={};
 const aptFloor=p=>{const f=UI.aptFloor[p.id];return p.floors.some(x=>x.id===f)?f:p.floors[0].id};
 const roomsFloor=p=>{const f=UI.roomsFloor[p.id];return f==='all'||p.floors.some(x=>x.id===f)?f:'all'};
 const newRoomFloor=p=>{const f=roomsFloor(p);return f==='all'?aptFloor(p):f};
-function floorView(p,fid){p.layout=p.layout||{};return{...p,rooms:p.rooms.filter(r=>floorOf(p,r)===fid)}}
+function floorView(p,fid){p.layout=p.layout||{};return{...p,displayFloor:fid,rooms:p.rooms.filter(r=>floorOf(p,r)===fid)}}
 const closedArea=rooms=>rooms.filter(r=>geo(r).closed).reduce((a,r)=>a+geo(r).floor,0);
 function seatsLine(rooms){const n=rooms.reduce((a,r)=>a+Math.max(0,Math.round(num(r.seats))),0),A=closedArea(rooms);return n?`Рабочих мест: ${n} · ${fmt(A/n,1)} м² на место`:''}
 
@@ -1150,7 +1162,7 @@ vRoom=function(){const p=P(),r=RM(),base=oldVRoom24();if(!p||!r)return base;ensu
  return base+`<div class="card list" id="objectTools"><h3>${esc(k.n)}</h3>${extra}${k.seats&&geo(r).closed&&num(r.seats)>0?`<p class="small">${fmt(geo(r).floor/num(r.seats),1)} м² на рабочее место</p>`:''}</div>`};
 
 const oldVSettings24=vSettings;
-vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">Bosch, Leica и другие Bluetooth-дальномеры. Включите Bluetooth на приборе и нажмите «Подключить»: появится список найденных устройств. Каждый замер приходит в приложение.</p>').replace('версия 2.3','версия 2.8').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
+vSettings=function(){return oldVSettings24().replace(/<h3>Дальномер<\/h3><p class="small muted">[^<]*<\/p>/,'<h3>Дальномер</h3><p class="small muted">'+(NATIVE||navigator.bluetooth?'Для поддерживаемого прибора включите Bluetooth и нажмите «Подключить».':'Используйте ручной ввод показаний. В этом браузере подключение дальномера по Bluetooth недоступно.')+'</p>').replace('версия 2.3','версия 2.8').replace('<div class="card"><h3>Данные',rfSettings24()+'<div class="card"><h3>Данные')};
 const oldVHome24=vHome;
 vHome=function(){let h=oldVHome24().replace('Подключите дальномер Bosch GLM','Подключите Bluetooth-дальномер (Bosch, Leica и др.)');for(const p of DB.projects)if(p.kind&&p.kind!=='flat')h=h.replace(new RegExp('(data-a="open" data-id="'+p.id+'">[\\s\\S]*?<div class="t">[^<]*)'),m=>m+' <span class="badge">'+esc(kindOf(p).n)+'</span>');return h};
 
@@ -1402,8 +1414,8 @@ function Dxf(){const E=[],layers={},F=v=>(Math.round(v*100)/100).toFixed(2);cons
 const bulgeOf=(A,M,B)=>{const cx=B[0]-A[0],cy=B[1]-A[1],c=Math.hypot(cx,cy);if(c<1e-9)return 0;const mx=M[0]-(A[0]+B[0])/2,my=M[1]-(A[1]+B[1])/2,h=Math.hypot(mx,my);if(h<1e-6)return 0;const cr=cx*my-cy*mx,hh=Math.min(h,c/2);return(cr<0?1:-1)*2*hh/c};
 function planDXF(p){const D=Dxf();[['СТЕНЫ',7],['ДВЕРИ',30],['ОКНА',5],['ЭЛЕКТРИКА',1],['ПОМЕЩЕНИЯ',3],['РАЗМЕРЫ',8]].forEach(([n,c])=>D.L(n,c));
  let shiftX=0;const groups=roomsByFloor(p);for(const grp of groups){const all=grp.rooms.map(r=>{const G=roomGlobal(p,r);return{r,G,pts:geo(r).contour.map(G)}}),xs=all.flatMap(a=>a.pts.map(q=>q[0])),ys=all.flatMap(a=>a.pts.map(q=>q[1])),minX=Math.min(...xs),minY=Math.min(...ys),maxX=Math.max(...xs);
-  const M=q=>[(q[0]-minX)*1000+shiftX,-(q[1]-minY)*1000];if(grp.f)D.text('ПОМЕЩЕНИЯ',M([minX,minY-.8]),250,grp.f.name,0);
-  for(const{r,G}of all){const g=geo(r),segs=g.segments,vs=segs.map(s=>{const A=M(G(s.at(0))),B=M(G(s.at(1))),Mi=M(G(s.at(.5)));return[A[0],A[1],s.curve?bulgeOf(A,Mi,B):0]});D.poly('СТЕНЫ',vs,true);
+  const M=q=>[(q[0]-minX)*1000+shiftX,-(q[1]-minY)*1000];if(Number.isFinite(minX))engDxf({...p,displayFloor:grp.f?.id},null,D,M);if(grp.f)D.text('ПОМЕЩЕНИЯ',M([minX,minY-.8]),250,grp.f.name,0);
+  for(const{r,G}of all){const g=geo(r),segs=g.segments,vs=segs.map(s=>{const A=M(G(s.at(0))),B=M(G(s.at(1))),Mi=M(G(s.at(.5)));return[A[0],A[1],s.curve?bulgeOf(A,Mi,B):0]});D.poly('СТЕНЫ',vs,true);engDxf(p,r,D,q=>M(G(q)));
    segs.forEach((s,i)=>{const m=G(s.at(.5)),n=inwardN(r,s,.5),q=M([m[0]+n[0]*.22,m[1]+n[1]*.22]);D.text('РАЗМЕРЫ',q,100,Math.round(s.length*1000)+(s.curve?' дуга':''))});
    const c=roomCentroid(g.contour.slice(0,-1).map(G));D.text('ПОМЕЩЕНИЯ',M(c),180,r.name);D.text('ПОМЕЩЕНИЯ',M([c[0],c[1]+.3]),130,fmt(g.floor)+' м2, h='+Math.round(num(r.h)*1000));
    for(const o of r.ops||[]){const a=opAt(r,o);if(!a)continue;const P0=G(a.s.at(a.t0)),P1=G(a.s.at(a.t1)),n=inwardN(r,a.s,(a.t0+a.t1)/2),nG=(()=>{const z=G([0,0]),u=G(n);return[u[0]-z[0],u[1]-z[1]]})();
@@ -1416,6 +1428,7 @@ function elevDXF(p,r){const D=Dxf();[['СТЕНЫ',7],['ДВЕРИ',30],['ОКН
  r.walls.forEach((w,wi)=>{const L=wlen(r,wi)*1000;D.rect('СТЕНЫ',x,0,L,H);D.text('РАЗМЕРЫ',[x+L/2,-200],120,'Стена '+(wi+1)+': '+Math.round(L)+(w.curve?' (по дуге)':''));D.text('РАЗМЕРЫ',[x-150,H/2],100,Math.round(H));
   for(const o of(r.ops||[]).filter(o=>o.wall===wi+1)){const a=opAt(r,o);if(!a)continue;const sill=o.type==='door'?0:o.sill!=null?num(o.sill):.85;D.rect(o.type==='door'?'ДВЕРИ':'ОКНА',x+a.off*1000,sill*1000,a.w*1000,num(o.h)*1000);D.text(o.type==='door'?'ДВЕРИ':'ОКНА',[x+a.off*1000+a.w*500,sill*1000+num(o.h)*500],90,(o.type==='door'?'Д ':'О ')+Math.round(a.w*1000)+'x'+Math.round(num(o.h)*1000)+' от угла '+Math.round(a.off*1000)+(o.type!=='door'?(o.sill!=null?' пд '+Math.round(sill*1000):' пд не изм.'):''))}
   (r.points||[]).forEach((pt,i)=>{const d=ELECTRICAL[pt.type];if(!d||!d.wall||num(pt.wall)!==wi+1)return;const q=[x+num(pt.offset)*1000,num(pt.height)*1000];D.circle('ЭЛЕКТРИКА',q,40);D.text('ЭЛЕКТРИКА',[q[0]+60,q[1]+50],70,pointTag(r,i)+' '+Math.round(num(pt.offset)*1000)+'/'+Math.round(num(pt.height)*1000),0)});
+  for(const e of Eng.items(p)){const a=Eng.anchor(p,e);if(!a||a.r!==r||a.i!==wi||e.height==null||!Eng.visible(p,e))continue;const layer='ENG_'+e.group.toUpperCase(),q=[x+a.offset*1000,e.height*1000];D.L(layer,4);D.circle(layer,q,Math.max(20,(e.diameter||0)*500));D.text(layer,[q[0]+50,q[1]+40],60,Eng.label(e)+' '+Math.round(e.offset*1000)+' / '+Math.round(e.height*1000),0)}
   const f=fx.walls[wi]||{};const lab=FX_KEYS.filter(([k])=>f[k]).map(([k,n])=>n+' '+Math.round(f[k]*1000)).join('; ');if(lab)D.text('РАЗМЕРЫ',[x,-400],90,lab,0);x+=L+1500});
  D.text('РАЗМЕРЫ',[0,H+400],200,r.name+' — развёртки стен, мм; вид изнутри, слева направо по ходу обмера',0);return D.bytes()}
 function furnCSV(p,r){const fx=fxOf(r),rows=[['Объект',p.name],['Помещение',r.name],['Высота по замеру, мм',Math.round(num(r.h)*1000)],[],['Стена','Длина, мм','Дуга','Длина у пола','на 1 м','под потолком','Высота в начале','в конце']];
@@ -1426,39 +1439,57 @@ function furnCSV(p,r){const fx=fxOf(r),rows=[['Объект',p.name],['Поме�
 
 /* ---------- IFC 2x3 (spaces, walls with openings, doors, windows) ---------- */
 function ifcGuid(){const c='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$',b=new Uint8Array(16);crypto.getRandomValues(b);let n=0n;for(const x of b)n=(n<<8n)|BigInt(x);let s='';for(let i=0;i<22;i++){s=c[Number(n%64n)]+s;n/=64n}return s}
-const ifcStr=s=>"'"+[...String(s)].map(ch=>{const c=ch.codePointAt(0);return c<32||c>126?'\\X2\\'+c.toString(16).toUpperCase().padStart(4,'0')+'\\X0\\':ch==="'"?"''":ch==='\\'?'\\\\':ch}).join('')+"'";
+const ifcStr=s=>"'"+[...String(s)].map(ch=>{const c=ch.codePointAt(0);return c<32||c>126?'\\X2\\'+ch.split('').map(unit=>unit.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0')).join('')+'\\X0\\':ch==="'"?"''":ch==='\\'?'\\\\':ch}).join('')+"'";
 function planIFC(p){const L=[];let id=0;const E=s=>{L.push('#'+(++id)+'='+s+';');return'#'+id},F=v=>{const x=Math.round(v*1000)/1000;return Number.isInteger(x)?x+'.':String(x)},pt=(...c)=>E('IFCCARTESIANPOINT(('+c.map(F).join(',')+'))'),dir=(...c)=>E('IFCDIRECTION(('+c.map(F).join(',')+'))');
- const person=E("IFCPERSON($,$,'',$,$,$,$,$)"),org=E("IFCORGANIZATION($,"+ifcStr('Замер и смета')+",$,$,$)"),po=E(`IFCPERSONANDORGANIZATION(${person},${org},$)`),appl=E(`IFCAPPLICATION(${org},'2.5',${ifcStr('Замер и смета')},'ZS')`),oh=E(`IFCOWNERHISTORY(${po},${appl},$,.ADDED.,$,${po},${appl},${Math.floor(Date.now()/1000)})`);
+ const person=E("IFCPERSON($,$,'',$,$,$,$,$)"),org=E("IFCORGANIZATION($,"+ifcStr('Замер и смета')+",$,$,$)"),po=E(`IFCPERSONANDORGANIZATION(${person},${org},$)`),appl=E(`IFCAPPLICATION(${org},'3.0',${ifcStr('Замер и смета')},'ZS')`),oh=E(`IFCOWNERHISTORY(${po},${appl},$,.ADDED.,$,${po},${appl},${Math.floor(Date.now()/1000)})`);
  const u1=E('IFCSIUNIT(*,.LENGTHUNIT.,.MILLI.,.METRE.)'),u2=E('IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.)'),u3=E('IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.)'),u4=E('IFCSIUNIT(*,.PLANEANGLEUNIT.,$,.RADIAN.)'),units=E(`IFCUNITASSIGNMENT((${u1},${u2},${u3},${u4}))`);
  const o0=pt(0,0,0),zD=dir(0,0,1),xD=dir(1,0,0),ax0=E(`IFCAXIS2PLACEMENT3D(${o0},${zD},${xD})`),ctx=E(`IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,${ax0},$)`),body=E(`IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Model',*,*,*,*,${ctx},$,.MODEL_VIEW.,$)`),axisCtx=E(`IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Axis','Model',*,*,*,*,${ctx},$,.GRAPH_VIEW.,$)`);
  const proj=E(`IFCPROJECT('${ifcGuid()}',${oh},${ifcStr(p.name||'Объект')},$,$,$,$,(${ctx}),${units})`);
  const lp=(rel,x,y,z,dx=1,dy=0)=>E(`IFCLOCALPLACEMENT(${rel},${E(`IFCAXIS2PLACEMENT3D(${pt(x,y,z)},${zD},${dir(dx,dy,0)})`)})`);
  const sitePl=lp('$',0,0,0),site=E(`IFCSITE('${ifcGuid()}',${oh},${ifcStr('Участок')},$,$,${sitePl},$,$,.ELEMENT.,$,$,$,$,$)`),bldPl=lp(sitePl,0,0,0),bld=E(`IFCBUILDING('${ifcGuid()}',${oh},${ifcStr(p.name||'Здание')},$,$,${bldPl},$,$,.ELEMENT.,$,$,$)`);
  E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${proj},(${site}))`);E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${site},(${bld}))`);
- const storeys=[],T=0.1;
+ const storeys=[];
  const extrude=(profile,depth,pos)=>E(`IFCEXTRUDEDAREASOLID(${profile},${pos||E(`IFCAXIS2PLACEMENT3D(${o0},$,$)`)},${zD},${F(depth)})`);
  const shape=(items,type='SweptSolid',c=body,ident='Body')=>E(`IFCPRODUCTDEFINITIONSHAPE($,$,(${E(`IFCSHAPEREPRESENTATION(${c},'${ident}','${type}',(${items}))`)}))`);
- const rectProf=(cx,cy,w,h)=>E(`IFCRECTANGLEPROFILEDEF(.AREA.,$,${E(`IFCAXIS2PLACEMENT2D(${pt(cx,cy)},${dir(1,0)})`)},${F(w)},${F(h)})`);
- for(const grp of roomsByFloor(p)){const level=grp.f&&grp.f.level!=null?num(grp.f.level)*1000:0,stPl=lp(bldPl,0,0,level),st=E(`IFCBUILDINGSTOREY('${ifcGuid()}',${oh},${ifcStr(grp.f?grp.f.name:'1 этаж')},$,$,${stPl},$,$,.ELEMENT.,${F(level)})`);storeys.push(st);
+ const face=corners=>{const loop=E('IFCPOLYLOOP(('+corners.map(q=>pt(...q)).join(',')+'))');const bound=E('IFCFACEOUTERBOUND('+loop+',.T.)');return E('IFCFACE(('+bound+'))')};
+ const surface=faces=>{if(!faces.length)return '$';const set=E('IFCCONNECTEDFACESET(('+faces.join(',')+'))');return shape(E('IFCFACEBASEDSURFACEMODEL(('+set+'))'),'SurfaceModel')};
+ for(const grp of roomsByFloor(p)){const level=grp.f&&grp.f.level!=null?num(grp.f.level)*1000:0,stPl=lp(bldPl,0,0,level),st=E(`IFCBUILDINGSTOREY('${ifcGuid()}',${oh},${ifcStr(grp.f?grp.f.name:'1 этаж')},$,$,${stPl},$,$,.ELEMENT.,${grp.f?.level!=null?F(level):'$'})`);storeys.push(st);
   const spaces=[],elems=[];
-  for(const r of grp.rooms){const G=roomGlobal(p,r),g=geo(r),M=q=>[q[0]*1000,-q[1]*1000],H=num(r.h)*1000||2700;
-   const poly=g.contour.slice(0,-1).map(G).map(M),signed=poly.reduce((s,a,i)=>{const b=poly[(i+1)%poly.length];return s+a[0]*b[1]-b[0]*a[1]},0);
-   const pl=E(`IFCPOLYLINE((${[...poly,poly[0]].map(q=>pt(q[0],q[1])).join(',')}))`),prof=E(`IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,${pl})`);
-   const spPl=lp(stPl,0,0,0);spaces.push(E(`IFCSPACE('${ifcGuid()}',${oh},${ifcStr(r.name)},$,$,${spPl},${shape(extrude(prof,H))},${ifcStr(r.name)},.ELEMENT.,.INTERNAL.,$)`));
-   g.segments.forEach((s,wi)=>{const n=s.curve?Math.max(2,Math.ceil(Math.abs(s.sweep)*8/Math.PI)):1,ops=(r.ops||[]).filter(o=>o.wall===wi+1).map(o=>({o,a:opAt(r,o)})).filter(x=>x.a);
-    for(let k=0;k<n;k++){const t0=k/n,t1=(k+1)/n,A=M(G(s.at(t0))),B=M(G(s.at(t1))),len=Math.hypot(B[0]-A[0],B[1]-A[1]);if(len<1)continue;const ux=(B[0]-A[0])/len,uy=(B[1]-A[1])/len,side=signed>0?-1:1;
-     const wPl=lp(stPl,A[0],A[1],0,ux,uy),axis=E(`IFCPOLYLINE((${pt(0,0)},${pt(len,0)}))`),solid=extrude(rectProf(len/2,side*T*500,len,T*1000),H);
-     const pds=E(`IFCPRODUCTDEFINITIONSHAPE($,$,(${E(`IFCSHAPEREPRESENTATION(${axisCtx},'Axis','Curve2D',(${axis}))`)},${E(`IFCSHAPEREPRESENTATION(${body},'Body','SweptSolid',(${solid}))`)}))`);
-     const wall=E(`IFCWALLSTANDARDCASE('${ifcGuid()}',${oh},${ifcStr(r.name+' — стена '+(wi+1)+(n>1?'.'+(k+1):''))},$,$,${wPl},${pds},$)`);elems.push(wall);
-     for(const{o,a}of ops){const tm=(a.t0+a.t1)/2;if(tm<t0||tm>=t1)continue;const segLen=s.length*(t1-t0),offIn=Math.max(0,(a.off-s.length*t0))*len/segLen,ow=Math.min(a.w*1000,len-offIn),oh2=num(o.h)*1000,sill=o.type==='door'?0:(o.sill!=null?num(o.sill):.85)*1000;
-      const oPl=lp(wPl,offIn,0,sill),op=E(`IFCOPENINGELEMENT('${ifcGuid()}',${oh},${ifcStr('Проём')},$,$,${oPl},${shape(extrude(rectProf(ow/2,side*T*500,ow,T*1000+40),oh2))},$)`);
-      E(`IFCRELVOIDSELEMENT('${ifcGuid()}',${oh},$,$,${wall},${op})`);const fPl=lp(oPl,0,0,0),fill=extrude(rectProf(ow/2,side*T*500,ow,40),oh2);
-      const el=o.type==='door'?E(`IFCDOOR('${ifcGuid()}',${oh},${ifcStr(o.grp?'Балконная дверь':'Дверь')},$,$,${fPl},${shape(fill)},$,${F(oh2)},${F(ow)})`):E(`IFCWINDOW('${ifcGuid()}',${oh},${ifcStr(o.grp?'Балконное окно':'Окно')},$,$,${fPl},${shape(fill)},$,${F(oh2)},${F(ow)})`);
-      E(`IFCRELFILLSELEMENT('${ifcGuid()}',${oh},$,$,${op},${el})`);elems.push(el)}}})}
+  for(const r of grp.rooms){
+   const G=roomGlobal(p,r),g=geo(r),M=q=>[q[0]*1000,-q[1]*1000],H=num(r.h)*1000,spPl=lp(stPl,0,0,0);
+   const poly=g.contour.slice(0,-1).map(G).map(M),pl=E('IFCPOLYLINE(('+[...poly,poly[0]].map(q=>pt(...q)).join(',')+'))');
+   const prof=E('IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,'+pl+')');
+   spaces.push(E("IFCSPACE('"+ifcGuid()+"',"+oh+','+ifcStr(r.name)+",$,$,"+spPl+','+(H>0?shape(extrude(prof,H)):'$')+','+ifcStr(r.name)+',.ELEMENT.,.INTERNAL.,$)'));
+   g.segments.forEach((seg,wi)=>{
+    const samples=seg.curve?Math.max(4,Math.ceil(Math.abs(seg.sweep)*24/Math.PI)):1;
+    const xy=t=>M(G(seg.at(t))),points=Array.from({length:samples+1},(_,i)=>xy(i/samples));
+    const axis=E('IFCPOLYLINE(('+points.map(q=>pt(...q)).join(',')+'))');
+    const ops=(r.ops||[]).filter(o=>o.wall===wi+1).map(o=>({o,a:opAt(r,o),z:o.type==='door'?0:o.sill==null?null:num(o.sill)*1000})).filter(x=>x.a&&x.o.h>0);
+    const cuts=[...new Set([0,1,...points.map((_,i)=>i/samples),...ops.flatMap(x=>[x.a.t0,x.a.t1])])].sort((a,b)=>a-b);
+    const quad=(a,b,bottom,top)=>{const A=xy(a),B=xy(b);return face([[...A,bottom],[...B,bottom],[...B,top],[...A,top]])};
+    const faces=[];
+    for(let j=1;j<cuts.length;j++){const a=cuts[j-1],b=cuts[j],mid=(a+b)/2;if(b-a<1e-7||H<=0)continue;
+     const op=ops.find(x=>x.z!=null&&x.a.t0<mid&&mid<x.a.t1);
+     if(!op)faces.push(quad(a,b,0,H));else{const top=op.z+op.o.h*1000;if(op.z>0&&op.z<=H)faces.push(quad(a,b,0,op.z));if(top<H)faces.push(quad(a,b,top,H))}
+    }
+    const geometry=faces.length?surface(faces):shape(axis,'Curve2D',axisCtx,'Axis');
+    const wPl=lp(stPl,0,0,0),wall=E("IFCWALL('"+ifcGuid()+"',"+oh+','+ifcStr(r.name+' — стена '+(wi+1))+','+ifcStr('Внутренняя поверхность по обмеру')+',$,'+wPl+','+geometry+',$)');elems.push(wall);
+    for(const {o,a,z} of ops){
+     const known=z!=null&&z>=0&&(!H||z+o.h*1000<=H+.01),opl=known?lp(wPl,0,0,0):'$';
+     const stops=cuts.filter(t=>t>=a.t0&&t<=a.t1),planes=[];
+     if(known)for(let j=1;j<stops.length;j++)if(stops[j]-stops[j-1]>1e-7)planes.push(quad(stops[j-1],stops[j],z,z+o.h*1000));
+     const rep=surface(planes),op=E("IFCOPENINGELEMENT('"+ifcGuid()+"',"+oh+','+ifcStr('Проём')+",$,$,"+opl+','+rep+',$)');
+     E("IFCRELVOIDSELEMENT('"+ifcGuid()+"',"+oh+",$,$,"+wall+','+op+')');
+     const type=o.type==='door'?'IFCDOOR':'IFCWINDOW',name=o.type==='door'?'Дверь':'Окно';
+     const el=E(type+"('"+ifcGuid()+"',"+oh+','+ifcStr(name)+",$,$,"+(known?lp(opl,0,0,0):'$')+','+surface(planes)+',$,'+F(o.h*1000)+','+F(o.w*1000)+')');
+     E("IFCRELFILLSELEMENT('"+ifcGuid()+"',"+oh+",$,$,"+op+','+el+')');elems.push(el);
+    }
+   });
+  }
   if(spaces.length)E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${st},(${spaces.join(',')}))`);if(elems.length)E(`IFCRELCONTAINEDINSPATIALSTRUCTURE('${ifcGuid()}',${oh},$,$,(${elems.join(',')}),${st})`)}
- E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${bld},(${storeys.join(',')}))`);
- const now=new Date().toISOString().slice(0,19);return utf8(`ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\nFILE_NAME(${ifcStr((p.name||'object')+'.ifc')},'${now}',(''),(''),'Zamer i Smeta 2.5','Zamer i Smeta','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n${L.join('\n')}\nENDSEC;\nEND-ISO-10303-21;\n`)}
-function studioJSON(p){return utf8(JSON.stringify({app:'Замер и смета 2.5',exported:new Date().toISOString(),settings:{},projects:[p]}))}
+ if(storeys.length)E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${bld},(${storeys.join(',')}))`);
+ const now=new Date().toISOString().slice(0,19);return utf8(`ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\nFILE_NAME(${ifcStr((p.name||'object')+'.ifc')},'${now}',(''),(''),'Zamer i Smeta 3.0','Zamer i Smeta','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n${L.join('\n')}\nENDSEC;\nEND-ISO-10303-21;\n`)}
+function studioJSON(p){return utf8(JSON.stringify({app:'Замер и смета 3.0',exported:new Date().toISOString(),settings:{},projects:[p]}))}
 
 /* ---------- designer tab ---------- */
 function vDesign(p){const groups=roomsByFloor(p),tot=groups.reduce((s,g)=>s+g.rooms.reduce((a,r)=>a+geo(r).floor,0),0),unplaced=!p.layout||p.rooms.filter(r=>geo(r).closed).some(r=>!(p.layout||{})[r.id]);
@@ -1467,7 +1498,7 @@ function vDesign(p){const groups=roomsByFloor(p),tot=groups.reduce((s,g)=>s+g.ro
  ${unplaced?'<p class="warn">Не все помещения расставлены на общем плане. Откройте вкладку «План» и разместите комнаты — иначе в файлах они встанут условно.</p>':''}</div>
  ${row('JSON для «Студии дизайна»','Полный объект: помещения, дуги, проёмы, балконные блоки, подоконники, электроточки, этажи, отделка. Откройте в программе «Студия дизайна» → «Объект» → «Загрузить JSON».','xstudio')}
  ${row('DXF для AutoCAD и ArchiCAD — план','Контуры помещений (дуги — настоящими дугами), двери со створкой, окна, электроточки, подписи и размеры. Единицы — миллиметры, слои по типам. AutoCAD: «Открыть». ArchiCAD: «Файл → Открыть» или «Вставить → DXF/DWG».','xdxf')}
- ${row('IFC для ArchiCAD и Revit — 3D-модель','Помещения (зоны), стены по контуру с проёмами, двери и окна по высоте. Толщина стен условная — 100 мм наружу от обмера; общие стены соседних помещений задваиваются. ArchiCAD: «Файл → Открыть» (IFC).','xifc')}
+ ${row('IFC для ArchiCAD и Revit — 3D-модель','Помещения (зоны), стены по контуру с проёмами, двери и окна по высоте. Стены передаются внутренними поверхностями по каждому помещению. Для окна без отметки подоконника сохраняются известные размеры. Неподтверждённые отметки этажей оставлены пустыми. ArchiCAD: «Файл → Открыть» (IFC).','xifc')}
  <div class="card"><p class="small muted" style="margin:0">Родные форматы .dwg (AutoCAD) и .pln (ArchiCAD) закрыты производителями и в телефоне не создаются. DXF и IFC — их официальные форматы обмена; обе программы открывают их без конвертеров.</p></div>`}
 
 /* ---------- project tabs and gating ---------- */
@@ -1774,22 +1805,30 @@ const PHDB={
   },
   async putAll(records){
     const db=await this.open();
-    return new Promise((resolve,reject)=>{
+    const write=batch=>new Promise((resolve,reject)=>{
       const tx=db.transaction('ph','readwrite');
       tx.oncomplete=()=>resolve();
       tx.onabort=()=>reject(tx.error||Error('Запись фотографий прервана'));
       try{
         const store=tx.objectStore('ph');
-        for(const record of records)store.add(record);
+        for(const record of batch)store.add(record);
       }catch(error){tx.abort();reject(error)}
     });
+    try{await write(records)}catch(error){
+      if(!['DataCloneError','UnknownError'].includes(error.name)&&!/preparing Blob|serialize.*(Blob|File)/i.test(error.message))throw error;
+      const batch=[];
+      for(const record of records){const copy={...record};for(const key of ['original','source'])if(copy[key] instanceof Blob){
+        copy[key+'Buffer']=await copy[key].arrayBuffer();copy[key+'Mime']=copy[key].type;delete copy[key];
+      }batch.push(copy)}
+      await write(batch);
+    }
   },
   async get(id){
     const db=await this.open();
     return new Promise((resolve,reject)=>{
       const tx=db.transaction('ph');
       const request=tx.objectStore('ph').get(id);
-      tx.oncomplete=()=>resolve(request.result||null);
+      tx.oncomplete=()=>{const r=request.result;if(r)for(const k of ['original','source'])if(!r[k]&&r[k+'Buffer']){r[k]=new Blob([r[k+'Buffer']],{type:r[k+'Mime']||''});delete r[k+'Buffer'];delete r[k+'Mime']}resolve(r||null)};
       tx.onabort=()=>reject(tx.error||Error('Чтение фотографии прервано'));
     });
   },
@@ -1816,10 +1855,9 @@ async function fillPh27(){
 }
 let phTarget27=null;
 const pendingPhotoWrites=new Map();
-function phPick27(mode){
-  const project=P(),room=RM();
+function phPick27(mode,project=P(),room=RM(),element=null){
   if(!project||!room)return;
-  phTarget27={project,room,wallObject:room.walls[UI.phWall-1]};
+  phTarget27={project,room,wallObject:room.walls?.[UI.phWall-1],element};
   if(window.Photo&&Photo.pick){Photo.pick(mode);return}
   const input=document.getElementById('ph27in');
   input.value='';
@@ -1867,15 +1905,17 @@ async function phAdd27(source){
     }
     const id=uid()+uid();
     await PHDB.putAll([{id,original,data,name:source.name||'',projectId:project.id,roomId:room.id}]);
-    if(!DB.projects.includes(project)||!project.rooms.includes(room)){
+    if(!DB.projects.includes(project)||!(target.element?project.engineering?.some(e=>e.id===target.element.id):project.rooms.includes(room))){
       await PHDB.removeAll([id]);
       throw Error('Помещение удалено');
     }
-    const wall=room.walls.indexOf(wallObject)+1;
+    const wall=(room.walls||[]).indexOf(wallObject)+1;
     const photo={id,wall:wall||null,ts:Date.now()};
-    (room.photos=room.photos||[]).push(photo);
+    const owner=target.element?project.engMedia:room;
+    if(target.element){photo.elements=[target.element.id];photo.capturedRoom=target.element.room||null;photo.capturedWall=target.element.wallKey||null}
+    (owner.photos=owner.photos||[]).push(photo);
     if(!save()){
-      room.photos.pop();
+      owner.photos.pop();
       if(!NATIVE)await PHDB.removeAll([id]).catch(console.warn);
       return;
     }
@@ -1888,6 +1928,7 @@ async function phAdd27(source){
   }
 }
 window.onNativePhoto=phAdd27;
+Eng.pick=(p,e,mode)=>{p.engMedia=p.engMedia||{id:'~eng',photos:[]};phPick27(mode,p,p.engMedia,e)};
 function photosCard27(r){const ph=r.photos||[];return`<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📷 Фото помещения (${ph.length})</h3></div>
  <p class="small muted" style="margin:6px 0">Снимите каждую стену — фото привяжется к стене и появится на ней в 3D.</p>
  <div class="chips"><span class="small muted" style="align-self:center">Стена:</span><button class="chip" data-a="phwall" data-i="" aria-pressed="${!UI.phWall}">общее</button>${r.walls.map((w,i)=>`<button class="chip" data-a="phwall" data-i="${i+1}" aria-pressed="${UI.phWall===i+1}">${i+1}</button>`).join('')}</div>
@@ -1994,12 +2035,13 @@ function roomDrawing27(r,G,M,k,opt={}){const g=geo(r),segs=g.segments,sign=g.sig
   s+=`<g ${ED('pt',i)}><circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="3" fill="transparent"/>`+(/^socket/.test(pt.type)?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1" fill="#fff" stroke="#000" stroke-width=".25"/>`:/switch/.test(pt.type)?`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r=".8" fill="#000"/>`:d.wall?`<rect x="${f1(q[0]-.9)}" y="${f1(q[1]-.9)}" width="1.8" height="1.8" fill="#fff" stroke="#000" stroke-width=".25"/>`:`<circle cx="${f1(q[0])}" cy="${f1(q[1])}" r="1.4" fill="#fff" stroke="#000" stroke-width=".25"/>`+ln27([q[0]-1,q[1]-1],[q[0]+1,q[1]+1],.2)+ln27([q[0]-1,q[1]+1],[q[0]+1,q[1]-1],.2))+(opt.tags?tx27(q[0]+1.6,q[1]-1.2,pointTag(r,i),{s:1.7,a:'start'}):'')+'</g>'});
  const c=roomCentroid(poly);s+=tx27(c[0],c[1]-1.5,r.name,{s:opt.big?3.6:3,b:1})+tx27(c[0],c[1]+2.6,fmt(g.floor,2)+' м²'+(num(r.h)?'  h='+mm(num(r.h)):''),{s:opt.big?2.8:2.4});
  return s+dims}
-function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const Gs=rooms.map(r=>({r,G:roomGlobal(p,r)}));let pts=[];Gs.forEach(({r,G})=>geo(r).segments.forEach(seg=>sampleSeg27(seg,seg.length*4).forEach(q=>pts.push(G(q)))));
+function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const Gs=rooms.map(r=>({r,G:roomGlobal(p,r)}));let pts=Eng.outside(p);Gs.forEach(({r,G})=>geo(r).segments.forEach(seg=>sampleSeg27(seg,seg.length*4).forEach(q=>pts.push(G(q)))));
  const minx=Math.min(...pts.map(q=>q[0])),maxx=Math.max(...pts.map(q=>q[0])),miny=Math.min(...pts.map(q=>q[1])),maxy=Math.max(...pts.map(q=>q[1]));
  const AW=380,AH=225,sc=STD_SCALES.find(s=>(maxx-minx)*1000/s<=AW-30&&(maxy-miny)*1000/s<=AH-30)||500,k=1000/sc;
  const ox=25+(AW-(maxx-minx)*k)/2,oy=12+(AH-(maxy-miny)*k)/2,M=q=>[ox+(q[0]-minx)*k,oy+(q[1]-miny)*k];
  let s=frame27(p,{title:kindOf(p).plan||'Обмерный план',scale:'1:'+sc,n,N});
- Gs.forEach(({r,G})=>{s+=roomDrawing27(r,G,M,k,{fs:2,d1:4,d2:8.5})});
+ s+=engMarkers(p,null,M,2);
+ Gs.forEach(({r,G})=>{s+=roomDrawing27(r,G,M,k,{fs:2,d1:4,d2:8.5})+engMarkers(p,r,q=>M(G(q)),2)});
  /* room schedule left of the title block */
  const T=rooms.map((r,i)=>{const g=geo(r);return[i+1,r.name,fmt(g.floor,2),fmt(g.perim,2),num(r.h)?fmt(num(r.h),2):'—']}),bx=25,by=252;s+=`<rect x="${bx}" y="${by}" width="200" height="40" fill="#fff" stroke="#000" stroke-width=".35"/>`+tx27(bx+100,by+4.5,'Экспликация помещений',{s:2.8,b:1});
  const cols=[8,92,34,34,32],rh=Math.min(4.2,30/Math.max(1,T.length+1));let y=by+7,x;
@@ -2010,7 +2052,7 @@ function sheetPlan27(p,n,N){const rooms=p.rooms.filter(r=>geo(r).closed);const G
  return{svg:wrapSheet27(s),title:'План'}}
 function wrapSheet27(inner){return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SH.W} ${SH.H}" width="${SH.W}mm" height="${SH.H}mm" class="sheet27"><rect width="${SH.W}" height="${SH.H}" fill="#fff"/>${inner}</svg>`}
 /* elevation of one wall (seen from inside; left corner on the left) */
-function elevDrawing27(r,wi,x0,y0,k){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=H*k,lis=leftIsStart27(r),X=(off,wd=0)=>x0+(lis?off:L-off-wd)*k,Y=y=>y0+(H-y)*k,c=corners27(r,wi);
+function elevDrawing27(r,wi,x0,y0,k,project){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=H*k,lis=leftIsStart27(r),X=(off,wd=0)=>x0+(lis?off:L-off-wd)*k,Y=y=>y0+(H-y)*k,c=corners27(r,wi);
  let s=`<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(h)}" fill="#fff" stroke="#000" stroke-width=".5"/>`;
  s+=tx27(x0+w/2,y0-6,'Развёртка стены '+(wi+1)+' (угол '+c.left+' — угол '+c.right+')',{s:2.8,b:1});
  const xs=[0,L],dn=[1,0];
@@ -2029,7 +2071,7 @@ function elevDrawing27(r,wi,x0,y0,k){const L=wlen(r,wi),H=num(r.h)||2.7,w=L*k,h=
  s+=dim27([x0,y0+h],[x0+w,y0+h],[0,1],C.length>2?9:4,String(mm(L)),{s:2.2,gap:.5});
  if(pts.length){const P=[x0,...pts.sort((a,b)=>a-b)];for(let i=1;i<P.length;i++)s+=dim27([P[i-1],y0+h],[P[i],y0+h],[0,1],C.length>2?14:9,String(Math.round((P[i]-P[i-1])/k*1000)),{s:1.7,gap:.5})}
  s+=dim27([x0,y0],[x0,y0+h],[-1,0],5,String(mm(H)),{s:2.2,gap:.5});
- return s}
+ return s+engElev(project,r,wi,X,Y,k)}
 function sheetsRoom27(p,r,n0,N){const g=geo(r),out=[];const pts=[];g.segments.forEach(seg=>sampleSeg27(seg,seg.length*4).forEach(q=>pts.push(q)));
  const minx=Math.min(...pts.map(q=>q[0])),maxx=Math.max(...pts.map(q=>q[0])),miny=Math.min(...pts.map(q=>q[1])),maxy=Math.max(...pts.map(q=>q[1]));
  const PWm=150,PHm=118,sc=STD_SCALES.find(s=>(maxx-minx)*1000/s<=PWm-34&&(maxy-miny)*1000/s<=PHm-34)||500,k=1000/sc,ox=25+(PWm-(maxx-minx)*k)/2+5,oy=14+(PHm-(maxy-miny)*k)/2+4,M=q=>[ox+(q[0]-minx)*k,oy+(q[1]-miny)*k];
@@ -2040,32 +2082,36 @@ function sheetsRoom27(p,r,n0,N){const g=geo(r),out=[];const pts=[];g.segments.fo
   for(let guard=0;guard<6;guard++){if(x+bw>reg.x1&&x>reg.x0){x=reg.x0;y+=rowH+3;rowH=0}if(x+bw<=reg.x1+.01&&y+bh<=reg.y1)break;if(regs.length){reg=regs.shift()}else{pages.push([]);regs=RN.slice(1);reg=RN[0]}x=reg.x0;y=reg.y0;rowH=0}
   pages[pages.length-1].push({i,x:x+14,y:y+9});x+=bw+4;rowH=Math.max(rowH,bh)}
  pages.forEach((pg,pi)=>{let s=frame27(p,{title:r.name+(pi?' — развёртки (прод.)':' — план и развёртки'),scale:pi?'1:'+se:'1:'+sc+' / 1:'+se,n:n0+pi,N});
-  if(!pi){s+=roomDrawing27(r,q=>q,M,k,{wallNo:1,tags:1,big:1,fs:2.2,d1:5,d2:10,radDims:1});s+=tx27(25+PWm/2+5,10.5,'План помещения, 1:'+sc,{s:2.8,b:1});
+  if(!pi){s+=roomDrawing27(r,q=>q,M,k,{wallNo:1,tags:1,big:1,fs:2.2,d1:5,d2:10,radDims:1})+engMarkers(p,r,M,2);s+=tx27(25+PWm/2+5,10.5,'План помещения, 1:'+sc,{s:2.8,b:1});
    s+=tx27(28,256,'Площадь пола '+fmt(g.floor,2)+' м² · периметр '+fmt(g.perim,2)+' м · высота '+(num(r.h)?mm(num(r.h))+' мм':'не измерена')+' · стены за вычетом проёмов '+fmt(g.wall,2)+' м²',{s:2.4,a:'start'});
    s+=tx27(28,262,'Обозначения: ○ розетка  ● выключатель  □ прочие настенные точки  ⊗ светильник. Развёртки — вид изнутри помещения, размеры в мм.',{s:2.1,a:'start',c:'#333'});
    if(r.comment)s+=tx27(28,268,'Примечание: '+String(r.comment).slice(0,140),{s:2.1,a:'start',c:'#333'})}
-  for(const b of pg)s+=elevDrawing27(r,b.i,b.x,b.y,ke);out.push({svg:wrapSheet27(s),title:r.name+(pi?' (прод.)':'')})});
+  for(const b of pg)s+=elevDrawing27(r,b.i,b.x,b.y,ke,p);out.push({svg:wrapSheet27(s),title:r.name+(pi?' (прод.)':'')})});
  return out}
 const ELEVROWS27=(r,i)=>18+((r.points||[]).some(pt=>num(pt.wall)===i+1&&ELECTRICAL[pt.type]&&ELECTRICAL[pt.type].wall)?5:0);
-function allSheets27(p){const rooms=p.rooms.filter(r=>geo(r).closed);let sheets=[{f:n=>sheetPlan27(p,n,0)}];
- /* count pages first */
- const tmp=[];tmp.push(sheetPlan27(p,1,1));let n=2;for(const r of rooms){const ss=sheetsRoom27(p,r,n,1);n+=ss.length;tmp.push(...ss)}
- const N=tmp.length;const out=[sheetPlan27(p,1,N)];n=2;for(const r of rooms){const ss=sheetsRoom27(p,r,n,N);n+=ss.length;out.push(...ss)}return out}
+function allSheets27(p){
+ const rooms=p.rooms.filter(r=>geo(r).closed),groups=hasFloors(p)?roomsByFloor(p):[];
+ const views=groups.length?groups.map(({f,rooms})=>({...p,name:p.name+' · '+f.name,rooms,displayFloor:f.id,sheetFloor:f.name})):[p];
+ const schedules=engTable(p);const count=views.length+rooms.reduce((n,r)=>n+sheetsRoom27(p,r,1,1).length,0)+schedules.length;
+ const out=views.map((view,i)=>{const s=sheetPlan27(view,i+1,count);if(view.sheetFloor)s.title+=' · '+view.sheetFloor;return s});
+ for(const r of rooms)out.push(...sheetsRoom27(p,r,out.length+1,count));return out.concat(schedules);
+}
 function vDraw27(p){const sh=allSheets27(p);UI.sheetI=Math.min(UI.sheetI||0,sh.length-1);const cur=sh[UI.sheetI];
  return`<div class="card"><h3>Рабочий чертёж (обмерный)</h3><p class="small muted">Формат А3, рамка и штамп, размеры в мм: цепочки до проёмов и радиаторов, габаритные размеры, развёртки стен с высотами подоконников, радиаторов и электроточек. Реквизиты для штампа — в настройках.</p>
  <div class="chips">${sh.map((x,i)=>`<button class="chip" data-a="sheet" data-i="${i}" aria-pressed="${i===UI.sheetI}">${i+1}. ${esc(x.title)}</button>`).join('')}</div></div>
  <div class="sheetbox">${cur.svg}</div>
  <div class="card"><div class="row wrap"><button class="btn" data-a="drawpdf" data-m="save">PDF — сохранить</button><button class="btn sec" data-a="drawpdf" data-m="share">PDF — отправить</button><button class="btn sec" data-a="drawsvg">SVG листа</button></div><p class="small muted" style="margin:8px 0 0">Для AutoCAD и ArchiCAD — DXF и IFC во вкладке «Дизайнеру».</p></div>`}
 async function sheetCanvas27(svg,pxW=2480){const im=new Image(),url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg.replace(/width="420mm" height="297mm"/,`width="${pxW}" height="${Math.round(pxW*SH.H/SH.W)}"`));await new Promise((res,rej)=>{im.onload=res;im.onerror=()=>rej(Error('svg'));im.src=url});const c=document.createElement('canvas');c.width=pxW;c.height=Math.round(pxW*SH.H/SH.W);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);return c}
+async function sheetJpeg27(svg){const cv=await sheetCanvas27(svg);try{return {width:cv.width,height:cv.height,jpeg:b64bytes(cv.toDataURL('image/jpeg',.9).split(',')[1])}}finally{cv.width=1;cv.height=1}}
 function pdfLandscape27(cvs,Wpt=1190.55,Hpt=841.89){const enc=new TextEncoder(),parts=[],offs=[];let len=0;const push=x=>{const b=typeof x==='string'?enc.encode(x):x;parts.push(b);len+=b.length};
  push('%PDF-1.4\n%âã\n');const obj=(id,body)=>{offs[id]=len;push(id+' 0 obj\n'+body+'\nendobj\n')};const n=cvs.length;
  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');obj(2,`<< /Type /Pages /Kids [${cvs.map((_,i)=>(3+3*i)+' 0 R').join(' ')}] /Count ${n} >>`);
- cvs.forEach((cv,i)=>{const id=3+3*i,jpg=b64bytes(cv.toDataURL('image/jpeg',0.9).split(',')[1]);obj(id,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${Wpt} ${Hpt}] /Resources << /XObject << /Im${i} ${id+1} 0 R >> >> /Contents ${id+2} 0 R >>`);
+ cvs.forEach((cv,i)=>{const id=3+3*i,jpg=cv.jpeg||b64bytes(cv.toDataURL('image/jpeg',0.9).split(',')[1]);obj(id,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${Wpt} ${Hpt}] /Resources << /XObject << /Im${i} ${id+1} 0 R >> >> /Contents ${id+2} 0 R >>`);
   offs[id+1]=len;push(`${id+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${cv.width} /Height ${cv.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);push(jpg);push('\nendstream\nendobj\n');
   const cs=`q ${Wpt} 0 0 ${Hpt} 0 0 cm /Im${i} Do Q`;obj(id+2,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`)});
  const total=3+3*n,xref=len;let x=`xref\n0 ${total}\n0000000000 65535 f \n`;for(let i=1;i<total;i++)x+=String(offs[i]).padStart(10,'0')+' 00000 n \n';push(x+`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
  const out=new Uint8Array(len);let o=0;for(const b of parts){out.set(b,o);o+=b.length}return out}
-async function drawPdf27(p,mode){toast('Готовлю чертёж…');await new Promise(r=>setTimeout(r,30));try{const sh=allSheets27(p),cvs=[];for(const s of sh)cvs.push(await sheetCanvas27(s.svg));const pdf=pdfLandscape27(cvs),name=('Чертёж '+(p.name||'')+' '+(p.date||today())).replace(/[\\/:*?"<>|]/g,'-').trim()+'.pdf';
+async function drawPdf27(p,mode){toast('Готовлю чертёж…');await new Promise(r=>setTimeout(r,30));try{const sh=allSheets27(p).concat(await engPhotoSheets(p)),cvs=[];for(const s of sh)cvs.push(await sheetJpeg27(s.svg));const pdf=pdfLandscape27(cvs),name=('Чертёж '+(p.name||'')+' '+(p.date||today())).replace(/[\\/:*?"<>|]/g,'-').trim()+'.pdf';
  if(NATIVE&&NATIVE.savePdf){const b=bytesB64(pdf);mode==='save'?NATIVE.savePdf(name,b):NATIVE.sharePdf(name,b);return}outFile(name,'application/pdf',pdf,mode)}catch(e){toast('Не удалось собрать PDF: '+e.message)}}
 
 /* ============ 3D and 5D (time + cost) ============ */
@@ -2086,8 +2132,8 @@ function scurve27(plan,day){const W=640,H=150,L=8,k=(W-2*L)/Math.max(1,plan.tota
  const cy=H-20-(spent27(plan,day)/m)*(H-40);return`<svg viewBox="0 0 ${W} ${H}" class="gantt27" xmlns="http://www.w3.org/2000/svg"><line x1="${L}" y1="${H-20}" x2="${W-L}" y2="${H-20}" stroke="currentColor" opacity=".3"/><path d="${d}" fill="none" stroke="#1f6b9a" stroke-width="2.5"/><circle cx="${L+day*k}" cy="${cy}" r="6" fill="#c2410c"/><text x="${W-L}" y="14" font-size="12" text-anchor="end" fill="currentColor">${rub(plan.sum)}</text><text x="${L}" y="${H-4}" font-size="12" fill="currentColor">Затраты нарастающим итогом</text></svg>`}
 function v3d27(p){const plan=plan5d27(p),day=Math.min(num(UI.d5day),plan.total),pr=progress27(plan,day);UI.d5day=day;
  return`<div class="card" style="padding:8px"><div class="v3d27" id="v3d27"><canvas id="c3d27"></canvas><div class="v3d27-hint small">Вращайте пальцем · два пальца — масштаб</div></div>
- <div class="chips" style="margin-top:8px"><button class="chip" data-a="v3view" data-v="iso" aria-pressed="${(UI.v3view||'iso')==='iso'}">3D</button><button class="chip" data-a="v3view" data-v="top" aria-pressed="${UI.v3view==='top'}">Сверху</button><button class="chip" data-a="v3view" data-v="in" aria-pressed="${UI.v3view==='in'}">Внутри</button><button class="chip" data-a="v3mode" aria-pressed="${!!UI.v3fin}">${UI.v3fin?'Готовый ремонт':'По графику 5D'}</button></div>
- <p class="small muted" style="margin:6px 0 0">Фото стен из замера накладываются на стены. Цвета — по выбранной отделке.</p></div>
+ ${sceneFloors3(p).length>1?'<label class="f">Этаж в 3D<select id="scene-floor3">'+sceneFloors3(p).map(g=>'<option value="'+esc(g.f.id)+'" '+(sceneFloor3(p).f.id===g.f.id?'selected':'')+'>'+esc(g.f.name)+'</option>').join('')+'</select></label>':''}<div class="chips" style="margin-top:8px"><button class="chip" data-a="v3view" data-v="iso" aria-pressed="${(UI.v3view||'iso')==='iso'}">3D</button><button class="chip" data-a="v3view" data-v="top" aria-pressed="${UI.v3view==='top'}">Сверху</button><button class="chip" data-a="v3view" data-v="in" aria-pressed="${UI.v3view==='in'}">Внутри</button><button class="chip" data-a="v3mode" aria-pressed="${!!UI.v3fin}">${UI.v3fin?'Готовый ремонт':'По графику 5D'}</button></div>
+ <p class="small muted" style="margin:6px 0 0">${Eng.items(p).length?'<label class="eng-check"><input id="eng-show3d" type="checkbox" '+(p.engineering3d!==false?'checked':'')+'> Инженерные элементы в 3D</label>':''}Фото стен из замера накладываются на стены. Цвета — по выбранной отделке.</p></div>
  <div class="card"><h3>5D: график и стоимость</h3>${plan.list.length?`<p class="small muted" style="margin-top:0">3D-модель + время + деньги. Этапы собраны из сметы (вариант «${vName(p.v||DB.settings.variant||'s')}»), длительность — по выработке бригады; меняйте под себя.</p>
  <label class="f">День ремонта: <b id="d5lab">${day} из ${plan.total} · ${addDays27(plan.start,day)}</b><input type="range" min="0" max="${plan.total}" step="1" value="${day}" data-d5="day" style="width:100%"></label>
  <div class="stat" style="margin:6px 0"><div><b id="d5spent">${rub(spent27(plan,day))}</b><span>потрачено к этому дню</span></div><div><b>${rub(plan.sum)}</b><span>вся смета</span></div><div><b>${plan.total}</b><span>рабочих дней</span></div><div><b>${addDays27(plan.start,plan.total)}</b><span>окончание</span></div></div>
@@ -2096,8 +2142,10 @@ function v3d27(p){const plan=plan5d27(p),day=Math.min(num(UI.d5day),plan.total),
  <table style="margin-top:8px">${plan.list.map(x=>`<tr><td>${esc(x.n)}</td><td class="n small">${rub(x.w+x.m)}</td><td style="width:90px"><input inputmode="numeric" data-d5="days.${x.k}" value="${x.days}" aria-label="Дней: ${esc(x.n)}"></td></tr>`).join('')}</table></details>`:'<p class="small muted">Выберите отделку помещений во вкладке «Смета» — этапы и стоимость появятся здесь.</p>'}</div>`}
 /* scene */
 let V3=null;
-async function mount3d27(p){const cv=document.getElementById('c3d27');if(!cv)return;let T;try{T=await loadThree27()}catch(e){cv.parentElement.innerHTML='<p class="small muted" style="padding:20px">3D недоступно: '+esc(e.message)+'</p>';return}
- if(V3){V3.stop();V3=null}const W=cv.clientWidth,H=cv.clientHeight,ren=new T.WebGLRenderer({canvas:cv,antialias:true});ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1));ren.setSize(W,H,false);ren.setClearColor(0xeef1f4);
+function sceneFloors3(p){return hasFloors(p)?roomsByFloor(p):[]}
+function sceneFloor3(p){const floors=sceneFloors3(p);return floors.find(g=>g.f.id===UI.viewFloor3)||floors[0]}
+async function mount3d27(p){const floor=sceneFloor3(p);if(floor)p={...p,displayFloor:floor.f.id,rooms:floor.rooms,sceneSchedule:plan5d27(p)};const cv=document.getElementById('c3d27');if(!cv)return;let T;try{T=await loadThree27()}catch(e){cv.parentElement.innerHTML='<p class="small muted" style="padding:20px">3D недоступно: '+esc(e.message)+'</p>';return}
+ if(!cv.isConnected)return;if(V3){V3.stop();V3=null}const W=cv.clientWidth,H=cv.clientHeight;let ren;try{ren=new T.WebGLRenderer({canvas:cv,antialias:true})}catch{cv.parentElement.textContent='3D недоступно: браузеру требуется WebGL. План и чертежи доступны в соседних вкладках.';return}ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1));ren.setSize(W,H,false);ren.setClearColor(0xeef1f4);
  const sc=new T.Scene();sc.add(new T.HemisphereLight(0xffffff,0x8a8a8a,.85));const dl=new T.DirectionalLight(0xffffff,.55);dl.position.set(6,12,4);sc.add(dl);
  const grp=new T.Group();sc.add(grp);const box=build3d27(T,p,grp);const cx=(box[0]+box[2])/2,cz=(box[1]+box[3])/2,span=Math.max(box[2]-box[0],box[3]-box[1],3);
  const cam=new T.PerspectiveCamera(50,W/H,.05,200);const fitK=1/Math.max(.45,Math.min(1,W/H)),st={th:.75,ph:.95,r:span*1.35*fitK,tx:cx,ty:0,tz:cz,fp:false};
@@ -2108,8 +2156,9 @@ async function mount3d27(p){const cv=document.getElementById('c3d27');if(!cv)ret
  cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY])};cv.onpointerup=cv.onpointercancel=e=>ptrs.delete(e.pointerId);
  cv.onpointermove=e=>{if(!ptrs.has(e.pointerId))return;const q=ptrs.get(e.pointerId);if(ptrs.size===2){const o=[...ptrs.entries()].find(([k])=>k!==e.pointerId)[1],d0=Math.hypot(q[0]-o[0],q[1]-o[1]),d1=Math.hypot(e.clientX-o[0],e.clientY-o[1]);if(d1&&!st.fp)st.r=Math.max(.5,Math.min(80,st.r*d0/d1))}else{st.th-=(e.clientX-q[0])*.008;st.ph=Math.max(.02,Math.min(st.fp?2.6:1.5,st.ph-(e.clientY-q[1])*.006))}ptrs.set(e.pointerId,[e.clientX,e.clientY]);dirty=true};
  cv.onwheel=e=>{e.preventDefault();if(!st.fp){st.r=Math.max(.5,Math.min(80,st.r*Math.exp(e.deltaY*.001)));dirty=true}};
- const loop=()=>{raf=requestAnimationFrame(loop);if(!dirty)return;dirty=false;if(st.fp){const tx=st.tx+Math.sin(st.ph)*Math.sin(st.th),ty=1.55+Math.cos(st.ph),tz=st.tz+Math.sin(st.ph)*Math.cos(st.th);cam.position.set(st.tx,1.55,st.tz);cam.lookAt(tx,ty,tz)}else place();ren.render(sc,cam)};loop();
- V3={stop:()=>{cancelAnimationFrame(raf);ren.dispose()},redraw:()=>{grp.clear();build3d27(T,p,grp);dirty=true},kick:()=>{dirty=true}};
+ const loop=()=>{if(!cv.isConnected){V3?.stop();V3=null;return}raf=requestAnimationFrame(loop);if(!dirty)return;dirty=false;if(st.fp){const tx=st.tx+Math.sin(st.ph)*Math.sin(st.th),ty=1.55+Math.cos(st.ph),tz=st.tz+Math.sin(st.ph)*Math.cos(st.th);cam.position.set(st.tx,1.55,st.tz);cam.lookAt(tx,ty,tz)}else place();ren.render(sc,cam)};loop();
+ const freeScene=()=>{const materials=new Set();grp.traverse(obj=>{obj.geometry?.dispose();for(const mat of Array.isArray(obj.material)?obj.material:(obj.material?[obj.material]:[]))materials.add(mat)});for(const mat of materials){mat.map?.dispose();mat.dispose()}grp.clear()};
+ V3={stop:()=>{cancelAnimationFrame(raf);freeScene();ren.dispose()},redraw:()=>{freeScene();build3d27(T,p,grp);dirty=true},kick:()=>{dirty=true}};
  /* textures load asynchronously */
  V3.texLoaded=()=>{dirty=true}}
 function colors27(p,r,pr){const fin=r.fin||{},done=k=>!pr||pr[k]==null||pr[k]>=1,started=k=>!pr||pr[k]==null||pr[k]>0;
@@ -2117,7 +2166,7 @@ function colors27(p,r,pr){const fin=r.fin||{},done=k=>!pr||pr[k]==null||pr[k]>=1
  const wall=!pr?wallFin:(done('wfin')&&done('wtile')&&(pr.wfin!=null||pr.wtile!=null))?wallFin:(pr.wprep!=null&&done('wprep'))?'#f3f2ee':'#b8b3aa';
  const floorFin=FLOORC(r)||'#d8d3ca',floor=!pr?floorFin:(pr.floor!=null&&done('floor'))?floorFin:(pr.scr!=null&&done('scr'))?'#cfcac1':'#a9a49b';
  return{wall,floor,points:!pr||pr.el==null||started('el')}}
-function build3d27(T,p,grp){const plan=UI.v3fin?null:plan5d27(p),pr=plan&&plan.list.length?progress27(plan,num(UI.d5day)):null;const rooms=p.rooms.filter(r=>geo(r).closed);let bx=[1e9,1e9,-1e9,-1e9];const TH=.1;
+function build3d27(T,p,grp){const plan=UI.v3fin?null:(p.sceneSchedule||plan5d27(p)),pr=plan&&plan.list.length?progress27(plan,num(UI.d5day)):null;const rooms=p.rooms.filter(r=>geo(r).closed);let bx=[1e9,1e9,-1e9,-1e9];const TH=.1;
  const mat=c=>new T.MeshLambertMaterial({color:c});const tl=new T.TextureLoader();
  for(const r of rooms){const G=roomGlobal(p,r),g=geo(r),H=num(r.h)||2.7,col=colors27(p,r,pr),sign=g.sign;
   const poly=[];g.segments.forEach(seg=>sampleSeg27(seg,seg.length*6).slice(0,-1).forEach(q=>poly.push(G(q))));poly.forEach(q=>{bx=[Math.min(bx[0],q[0]),Math.min(bx[1],q[1]),Math.max(bx[2],q[0]),Math.max(bx[3],q[1])]});
@@ -2137,18 +2186,18 @@ function build3d27(T,p,grp){const plan=UI.v3fin?null:plan5d27(p),pr=plan&&plan.l
   for(const rd of radsOf(r)){const seg=g.segments[num(rd.wall)-1];if(!seg)continue;const t=(num(rd.offset)+num(rd.w)/2)/(seg.length||1),q=seg.at(t),tg=seg.tangent(t),nl=[-tg[1]*sign,tg[0]*sign],P0=G(q),Pi=G([q[0]+nl[0]*.07,q[1]+nl[1]*.07]),A=G(seg.at(0)),B=G(seg.at(1));const m=new T.Mesh(new T.BoxGeometry(num(rd.w),num(rd.h),.08),mat(0xf7f7f7));m.position.set(Pi[0],num(rd.y)+num(rd.h)/2,Pi[1]);m.rotation.y=-Math.atan2(B[1]-A[1],B[0]-A[0]);grp.add(m)}
   if(col.points)(r.points||[]).forEach(pt=>{const d=ELECTRICAL[pt.type];if(!d)return;const q=pointLocal(r,pt);if(!q)return;const P0=G(q);if(d.wall){const seg=g.segments[num(pt.wall)-1];if(!seg)return;const t=Math.min(1,num(pt.offset)/(seg.length||1)),tg=seg.tangent(t),nl=[-tg[1]*sign,tg[0]*sign],Pi=G([q[0]+nl[0]*.012,q[1]+nl[1]*.012]),A=G(seg.at(0)),B=G(seg.at(1));const m=new T.Mesh(new T.BoxGeometry(.08,.08,.02),mat(/switch/.test(pt.type)?0x2465b7:0xffffff));m.position.set(Pi[0],num(pt.height),Pi[1]);m.rotation.y=-Math.atan2(B[1]-A[1],B[0]-A[0]);grp.add(m)}
    else{const m=new T.Mesh(new T.CylinderGeometry(.12,.12,.04,16),new T.MeshBasicMaterial({color:0xffe08a}));m.position.set(P0[0],H-.03,P0[1]);grp.add(m)}})}
- return bx}
+ eng3d(T,p,grp);return bx}
 
 /* ============ tabs: short main row + «Ещё» ============ */
 const MAIN_TABS27=[['rooms','Замер'],['plan','План'],['draw','Чертёж'],['3d','3D · 5D'],['est','Смета']];
-const MORE_TABS27=[['foreman','Прораб'],['elec','Электрика'],['design','Дизайнеру'],['furn','Мебельщику'],['fence','Забор'],['info','Клиент']];
+const MORE_TABS27=[['engineering','Инж. коммуникации'],['foreman','Прораб'],['elec','Электрика'],['design','Дизайнеру'],['furn','Мебельщику'],['fence','Забор'],['info','Клиент']];
 const GATED27=new Set(['draw','3d']);
 const oldVProject27=vProject;
-vProject=function(){const p=P();if(!p)return oldVProject27();const ok=measured(p);if(GATED27.has(R.tab)&&!ok)R.tab='rooms';const my=GATED27.has(R.tab),keep=R.tab;if(my)R.tab='info';let h=oldVProject27();R.tab=keep;
+vProject=function(){const p=P();if(!p)return oldVProject27();const ok=measured(p);if(GATED27.has(R.tab)&&!ok)R.tab='rooms';const my=GATED27.has(R.tab)||R.tab==='engineering',keep=R.tab;if(my)R.tab='info';let h=oldVProject27();R.tab=keep;
  const inMore=MORE_TABS27.some(([k])=>k===R.tab),open=UI.moreTabs||inMore,btn=([k,n])=>`<button data-a="tab" data-t="${k}" aria-pressed="${R.tab===k||(k==='est'&&R.tab==='var')}" ${(GATED.has(k)||GATED27.has(k))&&!ok?'disabled':''}>${k==='plan'?esc(kindOf(p).plan.replace(/^План\s*/,'План ').split(' ').slice(0,2).join(' ')):n}</button>`;
  const tabs=`<div class="tabs">${MAIN_TABS27.map(btn).join('')}<button data-a="moretabs" aria-pressed="${open}">${open?'Скрыть ▴':'Ещё ▾'}</button></div>${open?`<div class="tabs tabs2">${MORE_TABS27.map(btn).join('')}</div>`:''}`;
  h=h.replace(/<div class="tabs">[\s\S]*?<\/div>/,tabs);
- if(my){/* replace the «Клиент» body with ours */const start=h.indexOf(tabs)+tabs.length,f=h.lastIndexOf('<div class="foot">');const body=R.tab==='draw'?vDraw27(p):v3d27(p);h=h.slice(0,start)+body+(f>=0?h.slice(f):'')}
+ if(my){/* replace the «Клиент» body with ours */const start=h.indexOf(tabs)+tabs.length,f=h.lastIndexOf('<div class="foot">');const body=R.tab==='engineering'?Eng.list(p):R.tab==='draw'?vDraw27(p):v3d27(p);h=h.slice(0,start)+body+(f>=0?h.slice(f):'')}
  if(R.tab==='3d')setTimeout(()=>mount3d27(p),0);
  if(R.tab==='info')h+='<div class="card"><button class="btn" data-a="projectZip">Экспорт проекта ZIP</button></div>';
  return h};
@@ -2306,7 +2355,7 @@ function peInner28(r,P,opt){const g=geo(r),sel=opt.sel;let s='';
  if(sel)s+=selDims28(r,P.T,P.s,sel,1);
  if(!P.closed&&r.walls.length){const rr=P.heading*Math.PI/180,e=P.end;s+=`<circle cx="${e[0]}" cy="${e[1]}" r="6" fill="var(--acc)"/><line x1="${e[0]}" y1="${e[1]}" x2="${e[0]+Math.cos(rr)*26}" y2="${e[1]+Math.sin(rr)*26}" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4 3"/>`}
  if(P.sp[0])s+=`<circle cx="${P.sp[0][0]}" cy="${P.sp[0][1]}" r="5" fill="var(--ok,#2a9d5c)"/>`;
- return s}
+ return s+engMarkers(DB.projects.find(p=>p.id===R.pid),r,P.T,9)}
 
 /* ---------- generic drag engine: works on any svg[data-view] whose rooms are registered in VIEWS28[view].T ---------- */
 function affInv28(T){const o=T([0,0]),x=T([1,0]),y=T([0,1]),a=x[0]-o[0],b=y[0]-o[0],c=x[1]-o[1],d=y[1]-o[1],det=a*d-b*c||1e-9;return q=>{const X=q[0]-o[0],Y=q[1]-o[1];return[(d*X-b*Y)/det,(-c*X+a*Y)/det]}}
@@ -2461,7 +2510,8 @@ apartmentSVG=function(p){const m=apartmentPrims(p,420,420),sel=UI.sel28;let out=
   out+='<g data-room="'+q.r.id+'"><path d="'+pathData(pp)+' Z" fill="'+(q.r.wc||'#f5e8d4')+'" stroke="'+(UI.layoutRoom===q.r.id?'#e0620d':'#333')+'" stroke-width="2"/>';
   q.walls.forEach(w=>out+='<text x="'+w.mid[0]+'" y="'+(w.mid[1]-6)+'" text-anchor="middle" font-size="10" fill="#222" paint-order="stroke" stroke="white" stroke-width="3">'+fmt(w.length,2)+'</text>');
   out+='<text x="'+c[0]+'" y="'+c[1]+'" font-size="13" fill="#222" text-anchor="middle" paint-order="stroke" stroke="white" stroke-width="3" pointer-events="none">'+esc(q.r.name)+'</text></g>';
-  out+=itemsSVG28(q.r,q.T,m.scale,{u:.6,rid:q.r.id,hit:true,sel:sel&&sel.rid===q.r.id?sel:null});if(sel&&sel.rid===q.r.id&&obj28(q.r,sel.src,sel.i))out+=selDims28(q.r,q.T,m.scale,sel,.7)}
+  out+=engMarkers(p,q.r,q.T,6)+itemsSVG28(q.r,q.T,m.scale,{u:.6,rid:q.r.id,hit:true,sel:sel&&sel.rid===q.r.id?sel:null});if(sel&&sel.rid===q.r.id&&obj28(q.r,sel.src,sel.i))out+=selDims28(q.r,q.T,m.scale,sel,.7)}
+ T['~site']=q=>[q[0]*m.scale+m.ox,q[1]*m.scale+m.oy];out+=engMarkers(p,null,T['~site'],6);
  VIEWS28.apt={T,redraw:svg=>{const pp=P();if(!pp)return;const v=typeof hasFloors==='function'&&hasFloors(pp)?floorView(pp,aptFloor(pp)):pp;const s=apartmentSVG(v);svg.innerHTML=s.replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'')}};
  return out+'</svg>'};
 
@@ -2513,7 +2563,7 @@ handleUpgradeChange23=function(event){const el=event.target;
 
 /* ---------- rangefinder: active field of the step ---------- */
 const oldOnMeasure28=onMeasure;
-onMeasure=function(v){if(R.view==='room'&&!UI.roomFull&&RM()){const r=RM();
+onMeasure=function(v){if(Eng.measure(v))return;if(R.view==='room'&&!UI.roomFull&&RM()){const r=RM();
  if(UI.step28==='height'){const F=hFields28(r),k=UI.hAct||F[0][0];r.hpts=r.hpts||{};r.hpts[k]=r3(v);hApply28(r);const i=F.findIndex(f=>f[0]===k),nx=F.slice(i+1).find(f=>!r.hpts[f[0]])||F[i+1];UI.hAct=nx?nx[0]:k;UI.last=v;save();render();toast((F[i]||[,''])[1]+': '+mm(v)+' мм');return}
  const sel=UI.sel28;if(sel&&UI.peAct&&sel.rid===r.id){UI.last=v;const k=UI.peAct;if(set28(r,sel,k,v)){const F=fields28(r,sel).map(f=>f[0]),i=F.indexOf(k);UI.peAct=F[i+1]||null;save();toast(((fields28(r,sel).find(f=>f[0]===k)||[])[1]||'Замер')+': '+mm(v)+' мм')}render();return}
  if(UI.step28&&UI.step28!=='walls'){UI.last=v;render();toast('Замер '+mm(v)+' мм — выберите поле с 📏');return}}
@@ -2535,7 +2585,7 @@ build3d27=function(T,p,grp){const bx=oldBuild3d28(T,p,grp);const mat=c=>new T.Me
 
 /* ---------- validation of new fields ---------- */
 const oldValidate28=validateBackup;
-validateBackup=function(data){oldValidate28(data);for(const p of data.projects||[])for(const r of p.rooms||[]){
+validateBackup=function(data){oldValidate28(data);for(const p of data.projects){Eng.validate(p);DrawingProject.validateRef(p)}for(const p of data.projects||[])for(const r of p.rooms||[]){
  if(r.acs!=null&&(!Array.isArray(r.acs)||r.acs.some(x=>!(num(x.wall)>=1&&num(x.w)>=0&&num(x.h)>=0))))throw Error('Повреждены кондиционеры');
  if(r.hpts!=null&&(typeof r.hpts!=='object'||Array.isArray(r.hpts)||Object.values(r.hpts).some(v=>!(typeof v==='number'&&v>=0&&v<100))))throw Error('Повреждены высоты потолка');
  for(const o of r.ops||[]){if(o.hinge!=null&&!['a','b'].includes(o.hinge))throw Error('Повреждена дверь');if(o.swing!=null&&!['in','out'].includes(o.swing))throw Error('Повреждена дверь')}}};
