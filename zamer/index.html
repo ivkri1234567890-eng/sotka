@@ -3,11 +3,14 @@
 <head><script src="/sotka/gate.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Замер и смета 2.8</title>
+<title>Замер и смета 3.0</title>
 <script src="jszip.min.js"></script>
 <script src="media-zip.js"></script>
 <script src="engineering.js"></script>
 <script src="eng-views.js"></script>
+<script src="drawing-reader.js"></script>
+<script src="drawing-project.js"></script>
+<script src="drawing-dialog.js"></script>
 <style>.eng-dialog, .drawing-dialog{box-sizing:border-box;width:min(94vw,620px);max-height:90dvh;overflow:auto;padding:16px;border:1px solid #aaa;border-radius:12px}.eng-dialog input,.eng-dialog select,.drawing-dialog input,.drawing-dialog select{min-width:0;max-width:100%;font-size:16px}.eng-check{display:block;padding:8px}.eng-check input,#eng-loose{width:auto;min-height:24px}.eng-fields{display:grid;gap:8px}</style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -181,13 +184,14 @@ function save(){
   try{writeDB();storageStatus(null);return true}
   catch(error){storageStatus(error);return false}
 }
+function mediaOwners(p){return [...p.rooms,...(p.engMedia?[p.engMedia]:[]),...(p.drawingSource?.id?[{photos:[p.drawingSource]}]:[])]}
 function removeProjectsOrRooms(owner,key,remaining,removedRooms){
   const previous=owner[key];
   owner[key]=remaining;
   if(!save()){owner[key]=previous;return false}
   const ids=new Set(removedRooms.flatMap(room=>(room.photos||[]).map(photo=>photo.id)));
   if(ids.size){
-    for(const project of DB.projects)for(const room of project.rooms){
+    for(const project of DB.projects)for(const room of mediaOwners(project)){
       for(const photo of room.photos||[])ids.delete(photo.id);
     }
     if(ids.size)PHDB.removeAll([...ids]).catch(storageStatus);
@@ -255,7 +259,7 @@ const priceOf=(id,v)=>((DB.settings.prices||{})[id]||CAT[id].p)[VI[v]];
 const ROOM_NAMES=['Комната','Кухня','Спальня','Гостиная','Ванная','Санузел','Коридор','Балкон'];
 
 /* =================== geometry =================== */
-function planPts(room){const pts=[[0,0]];let h=0;(room.walls||[]).forEach((w,i)=>{if(i>0)h+=num(w.t);const r=h*Math.PI/180,[x,y]=pts[pts.length-1];pts.push([x+num(w.len)*Math.cos(r),y+num(w.len)*Math.sin(r)])});return{pts,heading:h}}
+function planPts(room){const pts=[[0,0]];let h=room.drawingHeading||0;(room.walls||[]).forEach((w,i)=>{if(i>0)h+=num(w.t);const r=h*Math.PI/180,[x,y]=pts[pts.length-1];pts.push([x+num(w.len)*Math.cos(r),y+num(w.len)*Math.sin(r)])});return{pts,heading:h}}
 function geo(room){
  const {pts,heading}=planPts(room),n=(room.walls||[]).length,last=pts[n],gap=Math.hypot(last[0],last[1]);
  const closed=n>=3&&gap<0.03;const P=closed?pts.slice(0,n):pts;let A=0;
@@ -449,7 +453,7 @@ function vSettings(){const s=DB.settings;
  <button class="btn sec wide" data-a="prices">Прайс: цены работ и материалов</button>
  <div class="card" style="margin-top:12px"><h3>Дальномер</h3><p class="small muted">Bosch GLM с Bluetooth (GLM 50-27 CG и др.). Включите Bluetooth на дальномере, нажмите «Подключить» и мерьте как обычно: каждое значение приходит в приложение.</p>${bleCard()}
  <details><summary>Журнал обмена (для диагностики)</summary><div class="log">${esc(BLE.log.join('\n')||'пусто')}</div></details></div>
- <div class="card"><h3>Данные · версия 2.8</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
+ <div class="card"><h3>Данные · версия 3.0</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». Очистка данных Safari может удалить проекты. Сохраните ZIP вне браузера. JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost" data-drawing-start>Создать проект из чертежа</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
 function vPrices(){const pr=DB.settings.prices||(DB.settings.prices={});
  return bar('Прайс')+`<p class="small muted">Цены за единицу для трёх вариантов: эконом / стандарт / премиум. Значения по умолчанию примерные — поставьте свои.</p>
  ${Object.entries(CAT).map(([id,it])=>{const p=pr[id]||it.p;return `<div class="card"><div class="small" style="font-weight:600">${esc(it.n)} <span class="muted">· ${it.g==='w'?'работа':'материал'}, ₽/${it.u}</span></div><div class="grid3" style="margin-top:6px">${p.map((x,i)=>`<label class="f">${VARS[i][1]}<input inputmode="decimal" aria-label="${VARS[i][1]}" data-f="pr.${id}.${i}" value="${x}"></label>`).join('')}</div></div>`}).join('')}
@@ -469,6 +473,7 @@ async function exportProjectZip(project,button){
     window.flushDb();
     if(pendingPhotoWrites.has(project))throw Error('Дождитесь окончания сохранения фотографии');
     const snapshot=JSON.parse(JSON.stringify({project,settings:DB.settings}));
+    if(snapshot.project.drawingSource?.id&&!confirm('Включить исходный чертёж в ZIP? Размер '+(snapshot.project.drawingSource.size/1048576).toFixed(1)+' МБ. Отмена сохранит ZIP без исходного файла.'))delete snapshot.project.drawingSource;
     validateBackup({projects:[snapshot.project],settings:snapshot.settings});
     toast('Собираю документы и фотографии проекта…');
     const documents=await projectDocuments(snapshot.project);
@@ -485,7 +490,7 @@ async function projectDocuments(project){
   add('designer/plan.dxf',planDXF(project));
   add('designer/model.ifc',planIFC(project));
   add('foreman.csv',utf8(foremanCSV(project)));
-  const sheets=allSheets27(project),canvases=[];
+  const sheets=allSheets27(project).concat(await engPhotoSheets(project)),canvases=[];
   for(const [index,sheet] of sheets.entries()){
     add('drawings/sheet-'+(index+1)+'.svg',utf8(sheet.svg));
     canvases.push(await sheetCanvas27(sheet.svg));
@@ -500,7 +505,7 @@ async function projectDocuments(project){
   return documents;
 }
 async function importProjectZip(file){
-  const {backup,records}=await ZamerZip.decode(file);
+  const {backup,records,source}=await ZamerZip.decode(file);
   validateBackup(backup);
   const project=backup.projects[0],photos=[];
   const matches=DB.projects.some(p=>p.id===project.id);
@@ -517,6 +522,7 @@ async function importProjectZip(file){
     }
   }
   if(records.size)throw Error('ZIP содержит фотографии без привязки к помещениям');
+  if(source){project.drawingSource.id=uid()+uid();photos.push({id:project.drawingSource.id,source,projectId:project.id})}
   if(photos.length)await PHDB.putAll(photos);
   const next={...DB,projects:[...DB.projects,project],settings:applySettings?{...DB.settings,...backup.settings}:DB.settings};
   try{
@@ -559,7 +565,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   back:()=>back(),settings:()=>go('settings'),prices:()=>go('prices'),ble:()=>bleConnect(),measure:()=>bleMeasure(),
   newproj:()=>{const np={id:uid(),name:'Объект '+(DB.projects.length+1),client:'',rooms:[],ts:Date.now(),date:today(),v:DB.settings.variant||'s'};DB.projects.push(np);save();go('project',{pid:np.id,tab:'info'})},
   open:()=>go('project',{pid:b.dataset.id,tab:'rooms'}),tab:()=>{R.tab=b.dataset.t;render()},
-  delproj:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',DB.projects.filter(x=>x!==p),p.rooms))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
+  delproj:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',DB.projects.filter(x=>x!==p),mediaOwners(p)))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить объект')}},
   addroom:()=>{const n=b.dataset.n,same=p.rooms.filter(x=>x.name.startsWith(n)).length;const nr={id:uid(),name:same?n+' '+(same+1):n,walls:[],h:p.rooms.length?p.rooms[p.rooms.length-1].h:2.7,ops:[],fin:{floor:/Ванн|Санузел/.test(n)?'tile':'laminate',walls:/Ванн|Санузел/.test(n)?'tile':'paint',ceiling:'stretch'},cnt:{}};p.rooms.push(nr);p.ts=Date.now();save();UI.target='wall';UI.turn=90;UI.placeType='';go('room',{rid:nr.id})},
   room:()=>{UI.target='wall';UI.placeType='';go('room',{rid:b.dataset.id})},
   delroom:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(p,'rooms',p.rooms.filter(x=>x!==r),[r]))back()}else{b.dataset.sure=1;b.textContent='✓';toast('Нажмите ещё раз, чтобы удалить помещение')}},
@@ -571,7 +577,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   undo:()=>{if(r.walls.length)removeWall23(r,r.walls.length-1)},
   delwall:()=>removeWall23(r,+b.dataset.i),
   close:()=>closeRoom(r),
-  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if(((r.ops||[]).length||(r.points||[]).length||r.photos?.some(x=>x.wall))&&!confirm('Перестроить контур? Проёмы и электроточки будут очищены. Фотографии останутся в помещении без привязки к стенам.'))return;for(const photo of r.photos||[])photo.wall=null;UI.phWall=null;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
+  rect:()=>{const x=num($('#ra').value),y=num($('#rb').value);if(!x||!y){toast('Введите длину и ширину');return}if((r.walls.some(w=>w.engKey)||(r.ops||[]).length||(r.points||[]).length||r.photos?.some(x=>x.wall))&&!confirm('Перестроить контур? Проёмы и электроточки будут очищены. Фотографии останутся в помещении. У инженерных элементов потребуется проверить привязку к новым стенам.'))return;for(const photo of r.photos||[])photo.wall=null;UI.phWall=null;r.ops=[];r.points=[];r.walls=[{len:x,t:0},{len:y,t:90},{len:x,t:90},{len:y,t:90}];r.closed=true;save();render()},
   optype:()=>{UI.opType=b.dataset.t;keepOp();render()},
   addop:()=>{const w=num($('#opw').value),hh=num($('#oph').value),wl=Math.round(num($('#opwall').value));if(w<=0||hh<=0||wl<1||wl>r.walls.length){toast('Укажите стену, ширину и высоту проёма');return}
    const len=physicalWallLength(r,wl-1),raw=$('#opoffset').value.trim(),offset=raw?Number(raw.replace(',','.')):(len-w)/2;if(w<=0||hh<=0||hh>r.h||!Number.isFinite(offset)||offset<0||offset+w>len+0.001){toast('Проём должен помещаться в стене и по высоте');return}if((r.ops||[]).some(o=>o.wall===wl&&Math.min(offset+w,(o.offset==null?(len-o.w)/2:o.offset)+o.w)-Math.max(offset,o.offset==null?(len-o.w)/2:o.offset)>.001)){toast('Проёмы на этой стене пересекаются');return}(r.ops=r.ops||[]).push({type:UI.opType,wall:wl,w,h:hh,offset});UI.opWall=wl;UI.opw=UI.oph=null;UI.target='wall';save();render();toast((UI.opType==='door'?'Дверь':'Окно')+' добавлено')},
@@ -583,7 +589,7 @@ app.addEventListener('click',e=>{if(handleElectricalClick23(e))return;const b=e.
   pdfsave:()=>makeAndSend(p,'save'),pdfshare:()=>makeAndSend(p,'share'),
   resetprices:()=>{DB.settings.prices={};save();render();toast('Цены сброшены')},
   export:()=>{const s=JSON.stringify(DB);if(NATIVE&&NATIVE.shareText)NATIVE.shareText('zamer-backup.json',s);else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));a.download='zamer-backup.json';a.click()}},
-  wipe:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',[],DB.projects.flatMap(project=>project.rooms))){render();toast('Все объекты удалены')}}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
+  wipe:()=>{if(b.dataset.sure){if(removeProjectsOrRooms(DB,'projects',[],DB.projects.flatMap(mediaOwners))){render();toast('Все объекты удалены')}}else{b.dataset.sure=1;b.textContent='Точно удалить всё?'}}
  };(A[a]||(()=>{}))()});
 function keepOp(){const g=id=>{const el=$(id);return el?num(el.value):null};const w=g('#opw'),h=g('#oph'),wl=g('#opwall');if(w)UI.opw=w;if(h)UI.oph=h;if(wl)UI.opWall=wl;const offset=$('#opoffset');if(offset)UI.opOffset=offset.value}
 app.addEventListener('change',e=>{if(handleUpgradeChange23(e))return;const el=e.target,k=el.dataset.f;if(!k)return;const p=P(),r=RM(),[s,a,b2]=k.split('.');
@@ -652,6 +658,7 @@ window.importBackup=text=>{
     const ids=new Set(DB.projects.map(project=>project.id));
     const projects=data.projects.map(source=>{
       const project=JSON.parse(JSON.stringify(source));
+      if(project.drawingSource?.id){delete project.drawingSource;project.drawingSourceOmitted=true}
       if(ids.has(project.id)){project.id=uid();project.name=(project.name||'Объект')+' (копия)'}
       ids.add(project.id);
       return project;
@@ -1462,7 +1469,7 @@ function planIFC(p){const L=[];let id=0;const E=s=>{L.push('#'+(++id)+'='+s+';')
   if(spaces.length)E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${st},(${spaces.join(',')}))`);if(elems.length)E(`IFCRELCONTAINEDINSPATIALSTRUCTURE('${ifcGuid()}',${oh},$,$,(${elems.join(',')}),${st})`)}
  E(`IFCRELAGGREGATES('${ifcGuid()}',${oh},$,$,${bld},(${storeys.join(',')}))`);
  const now=new Date().toISOString().slice(0,19);return utf8(`ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\nFILE_NAME(${ifcStr((p.name||'object')+'.ifc')},'${now}',(''),(''),'Zamer i Smeta 2.5','Zamer i Smeta','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n${L.join('\n')}\nENDSEC;\nEND-ISO-10303-21;\n`)}
-function studioJSON(p){return utf8(JSON.stringify({app:'Замер и смета 2.5',exported:new Date().toISOString(),settings:{},projects:[p]}))}
+function studioJSON(p){return utf8(JSON.stringify({app:'Замер и смета 3.0',exported:new Date().toISOString(),settings:{},projects:[p]}))}
 
 /* ---------- designer tab ---------- */
 function vDesign(p){const groups=roomsByFloor(p),tot=groups.reduce((s,g)=>s+g.rooms.reduce((a,r)=>a+geo(r).floor,0),0),unplaced=!p.layout||p.rooms.filter(r=>geo(r).closed).some(r=>!(p.layout||{})[r.id]);
@@ -2071,7 +2078,7 @@ function pdfLandscape27(cvs,Wpt=1190.55,Hpt=841.89){const enc=new TextEncoder(),
   const cs=`q ${Wpt} 0 0 ${Hpt} 0 0 cm /Im${i} Do Q`;obj(id+2,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`)});
  const total=3+3*n,xref=len;let x=`xref\n0 ${total}\n0000000000 65535 f \n`;for(let i=1;i<total;i++)x+=String(offs[i]).padStart(10,'0')+' 00000 n \n';push(x+`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
  const out=new Uint8Array(len);let o=0;for(const b of parts){out.set(b,o);o+=b.length}return out}
-async function drawPdf27(p,mode){toast('Готовлю чертёж…');await new Promise(r=>setTimeout(r,30));try{const sh=allSheets27(p),cvs=[];for(const s of sh)cvs.push(await sheetCanvas27(s.svg));const pdf=pdfLandscape27(cvs),name=('Чертёж '+(p.name||'')+' '+(p.date||today())).replace(/[\\/:*?"<>|]/g,'-').trim()+'.pdf';
+async function drawPdf27(p,mode){toast('Готовлю чертёж…');await new Promise(r=>setTimeout(r,30));try{const sh=allSheets27(p).concat(await engPhotoSheets(p)),cvs=[];for(const s of sh)cvs.push(await sheetCanvas27(s.svg));const pdf=pdfLandscape27(cvs),name=('Чертёж '+(p.name||'')+' '+(p.date||today())).replace(/[\\/:*?"<>|]/g,'-').trim()+'.pdf';
  if(NATIVE&&NATIVE.savePdf){const b=bytesB64(pdf);mode==='save'?NATIVE.savePdf(name,b):NATIVE.sharePdf(name,b);return}outFile(name,'application/pdf',pdf,mode)}catch(e){toast('Не удалось собрать PDF: '+e.message)}}
 
 /* ============ 3D and 5D (time + cost) ============ */
@@ -2541,7 +2548,7 @@ build3d27=function(T,p,grp){const bx=oldBuild3d28(T,p,grp);const mat=c=>new T.Me
 
 /* ---------- validation of new fields ---------- */
 const oldValidate28=validateBackup;
-validateBackup=function(data){oldValidate28(data);for(const p of data.projects)Eng.validate(p);for(const p of data.projects||[])for(const r of p.rooms||[]){
+validateBackup=function(data){oldValidate28(data);for(const p of data.projects){Eng.validate(p);DrawingProject.validateRef(p)}for(const p of data.projects||[])for(const r of p.rooms||[]){
  if(r.acs!=null&&(!Array.isArray(r.acs)||r.acs.some(x=>!(num(x.wall)>=1&&num(x.w)>=0&&num(x.h)>=0))))throw Error('Повреждены кондиционеры');
  if(r.hpts!=null&&(typeof r.hpts!=='object'||Array.isArray(r.hpts)||Object.values(r.hpts).some(v=>!(typeof v==='number'&&v>=0&&v<100))))throw Error('Повреждены высоты потолка');
  for(const o of r.ops||[]){if(o.hinge!=null&&!['a','b'].includes(o.hinge))throw Error('Повреждена дверь');if(o.swing!=null&&!['in','out'].includes(o.swing))throw Error('Повреждена дверь')}}};

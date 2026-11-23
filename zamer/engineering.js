@@ -24,7 +24,7 @@ const Eng = (() => {
   const roomOf=(p,e)=>p.rooms.find(r=>r.id===e.room);
   function anchor(p,e){
     const r=roomOf(p,e);
-    if(!r)return null;
+    if(!r||e.surface==='Без привязки')return null;
     if(e.surface==='Стена'){
       const i=r.walls.findIndex(w=>w.engKey&&w.engKey===e.wallKey);
       const seg=geo(r).segments[i];
@@ -36,7 +36,7 @@ const Eng = (() => {
   }
   function visible(p,e){return e.visible!==false&&p.engineeringLayers?.[e.group]!==false}
   function validate(p){
-    if(p.engineering==null)return;
+    if(p.engineering==null&&!p.engMedia)return;
     if(!Array.isArray(p.engineering)||p.engineering.length>10000)throw Error('Повреждён инженерный список');
     const ids=new Set();
     for(const e of p.engineering){
@@ -109,11 +109,13 @@ const Eng = (() => {
     if(!e)return;
     if(action==='photo'){Eng.pick(p,e);return}
     if(action==='delete'&&!confirm('Удалить инженерный элемент?'))return;
+    const oldPhotos=(p.engMedia?.photos||[]).map(f=>f.id);
     const copy={...e,id:id(),date:new Date().toISOString()};
     if(!commit(p,()=>{
       p.engineering=action==='copy'?items(p).concat(copy):items(p).filter(x=>x!==e);
       if(p.engMedia)p.engMedia={...p.engMedia,photos:p.engMedia.photos.map(f=>({...f,elements:action==='copy'&&f.elements.includes(e.id)?f.elements.concat(copy.id):action==='delete'?f.elements.filter(k=>k!==e.id):f.elements})).filter(f=>f.elements.length)};
     }))return;
+    if(action==='delete'){const used=new Set(DB.projects.flatMap(p=>mediaOwners(p).flatMap(r=>(r.photos||[]).map(f=>f.id))));const unused=oldPhotos.filter(id=>!used.has(id));if(unused.length)PHDB.removeAll(unused).catch(storageStatus)}
     render();
   });
   document.addEventListener('input',ev=>{
