@@ -4,7 +4,7 @@ function openDrawingDialog(){
  if(document.querySelector('dialog.drawing-dialog'))return;
  const d=document.createElement('dialog');d.className='drawing-dialog';
  d.innerHTML='<header><h2>Создать проект из чертежа</h2><button type="button" class="chip" data-do="cancel">Закрыть</button></header>'+
- '<label class="f">Чертёж до 32 МБ<input type="file" accept=".pdf,.dxf,.png,.jpg,.jpeg" data-el="file"></label><p role="status" data-el="status">Выберите PDF, DXF, JPG или PNG.</p>'+
+ '<label class="f">Выбрать PDF, JPG, PNG или DXF (до 32 МБ)<input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.dxf,.png,.jpg,.jpeg" data-el="file"></label><p role="status" data-el="status">Выберите PDF, DXF, JPG или PNG.</p>'+
  '<section data-el="work" hidden><div class="eng-fields"><label class="f">Название объекта<input data-el="name"></label><label class="f">Тип объекта<select data-el="kind"><option value="flat">Квартира</option><option value="house">Дом</option></select></label><label class="f">Страница<select data-el="page"></select></label></div>'+
  '<p data-el="note"></p><details><summary>Подписи чертежа и возможные размеры</summary><p data-el="texts"></p><button class="chip" data-do="ocr">Прочитать цифры на скане</button></details>'+
  '<div class="chips"><button data-do="zoom" class="chip">Увеличить / уменьшить</button><label>Поворот, ° <input type="number" data-el="angle" value="90" style="width:78px"></label><button data-do="rotate" class="chip">Повернуть</button></div>'+
@@ -137,4 +137,5 @@ function openDrawingDialog(){
  };
  d.oncancel=e=>{if(writing||((dirty||rooms.length)&&!confirm('Закрыть без создания проекта?')))e.preventDefault()};
  d.onclose=()=>{job++;ocr?.abort();reader?.close();d.remove()};
+ el('file').click();
 }

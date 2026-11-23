@@ -38,6 +38,10 @@ h3{font-size:15px;margin:0 0 8px}
 .btn:disabled{opacity:.4}
 .row{display:flex;gap:8px;align-items:center}
 .row>*{min-width:0}
+.data-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px}
+.data-actions .btn{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.data-actions [data-drawing-start],.data-actions [data-a="wipe"]{grid-column:1/-1}
+.data-actions [data-a="wipe"]{margin-top:8px}
 .grow{flex:1}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -453,7 +457,7 @@ function vSettings(){const s=DB.settings;
  <button class="btn sec wide" data-a="prices">Прайс: цены работ и материалов</button>
  <div class="card" style="margin-top:12px"><h3>Дальномер</h3><p class="small muted">Bosch GLM с Bluetooth (GLM 50-27 CG и др.). Включите Bluetooth на дальномере, нажмите «Подключить» и мерьте как обычно: каждое значение приходит в приложение.</p>${bleCard()}
  <details><summary>Журнал обмена (для диагностики)</summary><div class="log">${esc(BLE.log.join('\n')||'пусто')}</div></details></div>
- <div class="card"><h3>Данные · версия 3.0</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». Очистка данных Safari может удалить проекты. Сохраните ZIP вне браузера. JSON содержит только данные и ссылки на фотографии.</p><div class="row"><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost" data-drawing-start>Создать проект из чертежа</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
+ <div class="card"><h3>Данные · версия 3.0</h3><p class="small muted">Объекты хранятся на этом устройстве. На iPhone перенос между Safari и приложением на домашнем экране выполняется через «Экспорт проекта ZIP» во вкладке «Клиент». Очистка данных Safari может удалить проекты. Сохраните ZIP вне браузера. JSON содержит только данные и ссылки на фотографии.</p><div class="data-actions"><button class="btn" data-drawing-start>Импорт PDF и других чертежей</button><button class="btn ghost" data-a="export">JSON без фотографий</button><button class="btn ghost" data-a="import">Импорт JSON</button><button class="btn ghost" data-a="importZip">Импорт проекта ZIP</button><button class="btn ghost danger" data-a="wipe">Удалить всё</button></div></div><div class="card"><h3>Доступ к приложению</h3><p class="small muted">Вход сохраняется на этом телефоне. После сброса потребуется снова ввести пароль. Объекты останутся.</p><button class="btn ghost" data-a="activationReset">Сбросить вход</button></div>`}
 function vPrices(){const pr=DB.settings.prices||(DB.settings.prices={});
  return bar('Прайс')+`<p class="small muted">Цены за единицу для трёх вариантов: эконом / стандарт / премиум. Значения по умолчанию примерные — поставьте свои.</p>
  ${Object.entries(CAT).map(([id,it])=>{const p=pr[id]||it.p;return `<div class="card"><div class="small" style="font-weight:600">${esc(it.n)} <span class="muted">· ${it.g==='w'?'работа':'материал'}, ₽/${it.u}</span></div><div class="grid3" style="margin-top:6px">${p.map((x,i)=>`<label class="f">${VARS[i][1]}<input inputmode="decimal" aria-label="${VARS[i][1]}" data-f="pr.${id}.${i}" value="${x}"></label>`).join('')}</div></div>`}).join('')}
@@ -463,6 +467,11 @@ function render(){
  const fx=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.f:null;
  const wasMinorOpen=app.querySelector('#minorWorks')?.open;
  app.innerHTML=R.view==='home'?vHome():R.view==='project'?vProject():R.view==='room'?vRoom():R.view==='settings'?vSettings():R.view==='prices'?vPrices():vHome();
+ const step=app.querySelector('.steps28 .on');
+ if(step){
+   const strip=step.parentElement, bounds=strip.getBoundingClientRect(), active=step.getBoundingClientRect();
+   if(active.left<bounds.left||active.right>bounds.right)strip.scrollLeft+=active.left-bounds.left-(strip.clientWidth-step.offsetWidth)/2;
+ }
  if(wasMinorOpen&&app.querySelector('#minorWorks'))app.querySelector('#minorWorks').open=true;
  if(fx){const el=app.querySelector(`[data-f="${fx}"]`);if(el){el.focus();try{const l=el.value.length;el.setSelectionRange(l,l)}catch(e){}}}}
 
@@ -2447,14 +2456,14 @@ function panel28(r,sel,asSheet){const o=obj28(r,sel.src,sel.i);if(!o){UI.sel28=n
 function catOf28(r,sel){return(items28(r).find(x=>x.src===sel.src&&String(x.i)===String(sel.i))||{}).cat}
 
 /* ---------- step-by-step room screen ---------- */
-const STEPS28=[['walls','Стены','📐'],['height','Высота','↕️'],['window','Окна','🪟'],['balcony','Балкон. блок','🚪'],['door','Двери','🚪'],['radiator','Радиаторы','♨️'],['socket','Розетки','🔌'],['switch','Выключатели','🔘'],['light','Свет','💡'],['ac','Кондиционер','❄️'],['photo','Фото','📷'],['done','Готово','✅']];
+const STEPS28=[['walls','Стены','📐'],['height','Высота','↕️'],['window','Окна','🪟'],['balcony','Балкон. блок','🚪'],['door','Двери','🚪'],['radiator','Радиаторы','♨️'],['socket','Розетки','🔌'],['switch','Выключатели','🔘'],['light','Свет','💡'],['ac','Кондиционер','❄️'],['photo','Фото','📷'],['engineering','Инж. коммуникации','🔧'],['done','Готово','✅']];
 const HINT28={walls:'Обойдите комнату по часовой стрелке: замер стены → поворот → следующая стена. Когда вернётесь к началу — «Замкнуть».',
  height:'Высоту меряйте в каждом углу и в центре — так видно перепад потолка. Средняя высота пойдёт в расчёты.',
  window:'Нажмите «+ Окно», затем перетащите его на нужную стену или введите расстояние от угла.',balcony:'Балконный блок — дверь и окно в одном проёме. Выберите, с какой стороны дверь и куда она открывается.',
  door:'Поставьте дверь, выберите сторону петель и направление открывания — створка анимирована на плане.',radiator:'Радиатор встаёт под окно. Отметьте трубу-стояк от пола до потолка или нишу (нужны уголки).',
  socket:'Выберите 1-, 2-, 3- или 4-постовую розетку, интернет или ТВ. Отступ — от угла до центра, высота — от пола до центра.',switch:'Выключатель: отступ от угла и высота от пола.',
  light:'Люстра и потолочные светильники ставятся по центру — перетащите точку, рядом видно расстояние до стен. Бра — на стену.',ac:'Внутренний блок кондиционера: отступ от угла, ширина и высота от пола.',photo:'Снимите каждую стену — фото привяжется к стене и появится в 3D.',done:''};
-function stepCount28(r,k){if(k==='walls')return r.walls.length;if(k==='height')return(hStat28(r)||{}).n||0;if(k==='photo')return(r.photos||[]).length;if(CAT28[k])return items28(r).filter(x=>x.cat===k).length;return 0}
+function stepCount28(r,k){if(k==='walls')return r.walls.length;if(k==='height')return(hStat28(r)||{}).n||0;if(k==='photo')return(r.photos||[]).length;if(k==='engineering')return Eng.inRoom(P(),r).length;if(CAT28[k])return items28(r).filter(x=>x.cat===k).length;return 0}
 function vWizard28(){const p=P(),r=RM();if(!r)return vProject();const g=geo(r),step=UI.step28&&STEPS28.some(s=>s[0]===UI.step28)?UI.step28:(g.closed?'height':'walls');UI.step28=step;if(step==='walls')UI.target='wall';
  let h=bar(r.name,'<button class="icon" data-a="delroom" aria-label="Удалить помещение">🗑</button>');
  h+=`<div class="steps28" role="tablist">${STEPS28.map(([k,n,ic],j)=>{const c=stepCount28(r,k),dis=k!=='walls'&&!g.closed;return`<button class="st28 ${k===step?'on':''}" data-a="step28" data-k="${k}" ${dis?'disabled':''}><span>${ic}</span><b>${j+1}. ${n}</b>${c?`<i>${c}</i>`:''}</button>`}).join('')}</div>`;
@@ -2466,6 +2475,7 @@ function vWizard28(){const p=P(),r=RM();if(!r)return vProject();const g=geo(r),s
  else if(step==='walls')h+=wallsCard28(r);
  else if(step==='height')h+=heightCard28(r);
  else if(step==='photo')h+=photosCard27(r);
+ else if(step==='engineering')h+=Eng.roomStep(p,r,UI.peWall);
  else if(step==='done')h+=doneCard28(p,r);
  else h+=catCard28(r,step);
  const i=STEPS28.findIndex(s=>s[0]===step),prev=STEPS28[i-1],next=STEPS28[i+1];
@@ -2496,7 +2506,7 @@ function catCard28(r,cat){const C=CAT28[cat],its=items28(r).filter(x=>x.cat===ca
  ${its.length?`<table class="t27" style="margin-top:10px">${its.map(it=>{const p=pos28(r,it.src,it.i),d=p.x==null?lr28(r,p.wall,p.off,p.w):null;return`<tr data-a="pesel" data-src="${it.src}" data-i="${it.i}" style="cursor:pointer"><td><b>${esc(tag28(r,it.src,it.i))} ${esc(name28(r,it.src,it.i))}</b><br><span class="small muted">${d?'стена '+p.wall+' · ⬅ '+mm(d.fl)+' · '+mm(d.fr)+' ➡':nearWalls28(r,[p.x,p.y]).map(w=>'до ст. '+w+' '+mm(Math.abs(dWall28(r,w,[p.x,p.y])))).join(' · ')}</span></td><td><button class="icon" data-a="pesel" data-src="${it.src}" data-i="${it.i}" aria-label="Изменить">✎</button></td></tr>`}).join('')}</table>`:`<p class="small muted" style="margin:8px 0 0">${cat==='balcony'||cat==='ac'?'Если нет — просто нажмите «Далее».':'Пока нет.'}</p>`}</div>`}
 function doneCard28(p,r){const g=geo(r),its=items28(r),cnt=k=>its.filter(x=>x.cat===k).length,st=hStat28(r);
  return`<div class="card"><h3>${esc(r.name)}: замер готов</h3><div class="stat"><div><b>${fmt(g.floor,2)}</b><span>пол, м²</span></div><div><b>${fmt(g.perim,2)}</b><span>периметр, м</span></div><div><b>${mm(num(r.h))}</b><span>высота${st&&st.d>.005?' (перепад '+mm(st.d)+')':''}</span></div><div><b>${fmt(g.wall,2)}</b><span>стены, м²</span></div></div>
- <p class="small" style="margin:10px 0 0">Окон ${cnt('window')} · дверей ${cnt('door')} · балконных блоков ${cnt('balcony')} · радиаторов ${cnt('radiator')} · розеток ${cnt('socket')} · выключателей ${cnt('switch')} · светильников ${cnt('light')} · кондиционеров ${cnt('ac')}</p></div>
+ <p class="small" style="margin:10px 0 0">Окон ${cnt('window')} · дверей ${cnt('door')} · балконных блоков ${cnt('balcony')} · радиаторов ${cnt('radiator')} · розеток ${cnt('socket')} · выключателей ${cnt('switch')} · светильников ${cnt('light')} · кондиционеров ${cnt('ac')} · инженерных элементов ${Eng.inRoom(p,r).length}</p></div>
  <details class="card"><summary><b>Комментарий к помещению</b>${r.comment?' ✓':''}</summary><textarea data-f="r.comment" style="margin-top:8px" placeholder="Пожелания клиента, особенности">${esc(r.comment||'')}</textarea></details>
  <div class="card"><button class="btn wide" data-a="roomfull">Отделка и смета помещения →</button><button class="btn sec wide" style="margin-top:8px" data-a="pdfshare">PDF клиенту</button></div>`}
 

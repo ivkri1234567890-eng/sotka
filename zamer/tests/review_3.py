@@ -42,6 +42,57 @@ def pdf_fixture():
     return bytes(out)
 
 
+def check_room_step(page):
+    page.click('[data-t=rooms]')
+    def open_room(name):
+        page.locator('[data-a=room]').filter(has_text=name).click()
+    def step(key):
+        return page.locator(f'.steps28 [data-k="{key}"]')
+    def back():
+        page.locator('.bar [data-a=back]').click()
+
+    open_room('Мансарда')
+    step('photo').click()
+    page.locator('.foot [data-k=engineering]').click()
+    assert '12. Инж. коммуникации' in step('engineering').inner_text()
+    assert '13. Готово' in step('done').inner_text()
+    page.locator('svg.pe28 circle[data-wall28="2"]').click()
+    page.get_by_role('button',name='Добавить элемент',exact=True).click()
+    dlg=page.locator('.eng-dialog')
+    assert dlg.locator('[name=room] option:checked').text_content()=='Мансарда'
+    assert dlg.locator('[name=wallIndex]').input_value()=='1'
+    dlg.locator('[name=name]').fill('Стояк мансарды')
+    dlg.locator('[name=offset]').fill('250')
+    dlg.locator('[name=height]').fill('800')
+    dlg.get_by_role('button',name='Сохранить').click()
+    assert step('engineering').locator('i').inner_text()=='1'
+    assert step('engineering').evaluate("""el=>{
+        const a=el.getBoundingClientRect(), b=el.parentElement.getBoundingClientRect();
+        return a.left>=b.left-1 && a.right<=b.right+1;
+    }""")
+    assert page.evaluate('Eng.anchor(P(),P().engineering[0]).r.id===RM().id && Eng.anchor(P(),P().engineering[0]).i===1')
+    page.locator('.foot [data-k=done]').click()
+    assert page.get_by_text('инженерных элементов 1',exact=False).is_visible()
+    back()
+    page.click('[data-a=moretabs]')
+    page.click('[data-t=engineering]')
+    assert page.get_by_text('Стояк мансарды',exact=True).is_visible()
+    page.click('[data-t=rooms]')
+    page.click('[data-a=moretabs]')
+    open_room('Кухня')
+    step('engineering').click()
+    assert page.locator('[data-eng=edit]').count()==0
+    back()
+    open_room('Мансарда')
+    step('engineering').click()
+    page.click('[data-eng=edit]')
+    assert dlg.locator('[name=offset]').input_value()=='250'
+    dlg.locator('[data-close]').click()
+    page.click('[data-eng=delete]')
+    assert page.locator('[data-eng=edit]').count()==0
+    back()
+
+
 def run(page, url):
     errors = []
     page.on('pageerror', lambda e: errors.append(e.stack or str(e)))
@@ -54,12 +105,29 @@ def run(page, url):
     page.wait_for_function('navigator.serviceWorker.controller')
     page.context.set_offline(True)
     page.click('[data-a=settings]')
-    page.click('[data-drawing-start]')
+    original_viewport=page.viewport_size
+    for width in (320,390,768):
+        page.set_viewport_size({'width':width,'height':800})
+        assert page.locator('.data-actions').evaluate("""group=>{
+            const card=group.closest('.card').getBoundingClientRect();
+            const boxes=[...group.querySelectorAll('button')].map(b=>{
+                const box=b.getBoundingClientRect(), text=document.createRange();
+                text.selectNodeContents(b);
+                const label=text.getBoundingClientRect();
+                if(label.left<box.left-1 || label.right>box.right+1) throw Error('Clipped button label');
+                return box;
+            });
+            return boxes.every((b,i)=>b.left>=card.left && b.right<=card.right && b.height>=44 &&
+                boxes.slice(i+1).every(c=>b.right<=c.left || c.right<=b.left || b.bottom<=c.top || c.bottom<=b.top));
+        }""")
+    page.set_viewport_size(original_viewport)
+    with page.expect_file_chooser() as picker:
+        page.get_by_role('button',name='Импорт PDF и других чертежей').click()
     def field(k):
         return page.locator(f'[data-el="{k}"]')
     def act(k):
         page.click(f'[data-do="{k}"]')
-    field('file').set_input_files({'name':'house.pdf', 'mimeType':'application/pdf','buffer':pdf_fixture()})
+    picker.value.set_files({'name':'house.pdf', 'mimeType':'application/pdf','buffer':pdf_fixture()})
     page.wait_for_function("document.querySelector('[data-el=status]').textContent.includes('готова')",timeout=15000)
     assert 'Векторные' in field('note').text_content()
     assert '4000' in field('texts').text_content()
@@ -111,6 +179,7 @@ def run(page, url):
     for size in (360,390):
         page.set_viewport_size({'width':size,'height':800})
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    check_room_step(page)
     page.click('[data-a=moretabs]')
     page.click('[data-t=engineering]')
     page.click('[data-eng=new]')

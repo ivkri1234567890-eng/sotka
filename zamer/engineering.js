@@ -72,10 +72,22 @@ const Eng = (() => {
     return '<section class="card"><h3>Инженерные коммуникации</h3><button class="btn" data-eng="new">Добавить элемент</button><label class="f">Поиск<input id="eng-search" value="'+esc(term)+'"></label><label class="f">Категория<select id="eng-filter">'+opt('','Все категории',filter)+Object.entries(groups).map(([k,v])=>opt(k,v[0],filter)).join('')+'</select></label><label><input type="checkbox" id="eng-loose" '+(onlyLoose?'checked':'')+'> Без определённой привязки</label><div id="eng-results">'+rows(p)+'</div><details><summary>Слои на чертежах</summary>'+Object.entries(groups).map(([k,v])=>'<label class="eng-check"><input type="checkbox" data-layer="'+k+'" '+(p.engineeringLayers?.[k]!==false?'checked':'')+'> '+v[0]+'</label>').join('')+'</details></section>';
   }
   function rows(p){
-    return items(p).filter(e=>(!filter||filter===e.group)&&(!onlyLoose||!anchor(p,e))&&[label(e),e.type,e.zone,roomOf(p,e)?.name,e.comment].join(' ').toLowerCase().includes(term.toLowerCase())).map(e=>{
+    const matches=items(p).filter(e=>(!filter||filter===e.group)&&(!onlyLoose||!anchor(p,e))&&[label(e),e.type,e.zone,roomOf(p,e)?.name,e.comment].join(' ').toLowerCase().includes(term.toLowerCase()));
+    return cards(p,matches)||'<p class="muted">Элементов по выбранным условиям пока нет.</p>';
+  }
+  const inRoom=(p,room)=>items(p).filter(e=>e.room===room.id);
+  function roomStep(p,room,wall){
+    const selected=room.walls[wall-1]?wall:0;
+    const hint=selected?'Выбрана стена '+selected+'.':'Коснитесь стены на плане, чтобы привязать к ней новый элемент.';
+    return '<section class="card"><h3>Инженерные коммуникации</h3><p class="small muted">'+hint+'</p>'+
+      '<button class="btn wide" data-eng="new" data-room="'+esc(room.id)+'" data-wall="'+selected+'">Добавить элемент</button>'+
+      cards(p,inRoom(p,room))+'</section>';
+  }
+  function cards(p,entries){
+    return entries.map(e=>{
       const a=anchor(p,e);
       return '<div class="card"><b>'+esc(label(e))+'</b><p>'+esc([roomOf(p,e)?.name,e.zone,a?.i!=null?'стена '+(a.i+1):a?e.surface:'без определённой привязки',e.accuracy].filter(Boolean).join(' · '))+'</p>'+['edit','copy','photo','camera','delete'].map((k,i)=>'<button class="btn ghost" data-id="'+esc(e.id)+'" data-eng="'+k+'">'+['Изменить','Копировать','Фото из галереи','Снять фото','Удалить'][i]+'</button>').join('')+ thumbnails(p,e)+'</div>';
-    }).join('')||'<p class="muted">Элементов по выбранным условиям пока нет.</p>';
+    }).join('');
   }
   function thumbnails(p,e){
     return (p.engMedia?.photos||[]).filter(f=>f.elements.includes(e.id)).map(f=>'<button class="chip" aria-label="Открыть инженерное фото" data-eng-photo="'+esc(f.id)+'" data-owner="'+esc(e.id)+'"><img width="72" alt="Фото элемента" data-ph27="'+esc(f.id)+'"></button>').join('');
@@ -144,8 +156,13 @@ const Eng = (() => {
   document.addEventListener('click',ev=>{
     const b=ev.target.closest('[data-eng]'),p=P();if(!b||!p)return;
     const e=items(p).find(x=>x.id===b.dataset.id),action=b.dataset.eng;
-    if(action==='new'||action==='edit'){editor(p,e);return}
+    if(action==='new'){
+      const room=p.rooms.find(r=>r.id===b.dataset.room);
+      const wall=Number(b.dataset.wall)-1;
+      editor(p,room?{room:room.id,wallIndex:room.walls[wall]?wall:''}:undefined);return;
+    }
     if(!e)return;
+    if(action==='edit'){editor(p,e);return}
     if(action==='photo'||action==='camera'){Eng.pick(p,e,action==='camera'?'camera':'gallery');return}
     if(action==='delete'&&!confirm('Удалить инженерный элемент?'))return;
     const oldPhotos=(p.engMedia?.photos||[]).map(f=>f.id);
@@ -174,5 +191,5 @@ const Eng = (() => {
     else toast('Выберите поле размера в миллиметрах');
     return true;
   }
-  return {groups,items,anchor,outside,visible,label,tone,list,editor,measure,validate};
+  return {groups,items,inRoom,anchor,outside,visible,label,tone,list,roomStep,editor,measure,validate};
 })();
