@@ -1,8 +1,9 @@
 const scope = self.registration.scope;
 const cachePrefix = 'zamer-media-export:' + scope + ':';
-const cacheName = cachePrefix + '3';
+const cacheName = cachePrefix + '4.0-review1';
 const shell = [
   './', 'index.html', 'three.min.js', 'jszip.min.js', 'media-zip.js',
+  'engineering.js', 'eng-views.js', 'drawing-reader.js', 'drawing-project.js', 'drawing-dialog.js', 'pdf-local.js', 'pdf-worker.js',
   'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
   '../gate.js', '../hub.js'
 ];

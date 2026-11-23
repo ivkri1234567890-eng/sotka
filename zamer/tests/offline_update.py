@@ -53,7 +53,7 @@ def run(pw, server, root, profile):
         old_photo = page.evaluate('phData27("legacy")')
         assert old_photo.startswith('data:image/jpeg;')
         source = Path(__file__).resolve().parents[1]
-        for name in ('index.html', 'sw.js', 'media-zip.js'):
+        for name in ('index.html', 'sw.js', 'media-zip.js', 'engineering.js', 'eng-views.js', 'drawing-dialog.js', 'drawing-project.js', 'drawing-reader.js', 'pdf-local.js', 'pdf-worker.js'):
             shutil.copyfile(source / name, root / 'zamer' / name)
         server.interrupt_install = True
         page.evaluate("""async () => {

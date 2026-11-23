@@ -54,6 +54,7 @@ const Eng = (() => {
   }
   let dialog, measuring, filter='', term='', onlyLoose=false;
   function list(p){
+    setTimeout(fillPh27,0);
     return '<section class="card"><h3>Инженерные коммуникации</h3><button class="btn" data-eng="new">Добавить элемент</button><label class="f">Поиск<input id="eng-search" value="'+esc(term)+'"></label><label class="f">Категория<select id="eng-filter">'+opt('','Все категории',filter)+Object.entries(groups).map(([k,v])=>opt(k,v[0],filter)).join('')+'</select></label><label><input type="checkbox" id="eng-loose" '+(onlyLoose?'checked':'')+'> Без определённой привязки</label><div id="eng-results">'+rows(p)+'</div><details><summary>Слои на чертежах</summary>'+Object.entries(groups).map(([k,v])=>'<label class="eng-check"><input type="checkbox" data-layer="'+k+'" '+(p.engineeringLayers?.[k]!==false?'checked':'')+'> '+v[0]+'</label>').join('')+'</details></section>';
   }
   function rows(p){
@@ -90,7 +91,7 @@ const Eng = (() => {
         sel('base','Уровень отсчёта',opts(['Чистовой','Черновой'],e.base))+input('direction','Направление',e.direction)+(e.group==='waste'?input('slope','Измеренный уклон, %',e.slope):'')+sel('accuracy','Точность',opts(accuracy,e.accuracy))+sel('status','Состояние',opts(statuses,e.status))+input('comment','Комментарий',e.comment)+'<label class="eng-check"><input type="checkbox" name="visible" '+(e.visible?'checked':'')+'> Показывать на чертежах</label>';
     }
     form.onchange=ev=>{if(['group','room','surface'].includes(ev.target.name)){read();if(ev.target.name==='group')e.type=groups[e.group][1].split(', ')[0];if(ev.target.name==='room'){delete e.wallIndex;delete e.wallKey}draw()}};
-    form.onfocusin=ev=>{measuring=Object.hasOwn(fields,ev.target.name)?ev.target:null};
+    form.addEventListener('focusin',ev=>{measuring=Object.hasOwn(fields,ev.target.name)?ev.target:null});
     form.onsubmit=ev=>{
       ev.preventDefault();read();
       if([...Object.keys(fields),'slope'].some(k=>e[k]!=null&&(!Number.isFinite(e[k])||Math.abs(e[k])>10000||(!['x','y','slope','height'].includes(k)&&e[k]<0)))){alert('Проверьте числовые поля');return}
@@ -131,7 +132,7 @@ const Eng = (() => {
   });
   function measure(v){
     if(!dialog?.open)return false;
-    if(measuring&&Number.isFinite(v)&&v>0){measuring.value=String(Math.round(v*1000));toast('Замер записан в активное поле, мм')}
+    if(measuring===document.activeElement&&measuring&&Number.isFinite(v)&&v>0){measuring.value=String(Math.round(v*1000));toast('Замер записан в активное поле, мм')}
     else toast('Выберите поле размера в миллиметрах');
     return true;
   }
