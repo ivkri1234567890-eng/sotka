@@ -40,19 +40,19 @@ function engTable(p){
  return pages;
 }
 async function engPhotoSheets(p){
- const photos=p.engMedia?.photos||[],pages=[];
+ const photos=p.rooms.flatMap(r=>(r.photos||[]).map(f=>({id:f.id,title:r.name+(f.wall?' · стена '+f.wall:' · общее фото')}))).concat(p.engMedia?.photos||[]),pages=[];
  for(let i=0;i<photos.length;i+=4){
-  let body=tx27(16,16,'Фотофиксация инженерных элементов',{s:5,a:'start'});
+  let body=tx27(16,16,'Фотофиксация объекта',{s:5,a:'start'});
   for(const [j,f] of photos.slice(i,i+4).entries()){
    const x=16+(j%2)*197,y=28+Math.floor(j/2)*127;
-   const names=Eng.items(p).filter(e=>f.elements.includes(e.id)).map(e=>Eng.label(e));
+   const names=f.title?[f.title]:Eng.items(p).filter(e=>f.elements?.includes(e.id)).map(e=>Eng.label(e));
    const record=await PHDB.get(f.id);
-   if(!record)throw Error('Отсутствует инженерное фото '+f.id);
+   if(!record)throw Error('Отсутствует фото '+f.id);
    body+=tx27(x,y,names.join(', ').slice(0,78),{s:3.2,a:'start'});
-   if(record.data&&record.data.startsWith('data:image/jpeg;base64,'))body+='<image x="'+x+'" y="'+(y+4)+'" width="185" height="112" href="'+record.data+'" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="'+record.data+'"/>';
+   if(record.data&&record.data.startsWith('data:image/jpeg;base64,'))body+='<image x="'+x+'" y="'+(y+4)+'" width="185" height="112" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="'+record.data+'"/>';
    else body+=tx27(x,y+20,'Оригинал приложен в ZIP. Предпросмотр формата недоступен.',{s:2.7,a:'start'});
   }
-  pages.push({svg:wrapSheet27(body),title:'Фото инженерных элементов '+(pages.length+1)});
+  pages.push({svg:wrapSheet27(body),title:'Фото объекта '+(pages.length+1)});
  }
  return pages;
 }

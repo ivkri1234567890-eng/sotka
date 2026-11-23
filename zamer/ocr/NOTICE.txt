@@ -1,0 +1,5 @@
+Local OCR components
+
+Tesseract.js 6.0.1 (https://github.com/naptha/tesseract.js), tesseract.js-core 6.1.2 (https://github.com/naptha/tesseract.js-core). See Tesseract-LICENSE.md, Core-LICENSE.txt and the minified bundles' license notices in this directory.
+
+English trained data used for reading digits: @tesseract.js-data/eng 1.0.0, file 4.0.0_best_int/eng.traineddata.gz, sourced from https://github.com/naptha/tessdata. SHA-256 45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91.

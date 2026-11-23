@@ -1,6 +1,6 @@
 /* Convert reviewed preview coordinates to the application's existing editable room model. */
 const DrawingProject=(()=>{
- const distance=DrawingReader.dist;
+ const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
  function checkShape(points){
   if(!Array.isArray(points)||points.length<3||points.length>1000||points.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)))throw Error('Нужен замкнутый контур из 3–1000 вершин');
   const next=i=>points[(i+1)%points.length],cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
