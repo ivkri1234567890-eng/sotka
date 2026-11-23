@@ -57,13 +57,31 @@ def check_room_step(page):
     assert '12. Инж. коммуникации' in step('engineering').inner_text()
     assert '13. Готово' in step('done').inner_text()
     page.locator('svg.pe28 circle[data-wall28="2"]').click()
-    page.get_by_role('button',name='Добавить элемент',exact=True).click()
+    for title in ('Холодная вода','Горячая вода','Канализация','Труба отопления'):
+        page.get_by_role('button',name=title,exact=True).click()
+        dlg=page.locator('.eng-dialog')
+        assert dlg.get_by_role('heading',name=title,exact=True).is_visible()
+        assert dlg.locator('input:visible').evaluate_all("els=>els.map(el=>el.name)")==['offset','height','diameter']
+        assert dlg.locator('input:visible').evaluate_all("els=>els.every(el=>el.inputMode==='decimal')")
+        assert not dlg.locator('details').evaluate('el=>el.open')
+        assert dlg.evaluate('el=>el.scrollWidth<=el.clientWidth+1')
+        if title!='Труба отопления':
+            dlg.locator('[data-close]').click()
     dlg=page.locator('.eng-dialog')
     assert dlg.locator('[name=room] option:checked').text_content()=='Мансарда'
     assert dlg.locator('[name=wallIndex]').input_value()=='1'
-    dlg.locator('[name=name]').fill('Стояк мансарды')
     dlg.locator('[name=offset]').fill('250')
     dlg.locator('[name=height]').fill('800')
+    dlg.locator('[name=diameter]').fill('26,5')
+    ref=dlg.locator('[name=ref]')
+    first=ref.input_value()
+    assert ref.locator('option:checked').inner_text().startswith('Левый')
+    ref.select_option('start' if first=='end' else 'end')
+    other_distance=float(dlg.locator('[name=offset]').input_value())
+    expected=page.evaluate('wlen(RM(),1)*1000-250')
+    assert abs(other_distance-expected)<.000001,(other_distance,expected)
+    ref.select_option(first)
+    assert dlg.locator('[name=offset]').input_value()=='250'
     dlg.get_by_role('button',name='Сохранить').click()
     assert step('engineering').locator('i').inner_text()=='1'
     assert step('engineering').evaluate("""el=>{
@@ -76,7 +94,10 @@ def check_room_step(page):
     back()
     page.click('[data-a=moretabs]')
     page.click('[data-t=engineering]')
-    assert page.get_by_text('Стояк мансарды',exact=True).is_visible()
+    assert page.get_by_text('Труба отопления',exact=True).is_visible()
+    assert page.get_by_text('Ø 26,5 мм',exact=False).is_visible()
+    assert page.evaluate("engTable(P())[0].svg.includes('Ø 26,5') && engElev(P(),P().rooms.find(r=>r.id===P().engineering[0].room),1,x=>x,y=>y,1).includes('Ø26,5')")
+    assert page.evaluate("P().engineering[0].group==='heat' && P().engineering[0].diameter===.0265")
     page.click('[data-t=rooms]')
     page.click('[data-a=moretabs]')
     open_room('Кухня')
@@ -85,9 +106,25 @@ def check_room_step(page):
     back()
     open_room('Мансарда')
     step('engineering').click()
+    page.get_by_role('button',name='Другая коммуникация').click()
+    dlg.locator('[name=group]').select_option('power')
+    assert dlg.locator('[name=type]').is_visible() and dlg.locator('[name=diameter]:visible').count()==0
+    dlg.locator('[data-close]').click()
     page.click('[data-eng=edit]')
     assert dlg.locator('[name=offset]').input_value()=='250'
-    dlg.locator('[data-close]').click()
+    dlg.locator('summary').click()
+    dlg.locator('[name=name]').fill('Стояк мансарды')
+    dlg.locator('[name=width]').fill('42.1234567')
+    dlg.locator('[name=comment]').fill('За коробом')
+    dlg.get_by_role('button',name='Сохранить').click()
+    page.click('[data-eng=edit]')
+    assert not dlg.locator('[name=width]').is_visible()
+    dlg.locator('[name=diameter]').fill('32')
+    dlg.get_by_role('button',name='Сохранить').click()
+    assert page.evaluate("""() => {
+        const e=P().engineering[0];
+        return e.diameter===.032 && e.width===42.1234567/1000 && e.comment==='За коробом' && e.name==='Стояк мансарды';
+    }""")
     page.click('[data-eng=delete]')
     assert page.locator('[data-eng=edit]').count()==0
     back()
@@ -189,6 +226,7 @@ def run(page, url):
     dlg.locator('[name=height]').focus()
     page.evaluate('measure24(1.25)')
     assert dlg.locator('[name=height]').input_value()=='1250'
+    dlg.locator('summary').click()
     dlg.locator('[name=name]').fill('Ввод воды')
     dlg.locator('[name=diameter]').fill('25')
     dlg.locator('button[type=submit]').click()
