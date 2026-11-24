@@ -24,7 +24,10 @@ jobs:
           sudo chmod 666 /dev/kvm
           image='system-images;android-35;google_apis;x86_64'
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "emulator" "platform-tools" "$image" > /tmp/android-setup.log
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n survey -k "$image" -d pixel_5
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n survey -k "$image" -d pixel_5 -p "$ANDROID_AVD_HOME/survey.avd"
+          printf 'avd.ini.encoding=UTF-8\npath=%s\ntarget=android-35\n' "$ANDROID_AVD_HOME/survey.avd" > "$ANDROID_AVD_HOME/survey.ini"
           "$ANDROID_HOME/emulator/emulator" -avd survey -port 5554 -accel on -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 > /tmp/survey-emulator.log 2>&1 &
           timeout 160 adb wait-for-device || { tail -50 /tmp/survey-emulator.log; exit 1; }
           for n in {1..100}; do
