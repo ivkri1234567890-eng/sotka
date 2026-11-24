@@ -11,6 +11,7 @@ jobs:
     steps:
       - name: Download and verify the public installers
         run: |
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           curl --fail --location --retry 3 -o old.apk 'https://raw.githubusercontent.com/ivkri1234567890-eng/sotka/fd4f0cc1b9ba13cf3010a2085a3f3281beb051c8/zamer/android/ZamerSmeta-2.8.apk'
           curl --fail --location --retry 3 -o release.zip 'https://github.com/ivkri1234567890-eng/sotka/releases/download/zamer-android-3.0/ZamerSmeta-3.0-Android.zip'
           echo 'd84c3d9298acddd43822ca0d683321b5787ca643766558f461ebd96c50a3f2c5  release.zip' | sha256sum -c -
@@ -25,7 +26,7 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "emulator" "platform-tools" "$image" > /tmp/android-setup.log
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n survey -k "$image" -d pixel_5
           "$ANDROID_HOME/emulator/emulator" -avd survey -port 5554 -accel on -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -memory 2048 > /tmp/survey-emulator.log 2>&1 &
-          adb wait-for-device
+          timeout 160 adb wait-for-device || { tail -50 /tmp/survey-emulator.log; exit 1; }
           for n in {1..100}; do
             if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then exit 0; fi
             sleep 3
