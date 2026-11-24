@@ -1877,7 +1877,7 @@ const pendingPhotoWrites=new Map();
 function phPick27(mode,project=P(),room=RM(),element=null){
   if(!project||!room)return;
   phTarget27={project,room,wallObject:room.walls?.[UI.phWall-1],element};
-  if(window.Photo&&Photo.pick){Photo.pick(mode);return}
+  if(!window.zamerFileChooser&&window.Photo&&Photo.pick){Photo.pick(mode);return}
   const input=document.getElementById('ph27in');
   input.value='';
   if(mode==='camera')input.setAttribute('capture','environment');
