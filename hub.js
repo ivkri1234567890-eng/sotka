@@ -5,7 +5,7 @@
  var P=[
   {k:'ege',n:'Тренажёр ЕГЭ «Сотка»',i:'🎓',u:'/sotka/'},
   {k:'otchety',n:'Центр отчётов',i:'📊',u:'/sotka/otchety/',apk:'/sotka/otchety/android/Otchety.apk'},
-  {k:'zamer',n:'Замер и смета',i:'📐',u:'/sotka/zamer/',apk:'/sotka/zamer/android/ZamerSmeta-2.8.apk'},
+  {k:'zamer',n:'Замер и смета',i:'📐',u:'/sotka/zamer/',apk:'https://github.com/ivkri1234567890-eng/sotka/releases/download/zamer-android-3.0/ZamerSmeta-3.0.apk'},
   {k:'priemka',n:'Приёмка квартиры',i:'🏠',u:'/sotka/priemka/',apk:'/sotka/priemka/android/Priemka-1.2.apk'},
   {k:'sarkoidoz',n:'Саркоидоз — дневник',i:'🫁',u:'/sotka/sarkoidoz/',apk:'/sotka/sarkoidoz/android/Sarkoidoz-1.0.apk'},
   {k:'scan',n:'3D Сканер',i:'🧊',u:'/sotka/scan/'},

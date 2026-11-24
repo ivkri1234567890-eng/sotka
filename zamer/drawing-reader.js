@@ -120,6 +120,7 @@ const DrawingReader=(()=>{
  }
  async function digits(image,signal,progress){
   if(!window.Tesseract)await script('ocr/tesseract.min.js');
+  if(window.zamerFileChooser&&!window.zamerOcrAssets)await script('ocr/android-bundle.js');
   if(signal.aborted)throw Error('Распознавание отменено');
   const url=p=>new URL('ocr/'+p,document.baseURI).href;
   let worker,stop;
@@ -128,7 +129,8 @@ const DrawingReader=(()=>{
   try{
    let fail;
    const error=new Promise((_,reject)=>{fail=e=>reject(Error(String(e)))});
-   const init=Tesseract.createWorker('eng',1,{workerPath:url('worker.min.js'),corePath:url('tesseract-core-lstm.wasm.js'),langPath:url(''),workerBlobURL:false,cacheMethod:'none',logger:m=>progress(m.status==='recognizing text'?Math.round(m.progress*100):0),errorHandler:e=>fail(e)});
+   const assets=window.zamerOcrAssets;
+   const init=Tesseract.createWorker('eng',1,{workerPath:assets?.workerPath||url('worker.min.js'),corePath:url('tesseract-core-lstm.wasm.js'),langPath:assets?.langPath||url(''),workerBlobURL:false,cacheMethod:'none',logger:m=>progress(m.status==='recognizing text'?Math.round(m.progress*100):0),errorHandler:e=>fail(e)});
    let ended=false;
    try{worker=await Promise.race([init,interrupt,error])}catch(e){ended=true;throw e}finally{if(ended)init.then(w=>w.terminate(),()=>{})}
    await worker.setParameters({tessedit_char_whitelist:'0123456789.,',tessedit_pageseg_mode:'11'});

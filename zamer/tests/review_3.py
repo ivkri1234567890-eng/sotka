@@ -136,10 +136,11 @@ def run(page, url):
     page.on('dialog', lambda dialog: dialog.accept())
     page.goto(url)
     enter_app(page)
-    page.evaluate('async()=>{await navigator.serviceWorker.ready}')
-    page.reload()
-    enter_app(page)
-    page.wait_for_function('navigator.serviceWorker.controller')
+    if not url.startswith('file:'):
+        page.evaluate('async()=>{await navigator.serviceWorker.ready}')
+        page.reload()
+        enter_app(page)
+        page.wait_for_function('navigator.serviceWorker.controller')
     page.context.set_offline(True)
     page.click('[data-a=settings]')
     original_viewport=page.viewport_size
