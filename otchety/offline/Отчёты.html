@@ -2168,7 +2168,8 @@ function replaceCells(tr, values) {
 function registerLine(e) {
   const out = ['Опись № ' + e.no + (e.transferDate ? ' от ' + e.transferDate : '') + (e.invoice ? ' к УПД № ' + e.invoice + (e.date ? ' от ' + e.date : '') : '')];
   if (e.vins && e.vins.length) out.push(e.vins.length > 3 ? e.vins.length + ' автомобилей' : 'VIN: ' + e.vins.join(', '));
-  const docs = [e.poa ? 'доверенность № ' + e.poa : '', e.act ? 'акт № ' + e.act : '', e.sheetsTotal ? 'листов: ' + e.sheetsTotal : ''].filter(Boolean);
+  const sheets = e.sheetsTotal ?? e.sheets;
+  const docs = [e.poa ? 'доверенность № ' + e.poa : '', e.act ? 'акт № ' + e.act : '', sheets != null && sheets !== '' && typeof sheets !== 'object' ? 'листов: ' + sheets : ''].filter(Boolean);
   if (docs.length) out.push(docs.join(', '));
   return out.join('\n');
 }
@@ -2240,18 +2241,49 @@ async function parseOpis(bytes, name) {
   if (nm) e.no = +nm[1];
   const sig = /Передал[аи]?:\s*_*\s*\/\s*([^/]+?)\s*\/[\s\S]*?Принял[аи]?:\s*_*\s*\/\s*([^/]+?)\s*\//i.exec(head);
   if (sig) { e.gave = clean(sig[1]); e.took = clean(sig[2]); }
-  for (const t of parts.filter(p => p.tag === 'tbl')) for (const tr of rowsOf(t.xml)) {
-    const c = cellsOf(tr).map(xtext);
-    if (c.length < 2) continue;
-    const label = c[0].toLowerCase(), val = c[1], sh = c[2] ? c[2].trim() : '';
-    let key = null;
-    if (/^покупател/.test(label)) { key = 'buyer'; e.buyer = clean(val); }
-    else if (/^получател/.test(label)) { key = 'recipient'; e.recipient = clean(val); }
-    else if (/упд|сч[её]т/.test(label)) { key = 'upd'; const m = /№?\s*([^\s]+\/\d{6,8}|[^\s]+)\s*(?:от\s*(\d{2}\.\d{2}\.\d{4}))?/.exec(val.replace(/^№\s*/, '')); if (m) { e.invoice = clean(m[1]); e.date = m[2] || (parseInvoice(e.invoice) ? ddmmyyyy(parseInvoice(e.invoice)) : ''); } }
-    else if (/vin|автомобил/.test(label)) { key = 'vin'; e.vins = val.split(/[\s,;]+/).map(clean).filter(v => v.length >= 8); }
-    else if (/^доверенност/.test(label)) { key = 'poa'; e.poa = clean(val).replace(/^№\s*/, ''); }
-    else if (/^акт/.test(label)) { key = 'act'; e.act = clean(val).replace(/^№\s*/, ''); }
-    if (key && sh) { e.sheets[key] = sh; const n = parseFloat(sh.replace(',', '.')); if (Number.isFinite(n)) e.sheetsTotal += n; }
+  for (const t of parts.filter(p => p.tag === 'tbl')) {
+    // Старые описи без заголовка имеют три колонки. В заполненной таблице
+    // положение колонки листов берём из заголовка, включая объединённые ячейки.
+    let sheetsColumn = 2, nameColumn = 0, numberColumn = 1;
+    for (const tr of rowsOf(t.xml)) {
+      const cells = cellsOf(tr);
+      const c = cells.map(xtext);
+      if (c.length < 2) continue;
+      const columns = [];
+      let column = 0;
+      for (const cell of cells) {
+        columns.push(column);
+        column += Number((/<w:gridSpan\b[^>]*w:val="(\d+)"/.exec(cell) || [])[1]) || 1;
+      }
+      const header = c.findIndex(v => /^(?:кол-?во|количество)\s+листов$/i.test(headKey(v)));
+      if (header >= 0) {
+        sheetsColumn = columns[header];
+        const nameHeader = c.findIndex(v => /^(?:наименование|название|вид)(?:\s+документа|\s+документов)?$/.test(headKey(v)));
+        const numberHeader = c.findIndex(v => /^(?:№|номер)\s+документа$/.test(headKey(v)));
+        if (nameHeader >= 0) nameColumn = columns[nameHeader];
+        if (numberHeader >= 0) numberColumn = columns[numberHeader];
+        continue;
+      }
+      const label = headKey(c[columns.indexOf(nameColumn)]), val = c[columns.indexOf(numberColumn)] || '';
+      const sheetCell = columns.indexOf(sheetsColumn);
+      const sh = sheetCell >= 0 ? clean(c[sheetCell]) : '';
+      const summary = /^(?:(?:общий|общие|промежуточный|промежуточные)\s+)?(?:итог(?:о|и)?|всего|подытог|сумма)(?:$|[\s:.,—-])|^общее\s+(?:количество|число)\s+листов|^(?:количество|число)\s+листов\s+всего/.test(label);
+      const heading = /^(?:наименование|название|вид)\s*(?:документа|документов)?$/.test(label);
+      if (!label || summary || heading) continue;
+      let key = null;
+      if (/^покупател/.test(label)) { key = 'buyer'; e.buyer = clean(val); }
+      else if (/^получател/.test(label)) { key = 'recipient'; e.recipient = clean(val); }
+      else if (/упд|сч[её]т/.test(label)) { key = 'upd'; const m = /№?\s*([^\s]+\/\d{6,8}|[^\s]+)\s*(?:от\s*(\d{2}\.\d{2}\.\d{4}))?/.exec(val.replace(/^№\s*/, '')); if (m) { e.invoice = clean(m[1]); e.date = m[2] || (parseInvoice(e.invoice) ? ddmmyyyy(parseInvoice(e.invoice)) : ''); } }
+      else if (/vin|автомобил/.test(label)) { key = 'vin'; e.vins = val.split(/[\s,;]+/).map(clean).filter(v => v.length >= 8); }
+      else if (/^доверенност/.test(label)) { key = 'poa'; e.poa = clean(val).replace(/^№\s*/, ''); }
+      else if (/^акт/.test(label)) { key = 'act'; e.act = clean(val).replace(/^№\s*/, ''); }
+      if (key && sh) e.sheets[key] = sh;
+      // Название документа не ограничено перечнем извлекаемых реквизитов.
+      // Итоги и служебные строки исключаем независимо от чисел в их ячейках.
+      const service = /^(?:покупател|получател|автомобил|vin(?:$|[\s/:]))/.test(label);
+      const count = /^(\d+(?:[.,]\d+)?)(?:\s*(?:л\.?|лист(?:а|ов)?))?$/i.exec(sh);
+      if (!service && count) e.sheetsTotal += Number(count[1].replace(',', '.'));
+    }
   }
   e.sheetsTotal = Math.round(e.sheetsTotal * 100) / 100;
   return e;
@@ -2297,7 +2329,7 @@ function mergeFilled(items, reg) {
     if (o.invoice && e.invoice && invKey(o.invoice) !== invKey(e.invoice)) { out.mismatch.push('№ ' + o.no + ': в описи УПД ' + o.invoice + ', в реестре ' + e.invoice); continue; }
     const ch = [];
     const set = (k, v, label) => { if (v && String(e[k] || '') !== String(v)) { ch.push(label + ': ' + (e[k] || '—') + ' → ' + v); e[k] = v; } };
-    set('poa', o.poa, 'доверенность'); set('act', o.act, 'акт'); set('sheets', o.sheetsTotal ? String(o.sheetsTotal) : '', 'листов'); set('transferDate', o.transferDate, 'дата передачи');
+    set('poa', o.poa, 'доверенность'); set('act', o.act, 'акт'); set('sheets', String(o.sheetsTotal), 'листов'); set('transferDate', o.transferDate, 'дата передачи');
     if (o.poa && e.hasPoa !== 'есть') { e.hasPoa = 'есть'; }
     if (o.act && e.hasAct !== 'есть') { e.hasAct = 'есть'; }
     if (ch.length) { e.history = (e.history ? e.history + '\n' : '') + stamp + ': из заполненной описи — ' + ch.join('; '); out.updated++; }

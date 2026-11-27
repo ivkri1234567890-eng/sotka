@@ -25,15 +25,15 @@ def build(android=False):
 
 out = root / 'offline'; out.mkdir(exist_ok=True)
 html = build()
-(out / 'Отчёты.html').write_text(html, encoding='utf-8')
+(out / 'Отчёты.html').write_bytes(html.encode('utf-8'))
 sha = hashlib.sha256(html.encode('utf-8')).hexdigest()
 memo = (root / 'tools' / 'Памятка_для_службы_безопасности.txt').read_text(encoding='utf-8').replace('{SHA}', sha).replace('{DATE}', datetime.date.today().strftime('%d.%m.%Y'))
-(out / 'Памятка для службы безопасности.txt').write_text(memo, encoding='utf-8')
+(out / 'Памятка для службы безопасности.txt').write_bytes(memo.encode('utf-8'))
 with zipfile.ZipFile(out / 'Отчёты-офлайн.zip', 'w', zipfile.ZIP_DEFLATED) as z:
     z.writestr('Отчёты.html', html)
     z.writestr('Памятка для службы безопасности.txt', memo)
     z.writestr('SHA256.txt', sha + '  Отчёты.html\n')
 if len(sys.argv) > 1:
     pathlib.Path(sys.argv[1]).mkdir(parents=True, exist_ok=True)
-    (pathlib.Path(sys.argv[1]) / 'index.html').write_text(build(android=True), encoding='utf-8')
+    (pathlib.Path(sys.argv[1]) / 'index.html').write_bytes(build(android=True).encode('utf-8'))
 print(len(html), sha)
