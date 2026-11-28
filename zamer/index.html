@@ -2486,6 +2486,7 @@ function vWizard28(){const p=P(),r=RM();if(!r)return vProject();const g=geo(r),s
  else if(step==='height')h+=heightCard28(r);
  else if(step==='photo')h+=photosCard27(r);
  else if(step==='engineering')h+=Eng.roomStep(p,r,UI.peWall);
+ else if(step==='survey')h+=surveyCard(r);
  else if(step==='done')h+=doneCard28(p,r);
  else h+=catCard28(r,step);
  const i=STEPS28.findIndex(s=>s[0]===step),prev=STEPS28[i-1],next=STEPS28[i+1];
@@ -2627,6 +2628,87 @@ function gate28(){let ok=(function(){try{return sessionStorage.getItem('sotka-ga
  document.getElementById('g28b').onclick=go28;document.getElementById('g28').onkeydown=e=>{if(e.key==='Enter')go28()};setTimeout(()=>document.getElementById('g28')?.focus(),50)}
 
 window.__test={items28,pos28,set28,val28,add28,lr28,hApply28,hFields28,peSVG28,itemsSVG28,solve28,nearWalls28,fields28,obj28,offFromLeft28,hingeAB28,hingeSide28,blkDoorSide28,VIEWS28,acsOf,UI,R,allSheets27,plan5d27,wallItems27,toStart27,corners27,leftIsStart27,plOpen27,plSave27,radsOf,DB,wallSegment,physicalWallLength,electricalPosition,addElectrical23,pointInside23,removeWall23,planPts,planPrims,planSVG,planCanvas,apartmentCanvas,validateBackup,placement,apartmentModel,layoutIssues,vApartment,linesTable,geo,roomLines,projTotals,buildPdfPages,makePdf,parseFrame,parseText24,planDXF,elevDXF,planIFC,studioJSON,foremanCSV,furnCSV,bulgeOf,get onMeasure(){return onMeasure},fenceCalc,fenceCSV,geo:r=>geo(r),learn24,decode24,rfFrame,KINDS,floorView,pdfPlans24};
+
+/* Обмер по техническому заданию: сведения сохраняются отдельно от геометрии. */
+const SURVEY_FIELDS=[
+ ['walls','Стены и откосы','Для каждой стены укажите номер, толщину в мм, место и способ замера. Глубину откосов укажите отдельно.'],
+ ['floor','Пол и стяжка','Укажите наличие и толщину стяжки в мм, способ определения, ступени, пороги, подиумы и перепады с привязками.'],
+ ['ceiling','Потолок','Балки, короба, уклоны и перепады: размеры, положение и привязки.'],
+ ['water','Водопровод','Стояки и вводы, диаметры труб, счётчики и их габариты.'],
+ ['sewer','Канализация','Стояки, диаметры и высоты отводов; обязательно укажите уровень отсчёта: стяжка или перекрытие.'],
+ ['heating','Отопление','Стояки, отводы, отступы от стен, коллекторы, радиаторы и конвекторы: габариты и привязки.'],
+ ['gas','Газ','Стояки, отводы, трассы, водонагреватели и дымоходы с привязками.'],
+ ['vent','Вентиляция','Шахты, отверстия, кухонная вытяжка, воздуховоды и их диаметры, оборудование и привязки.'],
+ ['climate','Кондиционирование','Блоки, корзины, отверстия, вводы коммуникаций: расположение и размеры.'],
+ ['electric','Электроснабжение','Щит: размеры и привязки. Проверьте фото щита, схемы и автомата в коридоре.'],
+ ['doors','Двери','Размеры полотна отдельно от проёма, сторона и направление открывания.'],
+ ['windows','Окна','Для каждого окна укажите створки, направление открывания и максимальный вылет, мм.'],
+ ['photos','Фото стен и вида из окна','Отметьте, какие стены и виды из окон сфотографированы. Прикрепить фото можно на шаге «Фото».'],
+ ['video','Видео помещений и узлов','Отметьте съёмку 360°, пола и потолка, инженерных узлов с рулеткой. Видео сохраняется отдельно от приложения.'],
+ ['technicalphotos','Фото щита и коммуникаций','Перечислите снятые узлы, фото щита, схемы и автомата. Фото инженерных элементов добавляются на шаге «Инж. коммуникации».']
+];
+const SURVEY_STATUS=[['','Не проверено'],['measured','Зафиксировано'],['none','Отсутствует'],['unknown','Неизвестно / нет доступа'],['later','Нужно дополнить']];
+STEPS28.splice(STEPS28.findIndex(s=>s[0]==='done'),0,['survey','ТЗ объекта','📋']);
+function surveyCompleted(r){
+ return SURVEY_FIELDS.filter(([key])=>['measured','none'].includes(r.surveyTZ?.[key]?.status)).length;
+}
+function surveyCard(r){
+ const data=r.surveyTZ||{},done=surveyCompleted(r);
+ const help=`<details class="card"><summary><b>Как измерить толщину?</b></summary><p>Стена: измерьте рулеткой в доступном дверном или оконном проёме от одной поверхности до другой. Отметьте, включена ли отделка. Откос может не совпадать с толщиной стены.</p><p>Стяжка: измерьте видимый срез в существующем открытом месте или возьмите размер из подтверждённых документов. Без доступа не угадывайте: выберите «Неизвестно / нет доступа». Не сверлите пол без проверки расположения коммуникаций.</p></details>`;
+ const intro=`<div class="card"><h3>Обмер по ТЗ</h3><p class="small muted"><span data-survey-progress>${done}</span> из ${SURVEY_FIELDS.length} разделов отмечены как зафиксированные или отсутствующие. Сведения сохраняются в проекте и резервном ZIP. Чертёж автоматически не меняется; используйте штатные инструменты для нанесения объектов.</p><button type="button" class="btn sec" data-survey-export="1">Скачать ведомость объекта · TXT</button></div>`;
+ const sections=SURVEY_FIELDS.map(([key,title,hint])=>{
+  const item=data[key]||{};
+  const status=(SURVEY_STATUS.find(([value])=>value===item.status)||SURVEY_STATUS[0])[1];
+  const options=SURVEY_STATUS.map(([value,label])=>`<option value="${value}" ${value===(item.status||'')?'selected':''}>${label}</option>`).join('');
+  return `<details class="card survey-tz"><summary><b>${esc(title)}</b> · ${esc(status)}</summary><p class="small muted">${esc(hint)}</p><label class="f">Состояние<select data-survey-key="${key}" data-survey-field="status">${options}</select></label><label class="f">Размеры, привязки и комментарии<textarea data-survey-key="${key}" data-survey-field="notes" maxlength="4000" rows="3" placeholder="Например: стена 2 — 180 мм с отделкой, замер в дверном проёме">${esc(item.notes||'')}</textarea></label></details>`;
+ }).join('');
+ return intro+help+sections;
+}
+function surveyText(p){
+ const lines=['ВЕДОМОСТЬ ОБМЕРА ПО ТЗ','Объект: '+(p.name||'Без названия'),'Дата выгрузки: '+new Date().toLocaleDateString('ru-RU'),'Размеры и методы указаны замерщиком. Данные не нанесены автоматически на чертёж.',''];
+ for(const room of p.rooms||[]){
+  lines.push('ПОМЕЩЕНИЕ: '+(room.name||'Без названия'));
+  for(const [key,title] of SURVEY_FIELDS){
+   const item=room.surveyTZ?.[key]||{};
+   const status=(SURVEY_STATUS.find(([value])=>value===(item.status||''))||SURVEY_STATUS[0])[1];
+   lines.push(title+': '+status);
+   if(item.notes)lines.push(item.notes);
+  }
+  lines.push('');
+ }
+ return lines.join('\r\n');
+}
+function saveSurveyField(event){
+ const el=event.target,key=el?.dataset?.surveyKey,field=el?.dataset?.surveyField;
+ if(!SURVEY_FIELDS.some(([name])=>name===key)||!['status','notes'].includes(field))return;
+ if(event.type==='input'&&field!=='notes')return;
+ const room=RM();
+ if(!room)return;
+ const previous=room.surveyTZ;
+ const value=field==='notes'?el.value.slice(0,4000):el.value;
+ if(field==='status'&&!SURVEY_STATUS.some(([status])=>status===value))return;
+ if(previous?.[key]?.[field]===value)return;
+ room.surveyTZ={...previous,[key]:{...previous?.[key],[field]:value}};
+ if(!save()){
+  if(previous===undefined)delete room.surveyTZ;
+  else room.surveyTZ=previous;
+  el.value=previous?.[key]?.[field]||'';
+  return;
+ }
+ if(field==='status'){
+  const summary=el.closest('details')?.querySelector('summary');
+  if(summary)summary.innerHTML='<b>'+esc(SURVEY_FIELDS.find(([name])=>name===key)[1])+'</b> · '+esc(SURVEY_STATUS.find(([status])=>status===value)[1]);
+  const progress=document.querySelector('[data-survey-progress]');
+  if(progress)progress.textContent=surveyCompleted(room);
+ }
+}
+document.addEventListener('input',saveSurveyField);
+document.addEventListener('change',saveSurveyField);
+document.addEventListener('click',event=>{
+ if(!event.target.closest('[data-survey-export]'))return;
+ const project=P();
+ if(project)outFile((project.name||'Объект')+' — ведомость обмера.txt','text/plain;charset=utf-8',utf8('\ufeff'+surveyText(project)),'save');
+});
 
 gate28();
 if(dbReadError)storageStatus(dbReadError);

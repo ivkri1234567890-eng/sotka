@@ -2,6 +2,7 @@
 import functools
 import http.server
 import io
+import json
 import os
 from pathlib import Path
 import threading
@@ -55,7 +56,8 @@ def check_room_step(page):
     step('photo').click()
     page.locator('.foot [data-k=engineering]').click()
     assert '12. Инж. коммуникации' in step('engineering').inner_text()
-    assert '13. Готово' in step('done').inner_text()
+    assert '13. ТЗ объекта' in step('survey').inner_text()
+    assert '14. Готово' in step('done').inner_text()
     page.locator('svg.pe28 circle[data-wall28="2"]').click()
     for title in ('Холодная вода','Горячая вода','Канализация','Труба отопления'):
         page.get_by_role('button',name=title,exact=True).click()
@@ -89,6 +91,26 @@ def check_room_step(page):
         return a.left>=b.left-1 && a.right<=b.right+1;
     }""")
     assert page.evaluate('Eng.anchor(P(),P().engineering[0]).r.id===RM().id && Eng.anchor(P(),P().engineering[0]).i===1')
+    page.locator('.foot [data-k=survey]').click()
+    page.locator('.survey-tz').filter(has_text='Стены и откосы').locator('summary').click()
+    page.locator('[data-survey-key=walls][data-survey-field=status]').select_option('measured')
+    assert page.get_by_text('1 из 15 разделов', exact=False).is_visible()
+    page.locator('[data-survey-key=walls][data-survey-field=notes]').fill('Стена 2: 180 мм с отделкой')
+    assert page.evaluate("RM().surveyTZ.walls.notes") == 'Стена 2: 180 мм с отделкой'
+    assert page.evaluate("JSON.parse(localStorage.getItem('zs:db')).projects[0].rooms.find(r=>r.name==='Мансарда').surveyTZ.walls.notes") == 'Стена 2: 180 мм с отделкой'
+    assert page.evaluate("surveyText(P()).includes('Стена 2: 180 мм с отделкой')")
+    with page.expect_download() as download:
+        page.locator('[data-survey-export]').click()
+    statement = download.value.path().read_text(encoding='utf-8-sig')
+    assert 'ВЕДОМОСТЬ ОБМЕРА ПО ТЗ' in statement
+    assert 'Стена 2: 180 мм с отделкой' in statement
+    assert 'ПОМЕЩЕНИЕ: Кухня' in statement and 'ПОМЕЩЕНИЕ: Мансарда' in statement
+    # Ошибка записи должна откатить и данные, и выбранный статус.
+    page.evaluate("()=>{window.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw Error('test storage failure')}}")
+    page.locator('[data-survey-key=walls][data-survey-field=status]').select_option('none')
+    assert page.evaluate("RM().surveyTZ.walls.status") == 'measured'
+    assert page.locator('[data-survey-key=walls][data-survey-field=status]').input_value() == 'measured'
+    page.evaluate('Storage.prototype.setItem=window.originalSetItem;delete window.originalSetItem;save()')
     page.locator('.foot [data-k=done]').click()
     assert page.get_by_text('инженерных элементов 1',exact=False).is_visible()
     back()
@@ -269,6 +291,9 @@ def run(page, url):
         page.click('[data-a=projectZip]')
     archive=download.value.path().read_bytes()
     with zipfile.ZipFile(io.BytesIO(archive)) as z:
+        saved = json.loads(z.read('project.json'))['projects'][0]
+        assert next(r for r in saved['rooms'] if r['name']=='Мансарда')['surveyTZ']['walls'] == {
+            'status': 'measured', 'notes': 'Стена 2: 180 мм с отделкой'}
         assert z.read('source/drawing.pdf')==pdf_fixture()
         assert z.read('media/0-original.png')==orig
         assert z.read('documents/drawings.pdf').startswith(b'%PDF')
@@ -296,6 +321,7 @@ def run(page, url):
     page.wait_for_function('DB.projects.length===2')
     page.reload()
     enter_app(page)
+    assert page.evaluate("DB.projects.every(p=>p.rooms.find(r=>r.name==='Мансарда').surveyTZ.walls.notes==='Стена 2: 180 мм с отделкой')")
     assert page.evaluate("""async()=>{const [a,b]=DB.projects; const f=b.engMedia.photos[0],r=await PHDB.get(f.id),s=await PHDB.get(b.drawingSource.id);
      return r.original.size>0&&s.source.size===b.drawingSource.size&&a.drawingSource.id!==b.drawingSource.id&&a.engMedia.photos[0].id!==f.id&&Eng.anchor(b,b.engineering[0])?.i===0}""")
     assert page.evaluate("""async()=>{
